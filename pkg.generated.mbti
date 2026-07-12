@@ -1,0 +1,168 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "vectie/moonmold"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn derive_artifact(SpatialArtifact, artifact_id~ : String, representation~ : RepresentationKind, digest~ : String, relation~ : LineageRelation, known_losses~ : Array[String]) -> SpatialArtifact
+
+pub fn deterministic_manifest_key(String) -> String
+
+pub fn is_moonsuite_workspace_root(String) -> Bool
+
+pub fn is_scoped_output_path(String, String) -> Bool
+
+pub fn new_artifact(artifact_id~ : String, representation~ : RepresentationKind, digest~ : String, units~ : String, coordinate_frame~ : String, parent_digest~ : String?, relation~ : LineageRelation?, known_losses~ : Array[String]) -> SpatialArtifact
+
+pub fn validate_request(AdapterRequest) -> Unit raise AdapterError
+
+pub fn validate_transport_method(String) -> Unit raise AdapterError
+
+// Errors
+pub(all) suberror AdapterError {
+  InvalidIdentity(String)
+  InvalidDeadline(Int)
+  AuthorityExceeded(AuthorityClass)
+  WorkspaceBoundaryViolation(String)
+  StaleParent(expected~ : String, actual~ : String)
+  ConflictingIdempotencyKey(String)
+  UnsupportedTransportMethod(String)
+  InvalidOperation(String)
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub(all) enum AdapterOutcome {
+  Applied
+  IdempotentNoOp
+  Rejected
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) struct AdapterReceipt {
+  request_id : String
+  idempotency_key : String
+  outcome : AdapterOutcome
+  before_digest : String
+  after_digest : String
+  changed_objects : Array[String]
+  warnings : Array[String]
+  evidence : ValidationEvidence
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) struct AdapterRequest {
+  project_id : String
+  session_id : String
+  model_id : String
+  request_id : String
+  idempotency_key : String
+  expected_parent_digest : String
+  workspace_root : String
+  deadline_ms : Int
+  authority : AuthorityClass
+  operation : SemanticOperation
+}
+
+type AppliedRequest
+
+pub(all) enum AuthorityClass {
+  Observe
+  CognitiveMaintenance
+  SandboxExecution
+  WorkspaceMutation
+  ExternalEffect
+  PhysicalEffect
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) enum FindingSeverity {
+  Info
+  Warning
+  Error
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) enum LineageRelation {
+  InterpretedFrom
+  ModeledFrom
+  DimensionedBy
+  StyledFrom
+  OptimizedFrom
+  CollisionDerivedFrom
+  PhysicsDerivedFrom
+  ManufacturingDerivedFrom
+  ValidatedBy
+  RejectedBy
+  SupersededBy
+  PlacedAs
+  SimulatedAs
+} derive(Eq, ToJson, @debug.Debug)
+
+pub struct MockBackend {
+  mut scene_digest : String
+  applied : Array[AppliedRequest]
+}
+pub fn MockBackend::execute(Self, AdapterRequest) -> AdapterReceipt raise AdapterError
+pub fn MockBackend::new(initial_digest? : String) -> Self
+pub fn MockBackend::scene_digest(Self) -> String
+
+pub(all) enum RepresentationKind {
+  ReferenceSet
+  SpatialIntent
+  EditableSource
+  Engineering
+  Presentation
+  Simulation
+  ManufacturingCandidate
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) enum SemanticOperation {
+  CreateModel(name~ : String, units~ : String, coordinate_frame~ : String)
+  CreateBox(object_id~ : String, width_mm~ : Int, depth_mm~ : Int, height_mm~ : Int)
+  CreateCylinder(object_id~ : String, radius_mm~ : Int, height_mm~ : Int, sides~ : Int)
+  SetTransform(object_id~ : String, x_mm~ : Int, y_mm~ : Int, z_mm~ : Int)
+  AssignMaterial(object_id~ : String, material_id~ : String)
+  BooleanSubtract(target_id~ : String, cutter_id~ : String)
+  ValidateScene
+  ExportRepresentation(representation~ : RepresentationKind, output_path~ : String)
+} derive(Eq, ToJson, @debug.Debug)
+
+pub struct SpatialArtifact {
+  artifact_id : String
+  representation : RepresentationKind
+  digest : String
+  units : String
+  coordinate_frame : String
+  parent_digest : String?
+  relation : LineageRelation?
+  known_losses : Array[String]
+}
+pub fn SpatialArtifact::artifact_id(Self) -> String
+pub fn SpatialArtifact::can_replace_engineering(Self) -> Bool
+pub fn SpatialArtifact::canonical_manifest(Self) -> String
+pub fn SpatialArtifact::coordinate_frame(Self) -> String
+pub fn SpatialArtifact::digest(Self) -> String
+pub fn SpatialArtifact::known_losses(Self) -> Array[String]
+pub fn SpatialArtifact::manifest_key(Self) -> String
+pub fn SpatialArtifact::parent_digest(Self) -> String?
+pub fn SpatialArtifact::relation(Self) -> LineageRelation?
+pub fn SpatialArtifact::representation(Self) -> RepresentationKind
+pub fn SpatialArtifact::units(Self) -> String
+
+pub(all) struct ValidationEvidence {
+  validator : String
+  validator_version : String
+  subject_digest : String
+  accepted : Bool
+  findings : Array[ValidationFinding]
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) struct ValidationFinding {
+  code : String
+  severity : FindingSeverity
+  message : String
+  criterion : String
+} derive(Eq, ToJson, @debug.Debug)
+
+// Type aliases
+
+// Traits
+
