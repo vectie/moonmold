@@ -99,3 +99,16 @@ convention and nesting depth. This is adapter-wide policy, not a fixture value.
 
 **Qualification:** snake/kebab/camel and nested variants are exercised through
 the same public runtime; rejected requests leave the scene digest unchanged.
+
+## Recorded review trials — portable and honest evidence
+
+Three issues were caught before the milestone commit:
+
+1. a strict MCP schema could not express its own required fields;
+2. a `blender` label could have executed the mock reference runtime;
+3. representation lineage lived in the report rather than the artifact.
+
+The general fixes were, respectively, a complete public schema with a
+consistency test, explicit live-backend rejection/capability evidence, and
+self-describing immutable artifacts. None depends on the two fixture names or
+dimensions.
