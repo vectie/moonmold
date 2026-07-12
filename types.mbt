@@ -147,7 +147,11 @@ pub fn SpatialArtifact::known_losses(self : SpatialArtifact) -> Array[String] {
 }
 
 ///|
-pub fn SpatialArtifact::can_replace_engineering(self : SpatialArtifact) -> Bool {
+/// This is a representation-shape predicate, not validation or permission to
+/// replace an accepted engineering artifact.
+pub fn SpatialArtifact::is_lossless_engineering_representation(
+  self : SpatialArtifact,
+) -> Bool {
   self.representation == Engineering && self.known_losses.is_empty()
 }
 

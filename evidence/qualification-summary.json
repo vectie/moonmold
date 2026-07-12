@@ -1,0 +1,43 @@
+{
+  "schema": "moonmold-qualification-summary-v1",
+  "date": "2026-07-13",
+  "blender": {
+    "available": false,
+    "evidenceClass": "mock-reference-runtime",
+    "liveClaimed": false
+  },
+  "moonbit": {
+    "targets": ["wasm", "wasm-gc", "js", "native"],
+    "testsPerTarget": 10,
+    "failed": 0
+  },
+  "adapter": {
+    "tests": 17,
+    "failed": 0,
+    "unrestrictedScripts": false,
+    "physicalControl": false
+  },
+  "experiments": [
+    {
+      "planId": "arched-lunar-habitat",
+      "inputDigest": "sha256:96baa5908799f1a7e115c5587fcd0a08a5ac9a8d31d706a1d0663f98e56916bc",
+      "finalSceneDigest": "sha256:e3bbec14942d4d2536c8edb4c5116ee5bb79571af085fe734bef25e98575acb1",
+      "operationCount": 16,
+      "accepted": true
+    },
+    {
+      "planId": "tri-deck-observation-tower",
+      "inputDigest": "sha256:f3981bccc3d42e99c476329d0a13074ab903f0f27b815a624e29371d5b1bb55d",
+      "finalSceneDigest": "sha256:819a4d87b5182401c75b73ea4e3d87bd8ae0e3761a7f761a3a87311226501bbf",
+      "operationCount": 19,
+      "accepted": true
+    }
+  ],
+  "procedureTransfer": {
+    "procedureId": "parametric-building-from-explicit-spatial-intent-v1",
+    "structurallyDifferentInputs": 2,
+    "geometryHardcodedInRuntime": false,
+    "accepted": true
+  },
+  "claimCeiling": "digital-artifact-and-analysis-only"
+}

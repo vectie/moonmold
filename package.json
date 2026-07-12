@@ -1,0 +1,17 @@
+{
+  "name": "@vectie/moonmold-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bounded semantic Blender/MCP adapter and MoonMold experiment CLI",
+  "scripts": {
+    "test": "node --test adapter/*.test.mjs",
+    "demo": "node bin/moonmold.mjs build --input fixtures/habitat-a.json --output evidence/generated/habitat-a",
+    "demo:transfer": "node bin/moonmold.mjs build --input fixtures/tower-b.json --output evidence/generated/tower-b",
+    "mcp": "node adapter/mcp-server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+

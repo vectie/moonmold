@@ -1,0 +1,48 @@
+{
+  "schema": "moonmold-building-plan-v1",
+  "id": "arched-lunar-habitat",
+  "units": "mm",
+  "coordinateFrame": "z-up-right-handed",
+  "scaleEvidence": {
+    "source": "user-declared exterior width",
+    "valueMm": 8000,
+    "confidence": "explicit"
+  },
+  "referenceProvenance": [
+    {
+      "referenceId": "ref-habitat-sketch",
+      "source": "moonsuite-input://moonbook/arched-lunar-habitat/front-sketch",
+      "license": "user-provided",
+      "confidence": "conceptual"
+    }
+  ],
+  "unknowns": [
+    "structural wall composition",
+    "measured mass",
+    "pressure-vessel qualification"
+  ],
+  "components": [
+    {
+      "id": "floor-slab",
+      "kind": "box",
+      "dimensions": { "widthMm": 8000, "depthMm": 12000, "heightMm": 300 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 150 },
+      "materialId": "regolith-composite-unknown"
+    },
+    {
+      "id": "habitat-shell",
+      "kind": "cylinder",
+      "dimensions": { "radiusMm": 4000, "heightMm": 12000, "sides": 64 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 4000 },
+      "materialId": "pressure-shell-unknown"
+    },
+    {
+      "id": "airlock-block",
+      "kind": "box",
+      "dimensions": { "widthMm": 2400, "depthMm": 2200, "heightMm": 2800 },
+      "position": { "xMm": 0, "yMm": 6600, "zMm": 1400 },
+      "materialId": "airlock-assembly-unknown"
+    }
+  ]
+}
+

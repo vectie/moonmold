@@ -136,10 +136,10 @@ pub struct SpatialArtifact {
   known_losses : Array[String]
 }
 pub fn SpatialArtifact::artifact_id(Self) -> String
-pub fn SpatialArtifact::can_replace_engineering(Self) -> Bool
 pub fn SpatialArtifact::canonical_manifest(Self) -> String
 pub fn SpatialArtifact::coordinate_frame(Self) -> String
 pub fn SpatialArtifact::digest(Self) -> String
+pub fn SpatialArtifact::is_lossless_engineering_representation(Self) -> Bool
 pub fn SpatialArtifact::known_losses(Self) -> Array[String]
 pub fn SpatialArtifact::manifest_key(Self) -> String
 pub fn SpatialArtifact::parent_digest(Self) -> String?

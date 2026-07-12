@@ -1,0 +1,55 @@
+{
+  "schema": "moonmold-building-plan-v1",
+  "id": "tri-deck-observation-tower",
+  "units": "mm",
+  "coordinateFrame": "z-up-right-handed",
+  "scaleEvidence": {
+    "source": "user-declared deck elevation schedule",
+    "valueMm": 18000,
+    "confidence": "explicit"
+  },
+  "referenceProvenance": [
+    {
+      "referenceId": "ref-tower-elevation",
+      "source": "moonsuite-input://moonbook/tri-deck-observation-tower/elevation",
+      "license": "user-provided",
+      "confidence": "conceptual"
+    }
+  ],
+  "unknowns": [
+    "foundation anchoring",
+    "measured center of mass",
+    "radiation shielding performance"
+  ],
+  "components": [
+    {
+      "id": "central-column",
+      "kind": "cylinder",
+      "dimensions": { "radiusMm": 900, "heightMm": 18000, "sides": 48 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 9000 },
+      "materialId": "structural-alloy-unknown"
+    },
+    {
+      "id": "lower-deck",
+      "kind": "cylinder",
+      "dimensions": { "radiusMm": 4200, "heightMm": 500, "sides": 48 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 4500 },
+      "materialId": "deck-composite-unknown"
+    },
+    {
+      "id": "middle-deck",
+      "kind": "cylinder",
+      "dimensions": { "radiusMm": 3400, "heightMm": 500, "sides": 48 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 9500 },
+      "materialId": "deck-composite-unknown"
+    },
+    {
+      "id": "observation-pod",
+      "kind": "cylinder",
+      "dimensions": { "radiusMm": 2600, "heightMm": 3200, "sides": 64 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 16000 },
+      "materialId": "transparent-shield-unknown"
+    }
+  ]
+}
+

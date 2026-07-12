@@ -52,7 +52,7 @@ test "styled artifact is a sibling with explicit losses" {
   )
   assert_true(child.parent_digest() == Some(parent.digest()))
   assert_true(child.relation() == Some(StyledFrom))
-  assert_false(child.can_replace_engineering())
+  assert_false(child.is_lossless_engineering_representation())
 }
 
 ///|

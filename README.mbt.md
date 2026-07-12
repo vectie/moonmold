@@ -32,10 +32,28 @@ test "a presentation sibling cannot replace engineering truth" {
     known_losses=["collision fidelity", "engineering materials"],
   )
   assert_true(styled.parent_digest() == Some(source.digest()))
-  assert_eq(styled.can_replace_engineering(), false)
+  assert_eq(styled.is_lossless_engineering_representation(), false)
 }
 ```
 
 See `docs/CONSTITUTION.md`, `docs/ARCHITECTURE.md`, and
 `docs/EXPERIMENT_REPORT.md` for the product boundary, implementation journey,
 quality trials, and current limitations.
+
+## Qualification
+
+```sh
+moon check --target all --warn-list +unnecessary_annotation
+moon test --target all
+npm test
+npm run demo
+npm run demo:transfer
+```
+
+The demos create ignored evidence only under
+`/Users/kq/moonsuite/development/sources/moonmold/evidence/generated`. The two
+fixtures use one general procedure but different topology and dimensions.
+
+Start the bounded stdio MCP adapter with `npm run mcp`. Blender is optional;
+when unavailable, live-backend requests fail explicitly and only mock-reference
+receipts may be produced.
