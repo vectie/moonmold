@@ -1,0 +1,10 @@
+{
+  "id": "moonmold",
+  "name": "MoonMold",
+  "kind": "moon-suite-product",
+  "state_path": ".moonsuite/products/moonmold",
+  "service_path": ".moonsuite/products/moonmold/service.json",
+  "repo_path": "",
+  "status": "installed",
+  "capabilities": []
+}

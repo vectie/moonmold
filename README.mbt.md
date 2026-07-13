@@ -57,3 +57,9 @@ fixtures use one general procedure but different topology and dimensions.
 Start the bounded stdio MCP adapter with `npm run mcp`. Blender is optional;
 when unavailable, live-backend requests fail explicitly and only mock-reference
 receipts may be produced.
+
+The unattended product boundary is owned by `moonmold flow-adapter execute`
+and `moonmold flow-adapter attest`. Execution creates real Blender evidence;
+attestation re-hashes every declared output, preserves concrete unknowns, and
+publishes an immutable digital-only final artifact. `product-registry-entry.json`
+is the canonical MoonDesk registry entry for a suite installation.
