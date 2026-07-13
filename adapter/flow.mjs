@@ -86,6 +86,14 @@ function sha256(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
+async function declaredArtifactDigest(workspace, references) {
+  const identities = [];
+  for (const reference of references) {
+    identities.push(`${reference}|${sha256(await readFile(scoped(workspace, reference)))}`);
+  }
+  return sha256(identities.join("\n"));
+}
+
 export async function executeFlow({ workspace, requestRef, resultRef, draftRef }) {
   const request = await jsonAt(workspace, requestRef);
   requireIdentity(request);
@@ -158,7 +166,7 @@ export async function executeFlow({ workspace, requestRef, resultRef, draftRef }
     product_id: "moonmold",
     external_job_id: `moonmold-${request.attempt_id}`,
     status: evidence.outcome === "idempotent-no-op" ? "idempotent-no-op" : "succeeded",
-    output_digest: sha256(draftBytes),
+    output_digest: await declaredArtifactDigest(workspace, [draftRef]),
     output_artifacts: [draftRef],
     error_kind: "",
     compensable: true,
@@ -206,7 +214,7 @@ export async function attestFlow({ workspace, requestRef, resultRef, attestation
     result.idempotency_key !== request.idempotency_key ||
     result.product_id !== "moonmold" ||
     !["succeeded", "idempotent-no-op"].includes(result.status) ||
-    result.output_digest !== sha256(draftBytes) ||
+    result.output_digest !== await declaredArtifactDigest(workspace, [draftRef]) ||
     draft.contract_id !== "moonmold.live-building-result.v1" ||
     draft.product_id !== "moonmold" ||
     draft.operation !== "live-building" ||
