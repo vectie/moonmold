@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { runBuildingExperiment, validateBuildingPlan } from "./experiment.mjs";
@@ -8,7 +9,7 @@ import { createMcpHandler } from "./mcp.mjs";
 import { AdapterRejection, digest, resolveScopedPath } from "./protocol.mjs";
 import { SemanticAdapterRuntime } from "./runtime.mjs";
 
-const ROOT = "/Users/kq/moonsuite";
+const ROOT = process.env.MOONSUITE_ROOT ?? path.join(os.homedir(), "moonsuite");
 const REPO = path.join(ROOT, "development/sources/moonmold");
 const TMP = path.join(REPO, ".tmp");
 
@@ -163,17 +164,18 @@ test("deadlines and malformed geometry fail before mutation", async () => {
 });
 
 test("workspace path boundary rejects traversal and foreign roots", () => {
+  const foreignRoot = path.join(path.dirname(ROOT), "Workspace");
   for (const candidate of [
     "/tmp/model.json",
-    "/Users/kq/moonsuite/../escape.json",
-    "/Users/kq/Workspace/model.json"
+    path.join(ROOT, "../escape.json"),
+    path.join(foreignRoot, "model.json")
   ]) {
     assert.throws(() => resolveScopedPath(ROOT, candidate), {
       name: "AdapterRejection",
       code: "workspace-boundary"
     });
   }
-  assert.throws(() => resolveScopedPath("/Users/kq/Workspace", "/Users/kq/Workspace/model.json"), {
+  assert.throws(() => resolveScopedPath(foreignRoot, path.join(foreignRoot, "model.json")), {
     code: "workspace-boundary"
   });
 });
@@ -412,8 +414,11 @@ test("image reference intake separates pixels, scale, estimates and unknowns", a
   }
 });
 
-test("a symlinked output leaf cannot be overwritten", async () => {
+test("a symlinked output leaf cannot be overwritten", async (t) => {
   const directory = path.join(TMP, "symlink-test");
+  t.after(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
   await rm(directory, { recursive: true, force: true });
   await mkdir(directory, { recursive: true });
   const outside = path.join(TMP, "outside-target.json");
@@ -445,8 +450,11 @@ test("CLI rejection is visible to shell automation", () => {
   assert.equal(JSON.parse(result.stderr).accepted, false);
 });
 
-test("a symlinked output directory cannot redirect writes outside the workspace", async () => {
+test("a symlinked output directory cannot redirect writes outside the workspace", async (t) => {
   const directory = path.join(TMP, "symlink-parent-test");
+  t.after(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
   await rm(directory, { recursive: true, force: true });
   await mkdir(directory, { recursive: true });
   await symlink("/tmp/moonmold-forbidden-target", path.join(directory, "redirect"));
