@@ -42,12 +42,35 @@ authority it did not possess. It is now
 `is_lossless_engineering_representation`, with an explicit comment that the
 predicate does not validate or authorize replacement.
 
+### Live capability was invisible and output was hard to review
+
+The initial guide described only the mock runtime and one MCP tool. Blender is
+now capability-discovered and the MCP surface exposes a bounded whole-building
+operation. The CLI prints applied versus idempotent outcome, evidence class,
+plan identity, object count, output names, and physical-effect state.
+
+### Technically accepted renders were too dark
+
+The first live habitat and tower passed structural checks but required effort
+to read. A fixture-independent render policy now supplies a neutral ground,
+brighter environment, three-point lighting, exposure, and contrast. This
+improves the evidence view without changing exported model geometry.
+
+### Image input could invite false precision
+
+The reference intake now forces the user/agent to separate visible cues from
+scale evidence, estimates, occlusions, and unknowns. Pixel dimensions cannot
+be promoted into real dimensions. Source bytes are verified against tracked
+provenance before modeling begins.
+
 ## Current visible limitations
 
 - No rendered 3D viewport or reference-image overlay exists until MoonDesk and
   the embedded browser integrate this track.
-- Blender is absent, so mesh topology, normals, manifold state, visual
-  comparison, and cancellation of a live worker are not qualified.
+- The CLI has no integrated 3D viewport, reference overlay, or side-by-side
+  visual comparison; these belong in MoonDesk's embedded-browser journey.
+- Mesh topology, normals, manifold state, physics, and fabrication fitness are
+  not yet promotion gates. STL output remains a manufacturing candidate only.
 - CLI inputs are JSON fixtures; a user-friendly intent editor, reference
   picker, progress display, “Why blocked?” explanation, and visual comparison
   belong in the combined MoonDesk journey.
@@ -55,5 +78,4 @@ predicate does not validate or authorize replacement.
   developer disclosure layers.
 
 These limitations are explicit gates, not compatibility warnings and not
-claims of completed visual or physical modeling.
-
+claims of completed image reconstruction or physical modeling.

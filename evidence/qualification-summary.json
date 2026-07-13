@@ -2,9 +2,12 @@
   "schema": "moonmold-qualification-summary-v1",
   "date": "2026-07-13",
   "blender": {
-    "available": false,
-    "evidenceClass": "mock-reference-runtime",
-    "liveClaimed": false
+    "available": true,
+    "version": "Blender 4.5.11 LTS",
+    "runtimeManifest": "tools/blender/runtime-manifest.json",
+    "evidenceClass": "live-blender",
+    "liveClaimed": true,
+    "physicalEffects": false
   },
   "moonbit": {
     "targets": ["wasm", "wasm-gc", "js", "native"],
@@ -12,7 +15,11 @@
     "failed": 0
   },
   "adapter": {
-    "tests": 18,
+    "defaultTests": 22,
+    "defaultPassed": 20,
+    "defaultLiveSkipped": 2,
+    "liveTests": 3,
+    "livePassed": 3,
     "failed": 0,
     "unrestrictedScripts": false,
     "physicalControl": false
@@ -23,6 +30,8 @@
       "inputDigest": "sha256:33b223d1c49406ed5d63ce66a7d44788ccc12b6a6e11b91e977c70652ec90419",
       "finalSceneDigest": "sha256:e3bbec14942d4d2536c8edb4c5116ee5bb79571af085fe734bef25e98575acb1",
       "operationCount": 16,
+      "portableContracts": 5,
+      "liveRenderDigest": "sha256:724589ec3e02db3d85df190457a5ca6d46b0264b866a32125eedb370754bb486",
       "accepted": true
     },
     {
@@ -30,13 +39,27 @@
       "inputDigest": "sha256:7922658a841bb1255ff63b43f98472b6b2a0bd84959d2b340294555831d8b424",
       "finalSceneDigest": "sha256:819a4d87b5182401c75b73ea4e3d87bd8ae0e3761a7f761a3a87311226501bbf",
       "operationCount": 19,
+      "portableContracts": 5,
+      "liveRenderDigest": "sha256:f84fa1c3ffc05ac22238d6d6390463ac3a137eb87da7c7643284732bb801043a",
+      "accepted": true
+    },
+    {
+      "planId": "image-referenced-city-hall",
+      "inputDigest": "sha256:ddb987928ebc988df39c496b224f0e710dc5d06bc281c5ca7f61eb462229ad81",
+      "finalSceneDigest": "sha256:25431f08e0eee06bd0464d1597637273007c27de69c0c693d4b8d9face0b7aa1",
+      "operationCount": 28,
+      "portableContracts": 5,
+      "verifiedReferenceInputs": 1,
+      "liveRenderDigest": "sha256:3d31ef7450a9b4b535dbb5f7a8473d85e5c23a8ee3edbfb43db6dae04c882d1c",
       "accepted": true
     }
   ],
   "procedureTransfer": {
     "procedureId": "parametric-building-from-explicit-spatial-intent-v1",
-    "structurallyDifferentInputs": 2,
+    "structurallyDifferentInputs": 3,
+    "imageReferencedInputs": 1,
     "geometryHardcodedInRuntime": false,
+    "repeatRunsAccepted": true,
     "accepted": true
   },
   "claimCeiling": "digital-artifact-and-analysis-only"

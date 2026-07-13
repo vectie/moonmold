@@ -7,7 +7,7 @@ MoonMold distinguishes five durable outputs:
 | Editable source | MoonMold/MoonDesk | Reproducible digital authoring state |
 | Engineering | MoonRobo | Digital engineering candidate |
 | Presentation | MoonTown/browser | Presentation only |
-| Simulation | MoonMoon | Simulation-input candidate |
+| Simulation | MoonMoon | Digital simulation-input candidate |
 | Manufacturing candidate | Later fabrication review | Analysis only; no machine authority |
 
 The portable manifest proposal maps directly to MoonLib:

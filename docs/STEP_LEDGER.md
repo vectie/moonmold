@@ -68,6 +68,8 @@ their losses and claim ceilings.
 
 **Quality gate:** downstream outputs cannot overwrite engineering truth and do
 not claim measured mass, environmental calibration, or collision fidelity.
+MoonMold's simulation representation remains a `digital-artifact`; only
+MoonMoon may emit `simulation-evidence` after an actual simulation run.
 
 Portable consumer envelopes use the shared MoonLib contract names and include
 both artifact and transform in one immutable JSON document. This keeps
@@ -132,3 +134,31 @@ a nonzero exit for every rejected/false-acceptance path.
 
 **Qualification:** both building demos pass twice consecutively with exit zero;
 a process-level negative test proves rejected CLI execution exits nonzero.
+
+## B8 — Live Blender and user-reference qualification
+
+**Input:** three accepted building plans, including a workspace-local user image
+with an explicit scale source and separated uncertainty bundle; audited Blender
+4.5.11 LTS runtime manifest.
+
+**Output:** validated `.blend`, GLB, STL, PNG, bridge manifest, and live evidence
+for every plan. MCP and CLI use the same fixed bridge and return attributable
+receipts. Five portable envelopes are emitted for every mock experiment.
+
+**Quality gate:** 3/3 live tests and 20/20 default adapter tests pass; every
+complete run succeeds twice, with the second live execution an idempotent no-op.
+No request can inject code or gain physical authority.
+
+## Recorded visual-quality trial — readable evidence renders
+
+**Unqualified result:** habitat and tower renders were structurally valid but
+too dark for comfortable review.
+
+**General correction:** the bridge now applies a fixture-independent evidence
+lighting policy: neutral world and ground, balanced key/fill/rim lights, AgX
+contrast, and bounded exposure. Artifact geometry and downstream exports are
+unchanged by this review surface.
+
+**Qualification:** all three live outputs were regenerated, inspected, hashed,
+and rerun idempotently. Silhouettes and component boundaries are readable; no
+claim beyond presentation evidence was added.

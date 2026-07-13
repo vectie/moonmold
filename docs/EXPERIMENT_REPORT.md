@@ -4,9 +4,10 @@
 
 ## Question
 
-Can one general, input-driven semantic procedure create two structurally
-different building artifact families while preserving identity, scale,
-lineage, declared loss, validation, and the physical-effect boundary?
+Can one general, input-driven semantic procedure create structurally different
+building artifact families—including one informed by a user image—while
+preserving identity, scale, lineage, declared loss, validation, and the
+physical-effect boundary in both mock and live Blender execution?
 
 ## Trial 1 — arched lunar habitat
 
@@ -42,6 +43,42 @@ acceptance criteria, authority policy, and representation relations remain the
 same. This proves structural procedure reuse without embedding either
 building's dimensions in the runtime.
 
+## Trial 3 — image-referenced city hall
+
+**Input:** `fixtures/city-hall-image-referenced.json` plus the tracked image at
+`inputs/moonmold-reference-building/city-hall-reference.png`. The reference
+bundle separates observed visual cues, explicit non-pixel scale, estimates,
+occlusions, unknowns, intended consumers, and byte-level provenance.
+
+**Input digest:**
+`sha256:ddb987928ebc988df39c496b224f0e710dc5d06bc281c5ca7f61eb462229ad81`
+
+**Output:** accepted 28-operation run and five portable contracts. The same
+generic procedure produced a seven-component model; no city-hall dimensions
+or image-specific branches were added to the runtime.
+
+**Boundary:** this is reference-informed semantic modeling. It does not claim
+pixel-derived dimensions, photogrammetry, visual identity, structural fitness,
+or physical readiness.
+
+## Live Blender qualification
+
+Blender 4.5.11 LTS executed all three plans through the fixed semantic bridge.
+Each run produced and validated `.blend`, GLB, STL, PNG, manifest, and live
+evidence outputs. The first pass was `applied`; a second identical pass for
+each plan was an `idempotent-no-op`. The live test suite passed 3/3, including
+the MCP path. All outputs remained digital and `physicalEffects:false`.
+
+The first render review found that technically valid habitat and tower images
+were too dark. The general renderer policy—not the fixtures—was revised to use
+a neutral world, ground plane, balanced three-point lighting, AgX contrast, and
+bounded exposure. All three plans were rerun and visually inspected; their
+silhouettes and component boundaries are now readable. This is presentation
+quality evidence, not engineering validation.
+
+Live binary outputs remain ignored under `evidence/generated/live-blender-*`.
+Their stable identities are recorded in `evidence/qualification-summary.json`.
+
 ## Negative trials
 
 The suite rejects stale parents, idempotency conflicts, duplicate objects,
@@ -56,13 +93,15 @@ negative suite passed. No fixture-specific token was added.
 
 ## Current limitation
 
-The artifacts are deterministic semantic scene packages, not rendered Blender
-meshes. Blender was absent, and MoonMold reports that fact. Visual similarity,
-topology/manifold checks from a real mesh, and live backend cancellation remain
-future live-adapter gates; no mock result is labeled as live Blender evidence.
+The bridge emits real Blender meshes and review renders, but primitive semantic
+modeling is not image reconstruction. Visual similarity scoring, topology and
+manifold promotion gates, material calibration, physics validation, and
+fabrication qualification remain later stages. Live and mock evidence classes
+stay distinct.
 
 Generated run artifacts are under ignored
-`evidence/generated/{habitat-a,tower-b}` so qualification does not dirty the
-repository. Reproduce with `npm run demo` and `npm run demo:transfer`.
-Both commands are repeatable: byte-identical immutable artifacts become
-idempotent no-ops, while divergent content remains a hard conflict.
+`evidence/generated/` so qualification does not dirty the repository. Reproduce
+the first two mock trials with `npm run demo` and `npm run demo:transfer`, and
+run live qualification with `npm run test:blender`. All three complete runs
+were repeated: byte-identical immutable artifacts become idempotent no-ops,
+while divergent content remains a hard conflict.

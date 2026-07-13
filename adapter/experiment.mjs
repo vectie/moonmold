@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { SemanticAdapterRuntime } from "./runtime.mjs";
 import { AdapterRejection, canonicalJson, digest, resolveScopedPath } from "./protocol.mjs";
@@ -22,6 +23,46 @@ export function validateBuildingPlan(plan) {
   if (!Array.isArray(plan.components) || plan.components.length < 2) {
     throw new AdapterRejection("weak-spatial-intent", "at least two components are required");
   }
+  if (plan.referenceBundle !== undefined) {
+    const bundle = plan.referenceBundle;
+    if (
+      typeof bundle.imageRef !== "string" ||
+      !bundle.imageRef.startsWith("moonsuite-input://") ||
+      !/^sha256:[a-f0-9]{64}$/.test(bundle.sourceDigest ?? "") ||
+      !Array.isArray(bundle.observedCues) || bundle.observedCues.length === 0 ||
+      !Array.isArray(bundle.estimates) ||
+      !Array.isArray(bundle.occlusions) || bundle.occlusions.length === 0 ||
+      !Array.isArray(bundle.unknowns) || bundle.unknowns.length === 0 ||
+      !Array.isArray(bundle.intendedConsumers) || bundle.intendedConsumers.length === 0
+    ) {
+      throw new AdapterRejection(
+        "incomplete-reference-bundle",
+        "reference intake must separate cues, estimates, occlusions, unknowns, and consumers",
+      );
+    }
+    if (
+      !bundle.suppliedScale ||
+      !Number.isFinite(bundle.suppliedScale.valueMm) ||
+      bundle.suppliedScale.valueMm <= 0 ||
+      bundle.suppliedScale.derivedFromPixels !== false ||
+      plan.scaleEvidence?.derivedFromPixels !== false ||
+      plan.scaleEvidence?.valueMm !== bundle.suppliedScale.valueMm
+    ) {
+      throw new AdapterRejection(
+        "unqualified-image-scale",
+        "pixels cannot supply dimensions; explicit matching scale evidence is required",
+      );
+    }
+    const provenance = plan.referenceProvenance.find((item) =>
+      item.source === bundle.imageRef
+    );
+    if (!provenance || provenance.digest !== bundle.sourceDigest) {
+      throw new AdapterRejection(
+        "reference-provenance-mismatch",
+        "reference bundle digest must match tracked provenance",
+      );
+    }
+  }
   const ids = new Set();
   for (const component of plan.components) {
     if (ids.has(component.id)) {
@@ -36,6 +77,33 @@ export function validateBuildingPlan(plan) {
     }
   }
   return structuredClone(plan);
+}
+
+/// Verify workspace-local reference bytes separately from semantic validation.
+export async function verifyReferenceInputs(plan) {
+  const bundle = plan.referenceBundle;
+  if (!bundle) return [];
+  const relative = bundle.imageRef.slice("moonsuite-input://".length);
+  const sourcePath = resolveScopedPath(
+    "/Users/kq/moonsuite/inputs",
+    path.join("/Users/kq/moonsuite/inputs", relative),
+  );
+  const bytes = await readFile(sourcePath);
+  const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+  if (actual !== bundle.sourceDigest) {
+    throw new AdapterRejection("reference-byte-mismatch", "reference image digest changed");
+  }
+  return [{
+    imageRef: bundle.imageRef,
+    sourceDigest: actual,
+    byteLength: bytes.length,
+    observedCues: bundle.observedCues,
+    suppliedScale: bundle.suppliedScale,
+    estimates: bundle.estimates,
+    occlusions: bundle.occlusions,
+    unknowns: bundle.unknowns,
+    intendedConsumers: bundle.intendedConsumers,
+  }];
 }
 
 function operationSequence(plan, outputRoot) {
@@ -112,6 +180,7 @@ function reportIdentity(report) {
 }
 
 const PORTABLE_REPRESENTATION = {
+  "spatial-intent": "spatial-intent",
   "editable-source": "editable-authoring-model",
   engineering: "engineering-model",
   presentation: "visual-styled-model",
@@ -146,7 +215,7 @@ const PORTABLE_POLICY = {
     operation: "derive-simulation-model",
     consumers: ["moonmoon"],
     forbidden: ["moonrobo-engineering", "fabrication"],
-    claim: "simulation-evidence"
+    claim: "digital-artifact"
   },
   "manufacturing-candidate": {
     lineage: "manufacturing-derived-from",
@@ -190,16 +259,28 @@ async function writePortableContracts({
     }
   }
   const summaries = [];
-  for (const representation of ["engineering", "presentation", "simulation"]) {
+  for (const representation of [
+    "editable-source",
+    "engineering",
+    "presentation",
+    "simulation",
+    "manufacturing-candidate"
+  ]) {
     const child = exports.get(representation);
-    const parentRepresentation = representation === "engineering"
-      ? "editable-source"
-      : "engineering";
-    const parent = exports.get(parentRepresentation);
+    const parentRepresentation = representation === "editable-source"
+      ? "spatial-intent"
+      : representation === "engineering"
+        ? "editable-source"
+        : "engineering";
+    const parent = representation === "editable-source"
+      ? { digest: digest(plan) }
+      : exports.get(parentRepresentation);
     const policy = PORTABLE_POLICY[representation];
     const artifactId = `${plan.id}:${PORTABLE_REPRESENTATION[representation]}`;
     const parentArtifactId =
-      `${plan.id}:${PORTABLE_REPRESENTATION[parentRepresentation]}`;
+      representation === "editable-source"
+        ? `${plan.id}:spatial-intent`
+        : `${plan.id}:${PORTABLE_REPRESENTATION[parentRepresentation]}`;
     const assumptions = plan.unknowns.map((gap) => `unverified: ${gap}`);
     const manifest = {
       contract_id: "moonmold.spatial-artifact.v1",
@@ -280,6 +361,12 @@ function representationPolicyLosses(representation) {
       return ["engineering material fidelity", "collision fidelity"];
     case "simulation":
       return ["measured mass properties absent", "environment calibration absent"];
+    case "manufacturing-candidate":
+      return [
+        "watertightness not independently measured",
+        "fabrication tolerance unqualified",
+        "material and process assumptions unresolved"
+      ];
     default:
       return [];
   }
@@ -289,6 +376,7 @@ export async function runBuildingExperiment({ inputPath, outputRoot }) {
   const workspaceRoot = "/Users/kq/moonsuite";
   const resolvedOutput = resolveScopedPath(workspaceRoot, outputRoot);
   const plan = validateBuildingPlan(JSON.parse(await readFile(inputPath, "utf8")));
+  const verifiedReferences = await verifyReferenceInputs(plan);
   await mkdir(resolvedOutput, { recursive: true });
   const runtime = new SemanticAdapterRuntime();
   const receipts = [];
@@ -323,7 +411,9 @@ export async function runBuildingExperiment({ inputPath, outputRoot }) {
       digest: digest(plan),
       scaleEvidence: plan.scaleEvidence,
       referenceProvenance: plan.referenceProvenance,
-      unknowns: plan.unknowns
+      unknowns: plan.unknowns,
+      referenceBundle: plan.referenceBundle ?? null,
+      verifiedReferences
     },
     output: {
       finalSceneDigest: runtime.sceneDigest,

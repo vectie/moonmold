@@ -2,11 +2,12 @@
 
 ## Surface
 
-`adapter/mcp-server.mjs` is a JSON-RPC stdio server. It exposes exactly one MCP
-tool, `moonmold_semantic_operation`; that tool accepts the typed MoonMold
-envelope and one allowlisted method. It does not expose Blender Python, shell,
-eval, arbitrary operators, arbitrary file reads, arbitrary URLs, or physical
-devices.
+`adapter/mcp-server.mjs` is a JSON-RPC stdio server. It exposes exactly two MCP
+tools: `moonmold_semantic_operation` for bounded scene operations and
+`moonmold_live_building` for a complete plan-to-Blender artifact run. Neither
+surface exposes Blender Python, shell, eval, arbitrary operators, arbitrary
+file reads, arbitrary URLs, or physical devices. The live tool selects the
+fixed audited bridge itself; request data cannot replace or extend it.
 
 The semantic methods are capability discovery, model creation, box/cylinder
 creation, transform, material assignment, boolean subtraction, validation, and
@@ -38,21 +39,21 @@ Send newline-delimited JSON-RPC 2.0 messages over stdin. `initialize`,
 
 ## Blender status
 
-Blender was not installed in the qualification environment. Capability
-discovery reports `available: false`; the mock reference runtime therefore
-proves all core state, identity, lineage, validation, and policy behavior.
-Explicitly requesting `backend: "blender"` fails with `backend-unavailable`
-rather than silently substituting mock evidence.
+The qualified workspace runtime is Blender 4.5.11 LTS, discovered through
+`/Users/kq/moonsuite/tools/blender/runtime-manifest.json`. Environment overrides
+are explicit (`BLENDER_BIN` or `MOONMOLD_BLENDER`); otherwise discovery does not
+search arbitrary host paths. Capability discovery reports executable, version,
+source, scene digest, and whether the live surface is available.
 
-A future live installation must provide a fixed, audited semantic bridge that
-maps the existing operations to Blender calls. It must not add a user-supplied
-script field. Live Blender evidence is optional until that executable is
-present; it cannot be fabricated from mock receipts.
+The live path creates a `.blend` source, GLB presentation/interchange model,
+STL manufacturing candidate, PNG review render, bridge manifest, and immutable
+evidence record. It validates output signatures, sizes, hashes, object count,
+bounds, input identity, reference bytes, and physical-effect absence before
+acceptance. An explicit live request can never silently substitute mock output.
 
 ## Cancellation and bounded work
 
-The current semantic primitives are in-process bounded operations. Requests
-outside the declared deadline range fail at validation. The future external
-Blender worker must implement deadline termination and cancellation before it
-can produce live-backend receipts.
-
+Semantic requests outside the declared deadline range fail at validation. The
+Blender child process has a bounded deadline and is terminated on timeout or
+MCP cancellation. `notifications/cancelled` is accepted while other requests
+remain serviceable; cancelled work cannot produce an accepted receipt.

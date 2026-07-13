@@ -1,0 +1,115 @@
+{
+  "schema": "moonmold-building-plan-v1",
+  "id": "image-referenced-city-hall",
+  "units": "mm",
+  "coordinateFrame": "z-up-right-handed",
+  "recordedAt": "2026-07-13T00:00:00Z",
+  "scaleEvidence": {
+    "source": "explicit modeling-fixture declaration, not pixels",
+    "valueMm": 8000,
+    "confidence": "supplied",
+    "derivedFromPixels": false
+  },
+  "referenceProvenance": [
+    {
+      "referenceId": "reference-city-hall-isometric",
+      "source": "moonsuite-input://moonmold-reference-building/city-hall-reference.png",
+      "digest": "sha256:7cb28cc6144e38626f56c3852c7a5a3023513fdd66dc642df8e74f4b66a54fe2",
+      "license": "existing MoonTown product artwork",
+      "confidence": "conceptual"
+    }
+  ],
+  "referenceBundle": {
+    "artifactRef": "moonsuite-input://moonmold-reference-building/reference-bundle.json",
+    "imageRef": "moonsuite-input://moonmold-reference-building/city-hall-reference.png",
+    "sourceDigest": "sha256:7cb28cc6144e38626f56c3852c7a5a3023513fdd66dc642df8e74f4b66a54fe2",
+    "observedCues": [
+      "central entrance",
+      "two projecting side wings",
+      "rectangular civic massing",
+      "upper parapet"
+    ],
+    "suppliedScale": {
+      "dimension": "facade width",
+      "valueMm": 8000,
+      "source": "explicit modeling-fixture declaration",
+      "derivedFromPixels": false
+    },
+    "estimates": [
+      "main depth",
+      "wing projection",
+      "entrance volume",
+      "conceptual height"
+    ],
+    "occlusions": [
+      "rear elevation",
+      "roof layer",
+      "interior",
+      "wall thickness"
+    ],
+    "unknowns": [
+      "measured materials",
+      "structural behavior",
+      "manufacturing properties"
+    ],
+    "intendedConsumers": ["moonbook", "moonmold", "moondesk"]
+  },
+  "unknowns": [
+    "rear elevation geometry",
+    "roof geometry",
+    "interior and wall thickness",
+    "measured materials",
+    "structural and manufacturing properties"
+  ],
+  "components": [
+    {
+      "id": "main-civic-block",
+      "kind": "box",
+      "dimensions": { "widthMm": 8000, "depthMm": 5200, "heightMm": 4200 },
+      "position": { "xMm": 0, "yMm": 0, "zMm": 2100 },
+      "materialId": "reference-light-facade-unverified"
+    },
+    {
+      "id": "left-wing",
+      "kind": "box",
+      "dimensions": { "widthMm": 2200, "depthMm": 6500, "heightMm": 3300 },
+      "position": { "xMm": -2900, "yMm": 300, "zMm": 1650 },
+      "materialId": "reference-light-facade-unverified"
+    },
+    {
+      "id": "right-wing",
+      "kind": "box",
+      "dimensions": { "widthMm": 2200, "depthMm": 6500, "heightMm": 3300 },
+      "position": { "xMm": 2900, "yMm": 300, "zMm": 1650 },
+      "materialId": "reference-light-facade-unverified"
+    },
+    {
+      "id": "entrance-volume",
+      "kind": "box",
+      "dimensions": { "widthMm": 2200, "depthMm": 900, "heightMm": 2400 },
+      "position": { "xMm": 0, "yMm": -3050, "zMm": 1200 },
+      "materialId": "reference-dark-trim-unverified"
+    },
+    {
+      "id": "entrance-canopy",
+      "kind": "box",
+      "dimensions": { "widthMm": 2800, "depthMm": 1200, "heightMm": 250 },
+      "position": { "xMm": 0, "yMm": -3450, "zMm": 2550 },
+      "materialId": "reference-light-facade-unverified"
+    },
+    {
+      "id": "entrance-step-upper",
+      "kind": "box",
+      "dimensions": { "widthMm": 2800, "depthMm": 700, "heightMm": 250 },
+      "position": { "xMm": 0, "yMm": -3800, "zMm": 125 },
+      "materialId": "reference-stone-step-unverified"
+    },
+    {
+      "id": "entrance-step-lower",
+      "kind": "box",
+      "dimensions": { "widthMm": 3400, "depthMm": 700, "heightMm": 180 },
+      "position": { "xMm": 0, "yMm": -4400, "zMm": 90 },
+      "materialId": "reference-stone-step-unverified"
+    }
+  ]
+}

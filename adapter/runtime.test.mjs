@@ -217,11 +217,14 @@ test("MCP exposes one semantic tool and rejects non-allowlisted tools", async ()
   const handle = createMcpHandler();
   const listed = await handle({ jsonrpc: "2.0", id: 1, method: "tools/list" });
   assert.deepEqual(listed.result.tools.map((tool) => tool.name), [
-    "moonmold_semantic_operation"
+    "moonmold_semantic_operation",
+    "moonmold_live_building"
   ]);
-  const schema = listed.result.tools[0].inputSchema;
-  assert.ok(schema.required.every((name) => schema.properties[name]));
-  assert.equal(schema.additionalProperties, false);
+  for (const tool of listed.result.tools) {
+    const schema = tool.inputSchema;
+    assert.ok(schema.required.every((name) => schema.properties[name]));
+    assert.equal(schema.additionalProperties, false);
+  }
   const rejected = await handle({
     jsonrpc: "2.0",
     id: 2,
@@ -294,6 +297,14 @@ test("two structurally different buildings reuse one general procedure", async (
     path.join(outputA, "simulation.portable.json"),
     "utf8",
   ));
+  const editablePortable = JSON.parse(await readFile(
+    path.join(outputA, "editable-source.portable.json"),
+    "utf8",
+  ));
+  const manufacturingPortable = JSON.parse(await readFile(
+    path.join(outputA, "manufacturing-candidate.portable.json"),
+    "utf8",
+  ));
   assert.equal(
     presentationPortable.manifest.contract_id,
     "moonmold.spatial-artifact.v1",
@@ -313,8 +324,28 @@ test("two structurally different buildings reuse one general procedure", async (
   assert.equal(presentationPortable.transform.lineage_relation, "styled-from");
   assert.equal(presentationPortable.manifest.claim_ceiling, "digital-artifact");
   assert.equal(simulationPortable.manifest.representation, "simulation-model");
-  assert.equal(simulationPortable.manifest.claim_ceiling, "simulation-evidence");
+  assert.equal(simulationPortable.manifest.claim_ceiling, "digital-artifact");
   assert.ok(simulationPortable.manifest.assumptions.length > 0);
+  assert.equal(
+    editablePortable.transform.parent_artifact_id,
+    "arched-lunar-habitat:spatial-intent",
+  );
+  assert.equal(editablePortable.transform.parent_representation, "spatial-intent");
+  assert.equal(editablePortable.transform.parent_digest, a.input.digest);
+  assert.equal(
+    manufacturingPortable.transform.parent_digest,
+    engineeringPortable.manifest.digest,
+  );
+  assert.equal(
+    manufacturingPortable.transform.lineage_relation,
+    "manufacturing-derived-from",
+  );
+  assert.equal(manufacturingPortable.manifest.claim_ceiling, "digital-artifact");
+  assert.ok(
+    manufacturingPortable.manifest.forbidden_consumers.includes(
+      "fabrication-execution",
+    ),
+  );
   const summary = JSON.parse(await readFile(
     path.join(REPO, "evidence/qualification-summary.json"),
     "utf8",
@@ -351,6 +382,33 @@ test("weak plans cannot advance to modeling", () => {
     };
     mutation(plan);
     assert.throws(() => validateBuildingPlan(plan), { code });
+  }
+});
+
+test("image reference intake separates pixels, scale, estimates and unknowns", async () => {
+  const planPath = path.join(REPO, "fixtures/city-hall-image-referenced.json");
+  const outputRoot = path.join(TMP, "image-reference-experiment");
+  await rm(outputRoot, { recursive: true, force: true });
+  const report = await runBuildingExperiment({ inputPath: planPath, outputRoot });
+  assert.equal(report.output.accepted, true);
+  assert.equal(report.input.verifiedReferences.length, 1);
+  const reference = report.input.verifiedReferences[0];
+  assert.equal(reference.suppliedScale.derivedFromPixels, false);
+  assert.ok(reference.observedCues.length > 0);
+  assert.ok(reference.estimates.length > 0);
+  assert.ok(reference.occlusions.length > 0);
+  assert.ok(reference.unknowns.length > 0);
+  const original = JSON.parse(await readFile(planPath, "utf8"));
+  for (const mutate of [
+    (plan) => { plan.referenceBundle.observedCues = []; },
+    (plan) => { plan.referenceBundle.occlusions = []; },
+    (plan) => { plan.referenceBundle.unknowns = []; },
+    (plan) => { plan.referenceBundle.suppliedScale.derivedFromPixels = true; },
+    (plan) => { plan.scaleEvidence.valueMm = 9000; },
+  ]) {
+    const candidate = structuredClone(original);
+    mutate(candidate);
+    assert.throws(() => validateBuildingPlan(candidate), AdapterRejection);
   }
 });
 

@@ -1,15 +1,49 @@
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 
-const CANDIDATES = [
-  process.env.MOONMOLD_BLENDER,
-  "/Applications/Blender.app/Contents/MacOS/Blender",
-  "/usr/local/bin/blender",
-  "/opt/homebrew/bin/blender",
-].filter(Boolean);
+const WORKSPACE_ROOT = "/Users/kq/moonsuite";
+const TOOL_MANIFEST = path.join(
+  WORKSPACE_ROOT,
+  "tools/blender/runtime-manifest.json",
+);
+
+function manifestCandidate() {
+  try {
+    const manifest = JSON.parse(readFileSync(TOOL_MANIFEST, "utf8"));
+    if (
+      manifest.contract_id !== "moonsuite.workspace-tool-runtime.v1" ||
+      manifest.tool_id !== "blender" ||
+      manifest.physical_effects !== false ||
+      typeof manifest.binary_path !== "string"
+    ) return null;
+    const executable = path.resolve(WORKSPACE_ROOT, manifest.binary_path);
+    if (!executable.startsWith(`${WORKSPACE_ROOT}${path.sep}`)) return null;
+    return { executable, manifest };
+  } catch {
+    return null;
+  }
+}
 
 export function discoverBlender() {
-  for (const executable of CANDIDATES) {
+  const workspace = manifestCandidate();
+  const candidates = [
+    process.env.BLENDER_BIN
+      ? { executable: process.env.BLENDER_BIN, source: "BLENDER_BIN" }
+      : null,
+    process.env.MOONMOLD_BLENDER
+      ? { executable: process.env.MOONMOLD_BLENDER, source: "MOONMOLD_BLENDER" }
+      : null,
+    workspace
+      ? {
+          executable: workspace.executable,
+          source: "workspace-tool-manifest",
+          manifest: workspace.manifest,
+        }
+      : null,
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const { executable } = candidate;
     try {
       accessSync(executable, constants.X_OK);
       const output = execFileSync(executable, ["--version"], {
@@ -20,8 +54,10 @@ export function discoverBlender() {
       return {
         available: true,
         executable,
+        source: candidate.source,
         version: output.split("\n")[0],
         executionMode: "fixed-semantic-bridge-only",
+        workspaceManifest: candidate.manifest ?? null,
       };
     } catch {
       // Discovery continues without broadening the executable search path.
@@ -30,8 +66,8 @@ export function discoverBlender() {
   return {
     available: false,
     executable: null,
+    source: null,
     version: null,
     executionMode: "mock-reference-runtime",
   };
 }
-
