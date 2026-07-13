@@ -282,6 +282,39 @@ test("two structurally different buildings reuse one general procedure", async (
     manufacturingArtifact.claimCeiling,
     "analysis-only-no-machine-authority",
   );
+  const engineeringPortable = JSON.parse(await readFile(
+    path.join(outputA, "engineering.portable.json"),
+    "utf8",
+  ));
+  const presentationPortable = JSON.parse(await readFile(
+    path.join(outputA, "presentation.portable.json"),
+    "utf8",
+  ));
+  const simulationPortable = JSON.parse(await readFile(
+    path.join(outputA, "simulation.portable.json"),
+    "utf8",
+  ));
+  assert.equal(
+    presentationPortable.manifest.contract_id,
+    "moonmold.spatial-artifact.v1",
+  );
+  assert.equal(
+    presentationPortable.transform.contract_id,
+    "moonmold.representation-transform.v1",
+  );
+  assert.equal(
+    presentationPortable.transform.parent_digest,
+    engineeringPortable.manifest.digest,
+  );
+  assert.equal(
+    presentationPortable.transform.child_digest,
+    presentationPortable.manifest.digest,
+  );
+  assert.equal(presentationPortable.transform.lineage_relation, "styled-from");
+  assert.equal(presentationPortable.manifest.claim_ceiling, "digital-artifact");
+  assert.equal(simulationPortable.manifest.representation, "simulation-model");
+  assert.equal(simulationPortable.manifest.claim_ceiling, "simulation-evidence");
+  assert.ok(simulationPortable.manifest.assumptions.length > 0);
   const summary = JSON.parse(await readFile(
     path.join(REPO, "evidence/qualification-summary.json"),
     "utf8",
@@ -308,6 +341,7 @@ test("weak plans cannot advance to modeling", () => {
   ]) {
     const plan = {
       schema: "moonmold-building-plan-v1",
+      recordedAt: "2026-07-13T00:00:00Z",
       scaleEvidence: { source: "declared" },
       unknowns: [],
       components: [

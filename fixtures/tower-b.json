@@ -3,6 +3,7 @@
   "id": "tri-deck-observation-tower",
   "units": "mm",
   "coordinateFrame": "z-up-right-handed",
+  "recordedAt": "2026-07-13T00:00:00Z",
   "scaleEvidence": {
     "source": "user-declared deck elevation schedule",
     "valueMm": 18000,
@@ -52,4 +53,3 @@
     }
   ]
 }
-

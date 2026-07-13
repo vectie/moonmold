@@ -3,6 +3,7 @@
   "id": "arched-lunar-habitat",
   "units": "mm",
   "coordinateFrame": "z-up-right-handed",
+  "recordedAt": "2026-07-13T00:00:00Z",
   "scaleEvidence": {
     "source": "user-declared exterior width",
     "valueMm": 8000,
@@ -45,4 +46,3 @@
     }
   ]
 }
-

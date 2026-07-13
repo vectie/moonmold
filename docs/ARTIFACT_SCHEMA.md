@@ -41,3 +41,18 @@ only descendants of the declared root under `/Users/kq/moonsuite`; traversal,
 foreign roots, symbolic-link ancestors, immutable output collisions, and NUL
 bytes fail closed.
 
+## Portable ingestion envelope
+
+Each engineering, presentation, and simulation export also writes
+`<representation>.portable.json`. The envelope contains a
+`moonmold.spatial-artifact.v1` manifest and its
+`moonmold.representation-transform.v1` transform using MoonLib's portable
+snake-case field names. Consumers therefore parse serialized contracts rather
+than importing MoonMold source code.
+
+The transform child identity/digest must equal the manifest identity/digest.
+Presentation and simulation transforms must name the engineering artifact and
+digest as parent. Every manifest includes authority envelope, procedure,
+assumptions, unresolved gaps, intended/forbidden consumers, validation refs,
+claim ceiling, units, coordinate system, up axis, handedness, and canonical
+recording time.

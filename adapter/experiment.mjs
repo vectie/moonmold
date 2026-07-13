@@ -13,6 +13,12 @@ export function validateBuildingPlan(plan) {
   if (!Array.isArray(plan.unknowns)) {
     throw new AdapterRejection("implicit-unknowns", "unknowns must be explicitly listed");
   }
+  if (
+    typeof plan.recordedAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(plan.recordedAt)
+  ) {
+    throw new AdapterRejection("missing-recorded-at", "recordedAt must be canonical UTC");
+  }
   if (!Array.isArray(plan.components) || plan.components.length < 2) {
     throw new AdapterRejection("weak-spatial-intent", "at least two components are required");
   }
@@ -100,8 +106,183 @@ function reportIdentity(report) {
     inputDigest: report.input.digest,
     finalSceneDigest: report.output.finalSceneDigest,
     accepted: report.output.accepted,
-    representations: report.output.representations
+    representations: report.output.representations,
+    portableContracts: report.output.portableContracts
   };
+}
+
+const PORTABLE_REPRESENTATION = {
+  "editable-source": "editable-authoring-model",
+  engineering: "engineering-model",
+  presentation: "visual-styled-model",
+  simulation: "simulation-model",
+  "manufacturing-candidate": "manufacturing-candidate"
+};
+
+const PORTABLE_POLICY = {
+  "editable-source": {
+    lineage: "modeled-from",
+    operation: "compile-editable-authoring-model",
+    consumers: ["moonmold", "moondesk"],
+    forbidden: ["moonrobo", "moonmoon", "fabrication"],
+    claim: "digital-artifact"
+  },
+  engineering: {
+    lineage: "modeled-from",
+    operation: "derive-engineering-model",
+    consumers: ["moonrobo"],
+    forbidden: ["moontown-presentation", "fabrication"],
+    claim: "digital-artifact"
+  },
+  presentation: {
+    lineage: "styled-from",
+    operation: "derive-presentation-model",
+    consumers: ["moontown", "moondesk"],
+    forbidden: ["moonrobo", "moonmoon", "fabrication"],
+    claim: "digital-artifact"
+  },
+  simulation: {
+    lineage: "physics-derived-from",
+    operation: "derive-simulation-model",
+    consumers: ["moonmoon"],
+    forbidden: ["moonrobo-engineering", "fabrication"],
+    claim: "simulation-evidence"
+  },
+  "manufacturing-candidate": {
+    lineage: "manufacturing-derived-from",
+    operation: "prepare-manufacturing-candidate",
+    consumers: ["manufacturing-review"],
+    forbidden: ["moontown", "moonrobo", "moonmoon", "fabrication-execution"],
+    claim: "digital-artifact"
+  }
+};
+
+async function writeExactImmutable(outputPath, value) {
+  const bytes = `${canonicalJson(value)}\n`;
+  await writeFile(outputPath, bytes, { encoding: "utf8", flag: "wx" }).catch(
+    async (error) => {
+      if (error.code !== "EEXIST") throw error;
+      const existing = await readFile(outputPath, "utf8").catch(() => null);
+      if (existing !== bytes) {
+        throw new AdapterRejection(
+          "immutable-portable-contract-conflict",
+          "existing portable contract differs from deterministic output",
+        );
+      }
+    },
+  );
+}
+
+async function writePortableContracts({
+  plan,
+  operations,
+  receipts,
+  outputRoot,
+}) {
+  const exports = new Map();
+  for (const [index, operation] of operations.entries()) {
+    const representation = operation.params?.representation;
+    if (representation) {
+      exports.set(representation, {
+        digest: receipts[index].outputHashes[0].digest,
+        payloadRef: receipts[index].outputHashes[0].uri.replace("moonsuite://", "")
+      });
+    }
+  }
+  const summaries = [];
+  for (const representation of ["engineering", "presentation", "simulation"]) {
+    const child = exports.get(representation);
+    const parentRepresentation = representation === "engineering"
+      ? "editable-source"
+      : "engineering";
+    const parent = exports.get(parentRepresentation);
+    const policy = PORTABLE_POLICY[representation];
+    const artifactId = `${plan.id}:${PORTABLE_REPRESENTATION[representation]}`;
+    const parentArtifactId =
+      `${plan.id}:${PORTABLE_REPRESENTATION[parentRepresentation]}`;
+    const assumptions = plan.unknowns.map((gap) => `unverified: ${gap}`);
+    const manifest = {
+      contract_id: "moonmold.spatial-artifact.v1",
+      artifact_id: artifactId,
+      project_id: `moonbook-${plan.id}`,
+      representation: PORTABLE_REPRESENTATION[representation],
+      parent_artifact_ids: [parentArtifactId],
+      digest: child.digest,
+      payload_ref: child.payloadRef,
+      units: plan.units,
+      coordinate_system: "cartesian",
+      up_axis: plan.coordinateFrame.startsWith("z-up") ? "z" : "y",
+      handedness: plan.coordinateFrame.endsWith("right-handed") ? "right" : "unknown",
+      source_refs: plan.referenceProvenance.map((source) =>
+        `books/${plan.id}/references/${source.referenceId}.json`
+      ),
+      backend_id: "moonmold-mock-reference",
+      backend_version: "0.1.0",
+      procedure_ref:
+        `books/${plan.id}/procedures/parametric-building-from-explicit-spatial-intent-v1.json`,
+      authority_envelope_id: `authority-moonmold-${plan.id}`,
+      assumptions,
+      unresolved_gaps: plan.unknowns,
+      validation_refs: [`books/${plan.id}/evidence/${representation}-validation.json`],
+      intended_consumers: policy.consumers,
+      forbidden_consumers: policy.forbidden,
+      claim_ceiling: policy.claim,
+      recorded_at: plan.recordedAt
+    };
+    const transform = {
+      contract_id: "moonmold.representation-transform.v1",
+      transform_id: `transform-${plan.id}-${representation}-v1`,
+      parent_artifact_id: parentArtifactId,
+      parent_digest: parent.digest,
+      parent_representation: PORTABLE_REPRESENTATION[parentRepresentation],
+      child_artifact_id: artifactId,
+      child_digest: child.digest,
+      child_representation: PORTABLE_REPRESENTATION[representation],
+      lineage_relation: policy.lineage,
+      operation: policy.operation,
+      parameters_digest: digest({
+        plan: plan.id,
+        representation,
+        procedure: "parametric-building-from-explicit-spatial-intent-v1"
+      }),
+      tool_id: "moonmold-semantic-adapter",
+      tool_version: "0.1.0",
+      authority_ref: `authority-moonmold-${plan.id}`,
+      declared_losses: representation === "engineering"
+        ? []
+        : representationPolicyLosses(representation),
+      validation_refs: manifest.validation_refs,
+      recorded_at: plan.recordedAt
+    };
+    const envelope = {
+      schema: "moonmold-portable-ingestion-v1",
+      manifest,
+      transform
+    };
+    const portablePath = path.join(outputRoot, `${representation}.portable.json`);
+    await writeExactImmutable(portablePath, envelope);
+    summaries.push({
+      representation,
+      artifact_id: artifactId,
+      digest: child.digest,
+      parent_digest: parent.digest,
+      lineage_relation: policy.lineage,
+      claim_ceiling: policy.claim,
+      path: `moonsuite://${path.relative("/Users/kq/moonsuite", portablePath)}`
+    });
+  }
+  return summaries;
+}
+
+function representationPolicyLosses(representation) {
+  switch (representation) {
+    case "presentation":
+      return ["engineering material fidelity", "collision fidelity"];
+    case "simulation":
+      return ["measured mass properties absent", "environment calibration absent"];
+    default:
+      return [];
+  }
 }
 
 export async function runBuildingExperiment({ inputPath, outputRoot }) {
@@ -197,6 +378,12 @@ export async function runBuildingExperiment({ inputPath, outputRoot }) {
     },
     receipts
   };
+  report.output.portableContracts = await writePortableContracts({
+    plan,
+    operations,
+    receipts,
+    outputRoot: resolvedOutput
+  });
   const reportPath = path.join(resolvedOutput, "experiment-report.json");
   let persisted = report;
   await writeFile(

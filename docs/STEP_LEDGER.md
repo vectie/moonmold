@@ -69,6 +69,10 @@ their losses and claim ceilings.
 **Quality gate:** downstream outputs cannot overwrite engineering truth and do
 not claim measured mass, environmental calibration, or collision fidelity.
 
+Portable consumer envelopes use the shared MoonLib contract names and include
+both artifact and transform in one immutable JSON document. This keeps
+MoonTown, MoonRobo, and MoonMoon independent of MoonMold's source tree.
+
 ## B7 — Manufacturing-candidate analysis boundary
 
 **Input:** accepted engineering candidate.
