@@ -64,6 +64,13 @@ test("Flow owns live Blender execution, immutable replay, and native attestation
   assert.equal(final.simulation_evidence, false);
   assert.equal(final.manufacturing_authority, false);
   assert.equal(final.blender.source, "workspace-tool-manifest");
+  assert.equal(final.execution_provenance.evidence_class, "live-blender");
+  assert.equal(final.execution_provenance.unrestricted_scripts, false);
+  assert.ok(final.preserved_unknowns.length >= 3);
+  for (const name of ["model.blend", "model.glb", "model.stl", "render.png"]) {
+    assert.match(final.verified_outputs[name].digest, /^sha256:[0-9a-f]{64}$/);
+    assert.ok(final.verified_outputs[name].size >= 64);
+  }
 });
 
 test("Flow rejects a draft that overclaims physical authority", async () => {

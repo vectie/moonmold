@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { runLiveBlenderExperiment } from "./live-blender.mjs";
 import { AdapterRejection, assertWorkspaceRoot, canonicalJson } from "./protocol.mjs";
@@ -82,6 +82,27 @@ async function immutableJson(workspace, reference, value) {
   return bytes;
 }
 
+async function replaceableDraftJson(workspace, reference, value) {
+  const output = scoped(workspace, reference);
+  const root = assertWorkspaceRoot(path.resolve(workspace));
+  const parent = path.dirname(output);
+  await mkdir(parent, { recursive: true });
+  const actualParent = await realpath(parent);
+  if (actualParent !== root && !actualParent.startsWith(`${root}${path.sep}`)) {
+    throw new AdapterRejection("workspace-boundary", "MoonMold draft parent escapes the workspace");
+  }
+  const bytes = `${canonicalJson(value)}\n`;
+  const temporary = path.join(parent, `.${path.basename(output)}.${process.pid}.${Date.now()}.tmp`);
+  await writeFile(temporary, bytes, { encoding: "utf8", flag: "wx" });
+  try {
+    await rename(temporary, output);
+  } catch (error) {
+    await unlink(temporary).catch(() => {});
+    throw error;
+  }
+  return bytes;
+}
+
 function sha256(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
@@ -115,7 +136,7 @@ export async function executeFlow({ workspace, requestRef, resultRef, draftRef }
     if (error instanceof AdapterRejection) throw error;
     if (error.code !== "ENOENT") throw error;
   }
-  const { reference: planRef } = await findPlan(workspace, request);
+  const { reference: planRef, candidate: plan } = await findPlan(workspace, request);
   const outputRef = `.moonsuite/products/moonmold/runs/${request.run_id}/${request.work_item_id}/${request.attempt_id}`;
   const evidence = await runLiveBlenderExperiment({
     inputPath: scoped(workspace, planRef),
@@ -136,7 +157,23 @@ export async function executeFlow({ workspace, requestRef, resultRef, draftRef }
     input_digest: evidence.inputDigest,
     object_count: evidence.objectCount,
     bounds_meters: evidence.boundsMeters,
+    verified_outputs: Object.fromEntries(Object.entries(evidence.outputs).map(([name, identity]) => [
+      name,
+      {
+        reference: `${outputRef}/${name}`,
+        digest: identity.digest,
+        size: identity.size,
+      },
+    ])),
     blender: evidence.blender,
+    execution_provenance: {
+      evidence_class: evidence.evidenceClass,
+      outcome: evidence.outcome,
+      fixed_bridge_digest: evidence.bridgeDigest,
+      authority: evidence.authority,
+      unrestricted_scripts: evidence.unrestrictedScripts,
+      verified_references: evidence.verifiedReferences,
+    },
     representations: {
       editable: "editable-authoring-model",
       engineering: "engineering-model",
@@ -156,8 +193,9 @@ export async function executeFlow({ workspace, requestRef, resultRef, draftRef }
     manufacturing_authority: false,
     physical_effects: false,
     unknowns_preserved: true,
+    preserved_unknowns: plan.unknowns,
   };
-  const draftBytes = await immutableJson(workspace, draftRef, draft);
+  const draftBytes = await replaceableDraftJson(workspace, draftRef, draft);
   const result = {
     result_id: `result-${request.attempt_id}-succeeded`,
     request_id: request.request_id,
@@ -196,7 +234,14 @@ async function validateLiveEvidence(workspace, draft) {
     ["presentation_ref", "render.png"],
   ]) {
     const info = await stat(scoped(workspace, draft[field]));
-    if (!info.isFile() || info.size < 64 || !evidence.outputs?.[name]?.digest) {
+    const actualDigest = sha256(await readFile(scoped(workspace, draft[field])));
+    if (
+      !info.isFile() ||
+      info.size < 64 ||
+      evidence.outputs?.[name]?.digest !== actualDigest ||
+      draft.verified_outputs?.[name]?.digest !== actualDigest ||
+      draft.verified_outputs?.[name]?.reference !== draft[field]
+    ) {
       throw new AdapterRejection("invalid-live-evidence", `MoonMold output is invalid: ${name}`);
     }
   }
@@ -221,7 +266,11 @@ export async function attestFlow({ workspace, requestRef, resultRef, attestation
     draft.claim_ceiling !== "digital-artifact" ||
     draft.simulation_evidence !== false ||
     draft.manufacturing_authority !== false ||
-    draft.physical_effects !== false
+    draft.physical_effects !== false ||
+    !Array.isArray(draft.preserved_unknowns) ||
+    draft.preserved_unknowns.length === 0 ||
+    draft.execution_provenance?.evidence_class !== "live-blender" ||
+    draft.execution_provenance?.unrestricted_scripts !== false
   ) {
     throw new AdapterRejection("invalid-flow-result", "MoonMold Flow result identity or claim boundary is invalid");
   }
