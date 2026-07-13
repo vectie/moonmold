@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { runBuildingExperiment } from "../adapter/experiment.mjs";
 import { runLiveBlenderExperiment } from "../adapter/live-blender.mjs";
+import { attestFlow, executeFlow } from "../adapter/flow.mjs";
 
 function argument(name) {
   const index = process.argv.indexOf(name);
@@ -9,9 +10,10 @@ function argument(name) {
 }
 
 const command = process.argv[2];
-if (command !== "build" && command !== "live-blender") {
+const subcommand = process.argv[3];
+if (command !== "build" && command !== "live-blender" && command !== "flow-adapter") {
   process.stderr.write(
-    "usage: moonmold <build|live-blender> --input PLAN.json --output WORKSPACE_PATH\n",
+    "usage: moonmold <build|live-blender|flow-adapter execute|flow-adapter attest> [options]\n",
   );
   process.exitCode = 2;
 } else {
@@ -29,7 +31,7 @@ if (command !== "build" && command !== "live-blender") {
         procedureId: report.procedureId
       }, null, 2)}\n`);
       if (!report.output.accepted) process.exitCode = 1;
-    } else {
+    } else if (command === "live-blender") {
       const evidence = await runLiveBlenderExperiment({
         inputPath: argument("--input"),
         outputRoot: argument("--output")
@@ -44,6 +46,25 @@ if (command !== "build" && command !== "live-blender") {
         physicalEffects: evidence.physicalEffects
       }, null, 2)}\n`);
       if (!evidence.accepted) process.exitCode = 1;
+    } else if (subcommand === "execute") {
+      await executeFlow({
+        workspace: argument("--workspace"),
+        requestRef: argument("--request"),
+        resultRef: argument("--result"),
+        draftRef: argument("--artifact"),
+      });
+    } else if (subcommand === "attest") {
+      await attestFlow({
+        workspace: argument("--workspace"),
+        requestRef: argument("--request"),
+        resultRef: argument("--result"),
+        attestationRef: argument("--attestation"),
+        attestorId: argument("--attestor-id"),
+        draftRef: argument("--draft"),
+        finalRef: argument("--final"),
+      });
+    } else {
+      throw new Error("flow-adapter requires execute or attest");
     }
   } catch (error) {
     process.stderr.write(`${JSON.stringify({
