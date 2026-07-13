@@ -112,3 +112,19 @@ The general fixes were, respectively, a complete public schema with a
 consistency test, explicit live-backend rejection/capability evidence, and
 self-describing immutable artifacts. None depends on the two fixture names or
 dimensions.
+
+## Recorded qualification trial — repeatable immutable output
+
+**Unqualified result:** rerunning the documented demos encountered their own
+ignored immutable outputs. The CLI returned `accepted:false`, while the happy
+path did not independently enforce a nonzero exit for a false acceptance value.
+This could make repeated qualification unusable or falsely green.
+
+**General correction:** byte-identical existing artifacts now return an
+idempotent no-op; differing bytes remain an immutable conflict. Existing
+reports are reused only when input digest, scene digest, representations,
+procedure, and acceptance state have the same semantic identity. The CLI sets
+a nonzero exit for every rejected/false-acceptance path.
+
+**Qualification:** both building demos pass twice consecutively with exit zero;
+a process-level negative test proves rejected CLI execution exits nonzero.

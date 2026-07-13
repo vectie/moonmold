@@ -23,6 +23,7 @@ if (process.argv[2] !== "build") {
       operationCount: report.output.operationCount,
       procedureId: report.procedureId
     }, null, 2)}\n`);
+    if (!report.output.accepted) process.exitCode = 1;
   } catch (error) {
     process.stderr.write(`${JSON.stringify({
       accepted: false,
@@ -32,4 +33,3 @@ if (process.argv[2] !== "build") {
     process.exitCode = 1;
   }
 }
-

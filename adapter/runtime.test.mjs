@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile, rm, symlink, mkdir } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { runBuildingExperiment, validateBuildingPlan } from "./experiment.mjs";
@@ -196,11 +197,20 @@ test("export is immutable, workspace-scoped, and does not mutate geometry", asyn
   assert.equal(duplicate.outcome, "idempotent-no-op");
   const otherRuntime = new SemanticAdapterRuntime({ initialDigest: before });
   otherRuntime.model = structuredClone(runtime.model);
-  await rejectCode(otherRuntime.execute({
+  const rediscovered = await otherRuntime.execute({
     ...request,
     requestId: "request-export-overwrite",
     idempotencyKey: "key-export-overwrite"
-  }), "immutable-output-exists");
+  });
+  assert.equal(rediscovered.outcome, "idempotent-no-op");
+  const conflictOutput = path.join(TMP, "export-test", "conflict.moonmold.json");
+  await writeFile(conflictOutput, "{}\n", "utf8");
+  await rejectCode(otherRuntime.execute({
+    ...request,
+    requestId: "request-export-conflict",
+    idempotencyKey: "key-export-conflict",
+    params: { ...request.params, outputPath: conflictOutput }
+  }), "immutable-output-conflict");
 });
 
 test("MCP exposes one semantic tool and rejects non-allowlisted tools", async () => {
@@ -234,7 +244,13 @@ test("two structurally different buildings reuse one general procedure", async (
     inputPath: path.join(REPO, "fixtures/tower-b.json"),
     outputRoot: outputB
   });
+  const repeated = await runBuildingExperiment({
+    inputPath: path.join(REPO, "fixtures/habitat-a.json"),
+    outputRoot: outputA
+  });
   assert.equal(a.output.accepted, true);
+  assert.equal(repeated.output.accepted, true);
+  assert.equal(repeated.output.finalSceneDigest, a.output.finalSceneDigest);
   assert.equal(b.output.accepted, true);
   assert.equal(a.procedureId, b.procedureId);
   assert.notEqual(a.input.digest, b.input.digest);
@@ -321,7 +337,20 @@ test("a symlinked output leaf cannot be overwritten", async () => {
       representation: "engineering",
       outputPath: path.join(directory, "engineering.moonmold.json")
     }
-  })), "immutable-output-exists");
+  })), "immutable-output-conflict");
+});
+
+test("CLI rejection is visible to shell automation", () => {
+  const result = spawnSync(process.execPath, [
+    path.join(REPO, "bin/moonmold.mjs"),
+    "build",
+    "--input",
+    path.join(REPO, "fixtures/does-not-exist.json"),
+    "--output",
+    path.join(TMP, "negative-cli")
+  ], { encoding: "utf8" });
+  assert.notEqual(result.status, 0);
+  assert.equal(JSON.parse(result.stderr).accepted, false);
 });
 
 test("a symlinked output directory cannot redirect writes outside the workspace", async () => {

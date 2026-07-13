@@ -64,3 +64,5 @@ future live-adapter gates; no mock result is labeled as live Blender evidence.
 Generated run artifacts are under ignored
 `evidence/generated/{habitat-a,tower-b}` so qualification does not dirty the
 repository. Reproduce with `npm run demo` and `npm run demo:transfer`.
+Both commands are repeatable: byte-identical immutable artifacts become
+idempotent no-ops, while divergent content remains a hard conflict.

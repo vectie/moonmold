@@ -1,4 +1,4 @@
-import { lstat, mkdir, realpath, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   AdapterRejection,
@@ -170,7 +170,7 @@ export class SemanticAdapterRuntime {
       protocol: PROTOCOL_VERSION,
       requestId: envelope.requestId,
       idempotencyKey: envelope.idempotencyKey,
-      outcome: "applied",
+      outcome: result.idempotentNoOp ? "idempotent-no-op" : "applied",
       beforeDigest,
       afterDigest,
       changedObjects: result.changedObjects,
@@ -233,6 +233,7 @@ export class SemanticAdapterRuntime {
     const warnings = [];
     const outputHashes = [];
     let result = null;
+    let idempotentNoOp = false;
     switch (method) {
       case "capability.discover":
         warnings.push("capability discovery does not mutate geometry");
@@ -315,11 +316,17 @@ export class SemanticAdapterRuntime {
           throw new AdapterRejection("workspace-boundary", "resolved output parent escapes workspace");
         }
         const bytes = `${canonicalJson(artifact)}\n`;
-        await writeFile(outputPath, bytes, { encoding: "utf8", flag: "wx" }).catch((error) => {
-          if (error.code === "EEXIST") {
-            throw new AdapterRejection("immutable-output-exists", "export refuses to overwrite an artifact");
+        await writeFile(outputPath, bytes, { encoding: "utf8", flag: "wx" }).catch(async (error) => {
+          if (error.code !== "EEXIST") throw error;
+          const existing = await readFile(outputPath, "utf8").catch(() => null);
+          if (existing !== bytes) {
+            throw new AdapterRejection(
+              "immutable-output-conflict",
+              "existing artifact differs from the deterministic export",
+            );
           }
-          throw error;
+          idempotentNoOp = true;
+          warnings.push("byte-identical immutable artifact already exists");
         });
         const artifactDigest = digest(artifact);
         outputHashes.push({
@@ -332,7 +339,7 @@ export class SemanticAdapterRuntime {
       default:
         throw new AdapterRejection("unsupported-method", "semantic operation is not implemented");
     }
-    return { changedObjects, warnings, outputHashes, result };
+    return { changedObjects, warnings, outputHashes, result, idempotentNoOp };
   }
 
   #requireObject(objectId) {

@@ -93,6 +93,17 @@ function operationSequence(plan, outputRoot) {
   return operations;
 }
 
+function reportIdentity(report) {
+  return {
+    schema: report.schema,
+    procedureId: report.procedureId,
+    inputDigest: report.input.digest,
+    finalSceneDigest: report.output.finalSceneDigest,
+    accepted: report.output.accepted,
+    representations: report.output.representations
+  };
+}
+
 export async function runBuildingExperiment({ inputPath, outputRoot }) {
   const workspaceRoot = "/Users/kq/moonsuite";
   const resolvedOutput = resolveScopedPath(workspaceRoot, outputRoot);
@@ -186,10 +197,22 @@ export async function runBuildingExperiment({ inputPath, outputRoot }) {
     },
     receipts
   };
+  const reportPath = path.join(resolvedOutput, "experiment-report.json");
+  let persisted = report;
   await writeFile(
-    path.join(resolvedOutput, "experiment-report.json"),
+    reportPath,
     `${canonicalJson(report)}\n`,
     { encoding: "utf8", flag: "wx" }
-  );
-  return report;
+  ).catch(async (error) => {
+    if (error.code !== "EEXIST") throw error;
+    const existing = JSON.parse(await readFile(reportPath, "utf8"));
+    if (canonicalJson(reportIdentity(existing)) !== canonicalJson(reportIdentity(report))) {
+      throw new AdapterRejection(
+        "immutable-report-conflict",
+        "existing experiment report belongs to different semantic evidence",
+      );
+    }
+    persisted = existing;
+  });
+  return persisted;
 }
