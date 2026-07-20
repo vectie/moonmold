@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moonmold.spatial-operation-request.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_id", "request_id", "idempotency_key", "project_id", "model_id", "expected_parent_digest", "authority", "operation"],
+  "properties": {
+    "contract_id": {"const": "moonmold.spatial-operation-request.v1"},
+    "request_id": {"type": "string", "minLength": 1},
+    "idempotency_key": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "model_id": {"type": "string", "minLength": 1},
+    "expected_parent_digest": {"type": "string", "minLength": 1},
+    "authority": {"enum": ["Observe", "CognitiveMaintenance", "SandboxExecution", "WorkspaceMutation"]},
+    "operation": {"type": "object", "minProperties": 1}
+  }
+}

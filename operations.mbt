@@ -47,6 +47,17 @@ pub(all) enum AdapterOutcome {
 } derive(Debug, Eq, ToJson)
 
 ///|
+/// The responsibility result is computed before backend execution. It makes
+/// ownership and claim ceilings inspectable without starting Blender or any
+/// other adapter process.
+pub(all) struct RequestResponsibility {
+  owner_product : String
+  disposition : String
+  claim_ceiling : String
+  reasons : Array[String]
+} derive(Debug, Eq, ToJson)
+
+///|
 pub(all) struct AdapterReceipt {
   request_id : String
   idempotency_key : String

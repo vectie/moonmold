@@ -133,6 +133,47 @@ test "physical and external authority are not accepted" {
 }
 
 ///|
+test "responsibility decision keeps digital claims below physical authority" {
+  let manufacturing = request_responsibility(
+    base_request(
+      ExportRepresentation(
+        representation=ManufacturingCandidate,
+        output_path="/Users/kq/moonsuite/outputs/candidate.step",
+      ),
+    ),
+  )
+  assert_eq(manufacturing.owner_product, "moonmold")
+  assert_eq(manufacturing.disposition, "execute-digital-operation")
+  assert_eq(manufacturing.claim_ceiling, "digital-manufacturing-candidate")
+  let physical = request_responsibility({
+    ..base_request(ValidateScene),
+    authority: PhysicalEffect,
+  })
+  assert_eq(physical.owner_product, "host/moongate")
+  assert_eq(physical.disposition, "reject")
+  assert_eq(physical.claim_ceiling, "no-physical-readiness-claim")
+  assert_false(physical.reasons.is_empty())
+}
+
+///|
+test "workspace boundary is portable but requires canonical absolute paths" {
+  assert_true(is_moonsuite_workspace_root("/home/operator/moonsuite"))
+  assert_false(is_moonsuite_workspace_root("relative/moonsuite"))
+  assert_false(is_moonsuite_workspace_root("/home/operator/../escape"))
+  assert_false(is_moonsuite_workspace_root("/"))
+  assert_true(
+    is_scoped_output_path(
+      "/home/operator/moonsuite", "/home/operator/moonsuite/outputs/model.glb",
+    ),
+  )
+  assert_false(
+    is_scoped_output_path(
+      "/home/operator/moonsuite", "/home/operator/moonsuite-other/model.glb",
+    ),
+  )
+}
+
+///|
 test "script-like and unknown transport methods are rejected" {
   for
     method_name in [

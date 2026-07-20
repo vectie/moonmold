@@ -37,9 +37,9 @@ key is a deterministic non-cryptographic integrity key for lightweight local
 manifests; serialized cross-product artifacts should use SHA-256.
 
 Paths in receipts are logical `moonsuite://` URIs. Runtime resolution accepts
-only descendants of the declared root under `/Users/kq/moonsuite`; traversal,
-foreign roots, symbolic-link ancestors, immutable output collisions, and NUL
-bytes fail closed.
+only descendants of the explicitly declared canonical absolute root;
+traversal, foreign roots, symbolic-link ancestors, immutable output
+collisions, and NUL bytes fail closed.
 
 ## Portable ingestion envelope
 

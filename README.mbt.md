@@ -1,6 +1,6 @@
 # MoonMold
 
-MoonMold transforms governed spatial intent, references, constraints, and
+MoonMold is a first-class installable MoonSuite domain pack. It transforms governed spatial intent, references, constraints, and
 procedures into editable digital models and representation-specific validation
 evidence. It may prepare a manufacturing candidate, but it cannot claim
 structural safety, physical readiness, or authorize a physical effect.
@@ -40,6 +40,9 @@ See `docs/CONSTITUTION.md`, `docs/ARCHITECTURE.md`, and
 `docs/EXPERIMENT_REPORT.md` for the product boundary, implementation journey,
 quality trials, and current limitations.
 
+The executable ownership rules and test seams are documented in
+[`docs/RESPONSIBILITY_AND_TESTABILITY.md`](docs/RESPONSIBILITY_AND_TESTABILITY.md).
+
 ## Qualification
 
 ```sh
@@ -50,8 +53,8 @@ npm run demo
 npm run demo:transfer
 ```
 
-The demos create ignored evidence only under
-`/Users/kq/moonsuite/development/sources/moonmold/evidence/generated`. The two
+The demos create ignored evidence only under this checkout's
+`evidence/generated` directory. The two
 fixtures use one general procedure but different topology and dimensions.
 
 Start the bounded stdio MCP adapter with `npm run mcp`. Blender is optional;

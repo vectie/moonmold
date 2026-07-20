@@ -6,5 +6,9 @@
   "service_path": ".moonsuite/products/moonmold/service.json",
   "repo_path": "",
   "status": "installed",
-  "capabilities": []
+  "capabilities": [
+    "spatial.operation.validate",
+    "spatial.operation.execute",
+    "representation.validate"
+  ]
 }

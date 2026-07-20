@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { attestFlow, executeFlow } from "./flow.mjs";
 
-const ROOT = "/Users/kq/moonsuite/development/sources/moonmold/.tmp/flow-adapter-test";
-const PLAN = "/Users/kq/moonsuite/development/sources/moonmold/fixtures/habitat-a.json";
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = path.join(REPO, ".tmp/flow-adapter-test");
+const PLAN = path.join(REPO, "fixtures/habitat-a.json");
 
 async function fixture() {
   await rm(ROOT, { recursive: true, force: true });

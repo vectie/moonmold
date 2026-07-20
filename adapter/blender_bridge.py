@@ -16,13 +16,13 @@ import bpy
 from mathutils import Vector
 
 
-ROOT = "/Users/kq/moonsuite"
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 
-def scoped(path):
+def scoped(root, path):
+    root = os.path.realpath(root)
     resolved = os.path.realpath(path)
-    if not resolved.startswith(ROOT + os.sep):
+    if resolved == root or not resolved.startswith(root + os.sep):
         raise ValueError("path escapes Moon Suite workspace")
     return resolved
 
@@ -168,9 +168,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--workspace-root", required=True)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1 :])
-    input_path = scoped(args.input)
-    output = scoped(args.output)
+    input_path = scoped(args.workspace_root, args.input)
+    output = scoped(args.workspace_root, args.output)
     os.makedirs(output, exist_ok=True)
     with open(input_path, "r", encoding="utf8") as handle:
         plan = json.load(handle)

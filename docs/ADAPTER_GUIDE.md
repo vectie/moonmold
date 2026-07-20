@@ -18,7 +18,7 @@ Each request carries:
 
 - project, session, model, request, and idempotency identities;
 - expected scene-parent digest;
-- a workspace root under `/Users/kq/moonsuite`;
+- an explicitly declared canonical absolute workspace root;
 - a bounded duration no greater than 120 seconds;
 - digital authority class;
 - semantic method and exact typed parameters.
@@ -40,10 +40,11 @@ Send newline-delimited JSON-RPC 2.0 messages over stdin. `initialize`,
 ## Blender status
 
 The qualified workspace runtime is Blender 4.5.11 LTS, discovered through
-`/Users/kq/moonsuite/tools/blender/runtime-manifest.json`. Environment overrides
-are explicit (`BLENDER_BIN` or `MOONMOLD_BLENDER`); otherwise discovery does not
-search arbitrary host paths. Capability discovery reports executable, version,
-source, scene digest, and whether the live surface is available.
+`tools/blender/runtime-manifest.json` below the explicitly configured tool
+workspace. Environment overrides are explicit (`BLENDER_BIN` or
+`MOONMOLD_BLENDER`); otherwise discovery does not search arbitrary host paths.
+Capability discovery reports executable, version, source, scene digest, and
+whether the live surface is available.
 
 The live path creates a `.blend` source, GLB presentation/interchange model,
 STL manufacturing candidate, PNG review render, bridge manifest, and immutable

@@ -1,0 +1,42 @@
+{
+  "id": "moonmold",
+  "version": "0.2.0",
+  "display_name": "MoonMold Spatial Modeling",
+  "product_id": "moonmold",
+  "kind": "DomainPack",
+  "required_runtime_extensions": ["moonclaw"],
+  "book_templates": [
+    {"id":"spatial-model-book","version":"1.0.0","path":"book/spatial-model-book.md"}
+  ],
+  "schemas": [
+    {"id":"spatial-operation-request","version":"1.0.0","path":"schemas/spatial-operation-request.schema.json"},
+    {"id":"spatial-operation-receipt","version":"1.0.0","path":"schemas/spatial-operation-receipt.schema.json"},
+    {"id":"spatial-artifact","version":"1.0.0","path":"schemas/spatial-artifact.schema.json"}
+  ],
+  "tools": [
+    {"id":"spatial.operation.validate","owner_product":"moonmold","input_schema_id":"spatial-operation-request","output_schema_id":"spatial-operation-receipt","authority":"SandboxExecution","idempotent":true,"evidence_outputs":["records/validation"],"review_required":false},
+    {"id":"spatial.operation.execute","owner_product":"moonmold","input_schema_id":"spatial-operation-request","output_schema_id":"spatial-operation-receipt","authority":"WorkspaceMutation","idempotent":true,"evidence_outputs":["records/operations","artifacts/models"],"review_required":true},
+    {"id":"representation.validate","owner_product":"moonmold","input_schema_id":"spatial-artifact","output_schema_id":"spatial-operation-receipt","authority":"SandboxExecution","idempotent":true,"evidence_outputs":["records/representation-validation"],"review_required":true}
+  ],
+  "workflows": [
+    {"id":"spatial-intent-to-reviewed-model","version":"1.0.0","path":"workflows/spatial-intent-to-reviewed-model.md"}
+  ],
+  "skills": [
+    {"id":"governed-spatial-modeling","version":"1.0.0","path":"skills/governed-spatial-modeling.md"}
+  ],
+  "policies": [
+    {"id":"digital-authority","version":"1.0.0","path":"policies/digital-authority.md"}
+  ],
+  "provider_ports": [
+    {"id":"semantic-model-backend","version":"1.0.0","path":"providers/semantic-model-backend.port.md"}
+  ],
+  "schedules": [],
+  "app_entrypoints": [],
+  "migrations": [
+    {"id":"moonmold-install","version":"1.0.0","path":"migrations/install.md"}
+  ],
+  "evaluations": [
+    {"id":"model-integrity","version":"1.0.0","path":"evaluations/model-integrity.md"}
+  ],
+  "uninstall_contract": {"id":"moonmold-uninstall","version":"1.0.0","path":"UNINSTALL.md"}
+}

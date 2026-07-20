@@ -16,6 +16,8 @@ pub fn is_scoped_output_path(String, String) -> Bool
 
 pub fn new_artifact(artifact_id~ : String, representation~ : RepresentationKind, digest~ : String, units~ : String, coordinate_frame~ : String, parent_digest~ : String?, relation~ : LineageRelation?, known_losses~ : Array[String]) -> SpatialArtifact
 
+pub fn request_responsibility(AdapterRequest) -> RequestResponsibility
+
 pub fn validate_request(AdapterRequest) -> Unit raise AdapterError
 
 pub fn validate_transport_method(String) -> Unit raise AdapterError
@@ -112,6 +114,13 @@ pub(all) enum RepresentationKind {
   Presentation
   Simulation
   ManufacturingCandidate
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) struct RequestResponsibility {
+  owner_product : String
+  disposition : String
+  claim_ceiling : String
+  reasons : Array[String]
 } derive(Eq, ToJson, @debug.Debug)
 
 pub(all) enum SemanticOperation {

@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { discoverBlender } from "./blender.mjs";
 import { runLiveBlenderExperiment } from "./live-blender.mjs";
 import { createMcpHandler } from "./mcp.mjs";
 
 const LIVE = process.env.MOONMOLD_LIVE_BLENDER === "1";
-const ROOT = "/Users/kq/moonsuite/development/sources/moonmold";
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("workspace Blender manifest is discoverable", () => {
   const blender = discoverBlender();
@@ -26,6 +27,7 @@ test("live Blender creates validated evidence for all qualified structures", { s
     const outputRoot = path.join(ROOT, output);
     await rm(outputRoot, { recursive: true, force: true });
     const evidence = await runLiveBlenderExperiment({
+      workspaceRoot: ROOT,
       inputPath: path.join(ROOT, "fixtures", fixture),
       outputRoot,
     });
@@ -38,6 +40,7 @@ test("live Blender creates validated evidence for all qualified structures", { s
       assert.match(evidence.outputs[name].digest, /^sha256:[a-f0-9]{64}$/);
     }
     const repeated = await runLiveBlenderExperiment({
+      workspaceRoot: ROOT,
       inputPath: path.join(ROOT, "fixtures", fixture),
       outputRoot,
     });
@@ -58,6 +61,7 @@ test("MCP live tool returns attributable Blender receipt", { skip: !LIVE }, asyn
       arguments: {
         requestId: "mcp-live-41",
         idempotencyKey: "mcp-live-city-hall-v1",
+        workspaceRoot: ROOT,
         inputPath: path.join(ROOT, "fixtures/city-hall-image-referenced.json"),
         outputRoot,
         timeoutMs: 120000,

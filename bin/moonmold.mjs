@@ -21,7 +21,8 @@ if (command !== "build" && command !== "live-blender" && command !== "flow-adapt
     if (command === "build") {
       const report = await runBuildingExperiment({
         inputPath: argument("--input"),
-        outputRoot: argument("--output")
+        outputRoot: argument("--output"),
+        workspaceRoot: argument("--workspace-root")
       });
       process.stdout.write(`${JSON.stringify({
         accepted: report.output.accepted,
@@ -34,7 +35,8 @@ if (command !== "build" && command !== "live-blender" && command !== "flow-adapt
     } else if (command === "live-blender") {
       const evidence = await runLiveBlenderExperiment({
         inputPath: argument("--input"),
-        outputRoot: argument("--output")
+        outputRoot: argument("--output"),
+        workspaceRoot: argument("--workspace-root")
       });
       process.stdout.write(`${JSON.stringify({
         accepted: evidence.accepted,

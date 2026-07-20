@@ -1,32 +1,31 @@
 import { accessSync, constants, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { MOONSUITE_ROOT } from "./protocol.mjs";
 
-const WORKSPACE_ROOT = "/Users/kq/moonsuite";
-const TOOL_MANIFEST = path.join(
-  WORKSPACE_ROOT,
-  "tools/blender/runtime-manifest.json",
-);
-
-function manifestCandidate() {
+function manifestCandidate(workspaceRoot) {
+  const toolManifest = path.join(
+    workspaceRoot,
+    "tools/blender/runtime-manifest.json",
+  );
   try {
-    const manifest = JSON.parse(readFileSync(TOOL_MANIFEST, "utf8"));
+    const manifest = JSON.parse(readFileSync(toolManifest, "utf8"));
     if (
       manifest.contract_id !== "moonsuite.workspace-tool-runtime.v1" ||
       manifest.tool_id !== "blender" ||
       manifest.physical_effects !== false ||
       typeof manifest.binary_path !== "string"
     ) return null;
-    const executable = path.resolve(WORKSPACE_ROOT, manifest.binary_path);
-    if (!executable.startsWith(`${WORKSPACE_ROOT}${path.sep}`)) return null;
+    const executable = path.resolve(workspaceRoot, manifest.binary_path);
+    if (!executable.startsWith(`${workspaceRoot}${path.sep}`)) return null;
     return { executable, manifest };
   } catch {
     return null;
   }
 }
 
-export function discoverBlender() {
-  const workspace = manifestCandidate();
+export function discoverBlender(workspaceRoot = MOONSUITE_ROOT) {
+  const workspace = manifestCandidate(workspaceRoot);
   const candidates = [
     process.env.BLENDER_BIN
       ? { executable: process.env.BLENDER_BIN, source: "BLENDER_BIN" }

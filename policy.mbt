@@ -1,18 +1,72 @@
 ///|
-fn contains_forbidden_segment(value : String) -> Bool {
-  value.contains("..") || value.contains("\u0000")
+fn absolute_path_is_canonical(value : String) -> Bool {
+  if !value.has_prefix("/") ||
+    value == "/" ||
+    value.has_suffix("/") ||
+    value.contains("\\") ||
+    value.contains("\u0000") {
+    return false
+  }
+  value[1:]
+  .split("/")
+  .all(segment => segment != "" && segment != "." && segment != "..")
 }
 
 ///|
 pub fn is_moonsuite_workspace_root(root : String) -> Bool {
-  root == "/Users/kq/moonsuite" || root.has_prefix("/Users/kq/moonsuite/")
+  absolute_path_is_canonical(root)
 }
 
 ///|
 pub fn is_scoped_output_path(root : String, path : String) -> Bool {
   is_moonsuite_workspace_root(root) &&
-  !contains_forbidden_segment(path) &&
+  absolute_path_is_canonical(path) &&
   path.has_prefix(root + "/")
+}
+
+///|
+fn operation_claim_ceiling(operation : SemanticOperation) -> String {
+  match operation {
+    ValidateScene => "digital-validation-evidence"
+    ExportRepresentation(representation=ManufacturingCandidate, ..) =>
+      "digital-manufacturing-candidate"
+    ExportRepresentation(representation=Engineering, ..) =>
+      "derived-engineering-representation"
+    ExportRepresentation(..) => "derived-digital-representation"
+    _ => "editable-digital-model"
+  }
+}
+
+///|
+/// Classifies the authority boundary without performing IO. MoonMold owns
+/// digital model mutation and validation only. External and physical effects
+/// remain host-owned even when a manufacturing candidate is being prepared.
+pub fn request_responsibility(
+  request : AdapterRequest,
+) -> RequestResponsibility {
+  match request.authority {
+    Observe | CognitiveMaintenance | SandboxExecution | WorkspaceMutation =>
+      {
+        owner_product: "moonmold",
+        disposition: "execute-digital-operation",
+        claim_ceiling: operation_claim_ceiling(request.operation),
+        reasons: [],
+      }
+    ExternalEffect =>
+      {
+        owner_product: "host/moongate",
+        disposition: "separate-authority-required",
+        claim_ceiling: "no-external-effect",
+        reasons: ["MoonMold does not own external-effect authority"],
+      }
+    PhysicalEffect =>
+      {
+        owner_product: "host/moongate",
+        disposition: "reject",
+        claim_ceiling: "no-physical-readiness-claim",
+        reasons: ["MoonMold never authorizes fabrication or physical motion"],
+      }
+  }
 }
 
 ///|
@@ -45,10 +99,9 @@ pub fn validate_request(request : AdapterRequest) -> Unit raise AdapterError {
   if request.deadline_ms <= 0 || request.deadline_ms > 120000 {
     raise InvalidDeadline(request.deadline_ms)
   }
-  match request.authority {
-    Observe | CognitiveMaintenance | SandboxExecution | WorkspaceMutation => ()
-    ExternalEffect | PhysicalEffect =>
-      raise AuthorityExceeded(request.authority)
+  let responsibility = request_responsibility(request)
+  if responsibility.disposition != "execute-digital-operation" {
+    raise AuthorityExceeded(request.authority)
   }
   if !is_moonsuite_workspace_root(request.workspace_root) {
     raise WorkspaceBoundaryViolation(request.workspace_root)

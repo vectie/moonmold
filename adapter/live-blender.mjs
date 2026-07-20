@@ -7,12 +7,12 @@ import { discoverBlender } from "./blender.mjs";
 import { validateBuildingPlan, verifyReferenceInputs } from "./experiment.mjs";
 import {
   AdapterRejection,
+  MOONSUITE_ROOT,
   canonicalJson,
   digest,
   resolveScopedPath,
 } from "./protocol.mjs";
 
-const ROOT = "/Users/kq/moonsuite";
 const BRIDGE = fileURLToPath(new URL("./blender_bridge.py", import.meta.url));
 
 async function hashFile(file) {
@@ -123,15 +123,21 @@ async function validateEvidence(outputRoot, plan, inputDigest) {
 export async function runLiveBlenderExperiment({
   inputPath,
   outputRoot,
+  workspaceRoot = MOONSUITE_ROOT,
+  toolWorkspaceRoot = MOONSUITE_ROOT,
+  referenceWorkspaceRoot = MOONSUITE_ROOT,
   timeoutMs = 120_000,
   signal,
 }) {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300_000) {
     throw new AdapterRejection("invalid-deadline", "live Blender deadline must be 1..300000ms");
   }
-  const resolvedOutput = resolveScopedPath(ROOT, outputRoot);
+  const resolvedOutput = resolveScopedPath(workspaceRoot, outputRoot);
   const plan = validateBuildingPlan(JSON.parse(await readFile(inputPath, "utf8")));
-  const verifiedReferences = await verifyReferenceInputs(plan);
+  const verifiedReferences = await verifyReferenceInputs(
+    plan,
+    referenceWorkspaceRoot,
+  );
   const inputDigest = digest(plan);
   const evidencePath = path.join(resolvedOutput, "live-evidence.json");
   try {
@@ -148,7 +154,7 @@ export async function runLiveBlenderExperiment({
     if (error instanceof AdapterRejection) throw error;
     if (error.code !== "ENOENT") throw error;
   }
-  const blender = discoverBlender();
+  const blender = discoverBlender(toolWorkspaceRoot);
   if (!blender.available) {
     throw new AdapterRejection("backend-unavailable", "workspace Blender runtime is unavailable");
   }
@@ -173,6 +179,8 @@ export async function runLiveBlenderExperiment({
       planPath,
       "--output",
       resolvedOutput,
+      "--workspace-root",
+      workspaceRoot,
     ],
     { timeoutMs, signal },
   );

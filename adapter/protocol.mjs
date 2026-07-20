@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
+import os from "node:os";
 import path from "node:path";
 
 export const PROTOCOL_VERSION = "moonmold.blender.v1";
-export const MOONSUITE_ROOT = "/Users/kq/moonsuite";
+export const MOONSUITE_ROOT = process.env.MOONSUITE_ROOT ?? path.join(os.homedir(), "moonsuite");
 export const ALLOWED_AUTHORITIES = new Set([
   "observe",
   "cognitive-maintenance",
@@ -70,13 +71,18 @@ function inspectParameterNames(value, trail = []) {
 }
 
 export function assertWorkspaceRoot(root) {
-  if (
-    typeof root !== "string" ||
-    (root !== MOONSUITE_ROOT && !root.startsWith(`${MOONSUITE_ROOT}${path.sep}`))
-  ) {
-    throw new AdapterRejection("workspace-boundary", "workspace root is outside ~/moonsuite", { root });
+  if (typeof root !== "string" || root.includes("\0") || !path.isAbsolute(root)) {
+    throw new AdapterRejection("workspace-boundary", "workspace root must be an absolute canonical path", { root });
   }
-  return path.resolve(root);
+  const resolved = path.resolve(root);
+  if (
+    resolved !== root ||
+    resolved === path.parse(resolved).root ||
+    root.endsWith(path.sep)
+  ) {
+    throw new AdapterRejection("workspace-boundary", "workspace root must be non-root and canonical", { root });
+  }
+  return resolved;
 }
 
 export function resolveScopedPath(root, candidate) {

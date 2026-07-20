@@ -8,8 +8,9 @@ a first physical-world bridge without physical control.
 **Output:** standalone `vectie/moonmold` module, product constitution,
 architecture, workspace-only policy, and explicit non-goals.
 
-**Quality gate:** no files outside `/Users/kq/moonsuite`; no dependency on
-sibling source trees; no script/shell/public physical operation.
+**Quality gate:** no files outside the request's declared canonical workspace
+root; no dependency on sibling source trees; no script/shell/public physical
+operation.
 
 ## B1 — Spatial contracts
 

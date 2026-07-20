@@ -101,6 +101,7 @@ export function createMcpHandler(runtime = new SemanticAdapterRuntime()) {
                   properties: {
                     requestId: { type: "string" },
                     idempotencyKey: { type: "string" },
+                    workspaceRoot: { type: "string" },
                     inputPath: { type: "string" },
                     outputRoot: { type: "string" },
                     timeoutMs: {
@@ -116,6 +117,7 @@ export function createMcpHandler(runtime = new SemanticAdapterRuntime()) {
                   required: [
                     "requestId",
                     "idempotencyKey",
+                    "workspaceRoot",
                     "inputPath",
                     "outputRoot",
                     "timeoutMs",
@@ -150,6 +152,7 @@ export function createMcpHandler(runtime = new SemanticAdapterRuntime()) {
           Object.keys(args).some((key) => ![
             "requestId",
             "idempotencyKey",
+            "workspaceRoot",
             "inputPath",
             "outputRoot",
             "timeoutMs",
@@ -165,6 +168,7 @@ export function createMcpHandler(runtime = new SemanticAdapterRuntime()) {
         cancellations.set(id, controller);
         try {
           const evidence = await runLiveBlenderExperiment({
+            workspaceRoot: args.workspaceRoot,
             inputPath: args.inputPath,
             outputRoot: args.outputRoot,
             timeoutMs: args.timeoutMs,

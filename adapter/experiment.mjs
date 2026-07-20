@@ -2,7 +2,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { SemanticAdapterRuntime } from "./runtime.mjs";
-import { AdapterRejection, canonicalJson, digest, resolveScopedPath } from "./protocol.mjs";
+import {
+  AdapterRejection,
+  MOONSUITE_ROOT,
+  canonicalJson,
+  digest,
+  resolveScopedPath,
+} from "./protocol.mjs";
 
 export function validateBuildingPlan(plan) {
   if (plan?.schema !== "moonmold-building-plan-v1") {
@@ -80,14 +86,12 @@ export function validateBuildingPlan(plan) {
 }
 
 /// Verify workspace-local reference bytes separately from semantic validation.
-export async function verifyReferenceInputs(plan) {
+export async function verifyReferenceInputs(plan, workspaceRoot = MOONSUITE_ROOT) {
   const bundle = plan.referenceBundle;
   if (!bundle) return [];
   const relative = bundle.imageRef.slice("moonsuite-input://".length);
-  const sourcePath = resolveScopedPath(
-    "/Users/kq/moonsuite/inputs",
-    path.join("/Users/kq/moonsuite/inputs", relative),
-  );
+  const inputRoot = path.join(workspaceRoot, "inputs");
+  const sourcePath = resolveScopedPath(inputRoot, path.join(inputRoot, relative));
   const bytes = await readFile(sourcePath);
   const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
   if (actual !== bundle.sourceDigest) {
@@ -247,6 +251,7 @@ async function writePortableContracts({
   operations,
   receipts,
   outputRoot,
+  workspaceRoot,
 }) {
   const exports = new Map();
   for (const [index, operation] of operations.entries()) {
@@ -349,7 +354,7 @@ async function writePortableContracts({
       parent_digest: parent.digest,
       lineage_relation: policy.lineage,
       claim_ceiling: policy.claim,
-      path: `moonsuite://${path.relative("/Users/kq/moonsuite", portablePath)}`
+      path: `moonsuite://${path.relative(workspaceRoot, portablePath)}`
     });
   }
   return summaries;
@@ -372,11 +377,18 @@ function representationPolicyLosses(representation) {
   }
 }
 
-export async function runBuildingExperiment({ inputPath, outputRoot }) {
-  const workspaceRoot = "/Users/kq/moonsuite";
+export async function runBuildingExperiment({
+  inputPath,
+  outputRoot,
+  workspaceRoot = path.dirname(outputRoot),
+  referenceWorkspaceRoot = MOONSUITE_ROOT,
+}) {
   const resolvedOutput = resolveScopedPath(workspaceRoot, outputRoot);
   const plan = validateBuildingPlan(JSON.parse(await readFile(inputPath, "utf8")));
-  const verifiedReferences = await verifyReferenceInputs(plan);
+  const verifiedReferences = await verifyReferenceInputs(
+    plan,
+    referenceWorkspaceRoot,
+  );
   await mkdir(resolvedOutput, { recursive: true });
   const runtime = new SemanticAdapterRuntime();
   const receipts = [];
@@ -472,7 +484,8 @@ export async function runBuildingExperiment({ inputPath, outputRoot }) {
     plan,
     operations,
     receipts,
-    outputRoot: resolvedOutput
+    outputRoot: resolvedOutput,
+    workspaceRoot,
   });
   const reportPath = path.join(resolvedOutput, "experiment-report.json");
   let persisted = report;

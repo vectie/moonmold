@@ -141,6 +141,7 @@ export async function executeFlow({ workspace, requestRef, resultRef, draftRef }
   const evidence = await runLiveBlenderExperiment({
     inputPath: scoped(workspace, planRef),
     outputRoot: scoped(workspace, outputRef),
+    workspaceRoot: workspace,
     timeoutMs: Math.min(Number(request.timeout_ms) || 120_000, 300_000),
   });
   const draft = {

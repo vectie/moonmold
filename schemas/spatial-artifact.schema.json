@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moonmold.spatial-artifact.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_id", "artifact_id", "representation", "digest", "units", "coordinate_frame", "known_losses", "claim_ceiling"],
+  "properties": {
+    "contract_id": {"const": "moonmold.spatial-artifact.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "representation": {"enum": ["reference-set", "spatial-intent", "editable-source", "engineering", "presentation", "simulation", "manufacturing-candidate"]},
+    "digest": {"type": "string", "minLength": 1},
+    "parent_digest": {"type": ["string", "null"]},
+    "units": {"type": "string", "minLength": 1},
+    "coordinate_frame": {"type": "string", "minLength": 1},
+    "known_losses": {"type": "array", "items": {"type": "string"}},
+    "claim_ceiling": {"type": "string", "minLength": 1},
+    "physical_authority": {"const": false}
+  }
+}
