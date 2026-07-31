@@ -31,7 +31,13 @@
     {"id":"semantic-model-backend","version":"1.0.0","path":"providers/semantic-model-backend.port.md"}
   ],
   "schedules": [],
-  "app_entrypoints": [],
+  "app_entrypoints": [
+    {
+      "id": "spatial-operator",
+      "path": "ui/rabbita-moonmold",
+      "audience": "spatial-model-operator"
+    }
+  ],
   "migrations": [
     {"id":"moonmold-install","version":"1.0.0","path":"migrations/install.md"}
   ],

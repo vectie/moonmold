@@ -1,5 +1,9 @@
 # MoonMold
 
+> **Domain pack · early digital-model alpha.** Read the
+> [product contract](docs/PRODUCT_CONTRACT.md) for representation truth,
+> Blender qualification, authority limits and release gates.
+
 MoonMold is a first-class installable MoonSuite domain pack. It transforms governed spatial intent, references, constraints, and
 procedures into editable digital models and representation-specific validation
 evidence. It may prepare a manufacturing candidate, but it cannot claim
@@ -66,3 +70,15 @@ and `moonmold flow-adapter attest`. Execution creates real Blender evidence;
 attestation re-hashes every declared output, preserves concrete unknowns, and
 publishes an immutable digital-only final artifact. `product-registry-entry.json`
 is the canonical MoonDesk registry entry for a suite installation.
+
+## First-class pack adapter and operator
+
+MoonMold now publishes the exact three manifest tools through a pack-local
+MoonBit `moonflow.adapter.v2` implementation with durable attempts, journal
+replay, reconciliation, short-lived health evidence and SHA-256 binding. See
+[`docs/PACK_ADAPTER.md`](docs/PACK_ADAPTER.md).
+
+The Rabbita operator at `ui/rabbita-moonmold` creates and loads governed
+requests, shows backend qualification and representation lineage, runs the
+bounded adapter, and records a named-human review without adding another agent
+runtime. See [`docs/OPERATOR_APP.md`](docs/OPERATOR_APP.md).

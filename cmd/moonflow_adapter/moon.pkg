@@ -1,0 +1,11 @@
+import {
+  "vectie/moonmold/adapter_runtime",
+  "vectie/moonmold/suite_adapter",
+  "moonbitlang/core/json",
+  "moonbitlang/x/fs" @fsx,
+  "moonbitlang/x/sys",
+}
+
+supported_targets = "native"
+
+pkgtype(kind: "executable")

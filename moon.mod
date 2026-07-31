@@ -13,3 +13,7 @@ keywords = [ "moonbit", "spatial-modeling", "lineage", "blender", "moonsuite" ]
 description = "Governed spatial modeling and representation validation for Moon Suite."
 
 preferred_target = "native"
+
+import {
+  "moonbitlang/x@0.4.45",
+}

@@ -34,3 +34,14 @@ collision representations. MoonMoon receives simulation representations.
 MoonBook owns reference provenance and reflections. No sibling-source import is
 required: interchange is serialized portable data.
 
+## Pack-local application and orchestration boundary
+
+`suite_adapter` owns the exact `moonflow.adapter.v2` declaration and portable
+request/result records. `adapter_runtime` is the MoonBit execution,
+reconciliation and health layer. It journals typed semantic operations below
+the workspace product home and replays them after restart.
+
+`ui/rabbita-moonmold` is a Rabbita projection over a fixed local operator host.
+The host invokes the MoonBit adapter and records named review; it performs no
+planning or model reasoning. MoonFlow remains the cross-product workflow owner
+and MoonClaw remains the only agent runtime.

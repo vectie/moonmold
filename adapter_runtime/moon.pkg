@@ -1,0 +1,10 @@
+import {
+  "vectie/moonmold",
+  "vectie/moonmold/suite_adapter",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/json",
+  "moonbitlang/x/crypto",
+  "moonbitlang/x/fs" @fsx,
+}
+
+supported_targets = "native"

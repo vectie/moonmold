@@ -1,0 +1,28 @@
+{
+  "contract_id": "moonflow.adapter-declaration.v1",
+  "adapter_id": "moonmold-pack-local-v1",
+  "product_id": "moonmold",
+  "pack_id": "moonmold",
+  "pack_version": "0.2.0",
+  "protocol": "moonflow.adapter.v2",
+  "operations": [
+    {
+      "operation_id": "spatial.operation.validate",
+      "claim_ceiling": "observation",
+      "supports_cancel": false,
+      "supports_reconcile": true
+    },
+    {
+      "operation_id": "spatial.operation.execute",
+      "claim_ceiling": "digital-artifact",
+      "supports_cancel": false,
+      "supports_reconcile": true
+    },
+    {
+      "operation_id": "representation.validate",
+      "claim_ceiling": "observation",
+      "supports_cancel": false,
+      "supports_reconcile": true
+    }
+  ]
+}

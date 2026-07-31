@@ -6,13 +6,22 @@
   "required": ["contract_id", "request_id", "idempotency_key", "outcome", "before_digest", "after_digest", "claim_ceiling", "physical_authority"],
   "properties": {
     "contract_id": {"const": "moonmold.spatial-operation-receipt.v1"},
+    "operation_ref": {"type": "string"},
     "request_id": {"type": "string", "minLength": 1},
+    "source_request_id": {"type": "string"},
+    "attempt_id": {"type": "string"},
     "idempotency_key": {"type": "string", "minLength": 1},
     "outcome": {"enum": ["applied", "idempotent-no-op", "rejected"]},
     "before_digest": {"type": "string", "minLength": 1},
     "after_digest": {"type": "string", "minLength": 1},
     "claim_ceiling": {"type": "string", "minLength": 1},
     "physical_authority": {"const": false},
-    "artifacts": {"type": "array", "items": {"type": "string"}}
+    "artifacts": {"type": "array", "items": {"type": "string"}},
+    "changed_objects": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "validation_evidence": {"type": "object"},
+    "backend_qualification": {"type": "object"},
+    "review_required": {"type": "boolean"},
+    "reconciliation": {"type": "object"}
   }
 }

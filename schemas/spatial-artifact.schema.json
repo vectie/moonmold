@@ -7,13 +7,20 @@
   "properties": {
     "contract_id": {"const": "moonmold.spatial-artifact.v1"},
     "artifact_id": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string"},
+    "model_id": {"type": "string"},
     "representation": {"enum": ["reference-set", "spatial-intent", "editable-source", "engineering", "presentation", "simulation", "manufacturing-candidate"]},
     "digest": {"type": "string", "minLength": 1},
     "parent_digest": {"type": ["string", "null"]},
+    "lineage_relation": {"type": "string"},
     "units": {"type": "string", "minLength": 1},
     "coordinate_frame": {"type": "string", "minLength": 1},
     "known_losses": {"type": "array", "items": {"type": "string"}},
     "claim_ceiling": {"type": "string", "minLength": 1},
-    "physical_authority": {"const": false}
+    "physical_authority": {"const": false},
+    "backend": {"type": "object"},
+    "intent": {"type": "string"},
+    "reference_artifacts": {"type": "array", "items": {"type": "string"}},
+    "constraints": {"type": "array", "items": {"type": "string"}}
   }
 }
