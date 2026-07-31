@@ -1,0 +1,141 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "vectie/moonmold/suite_adapter"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn adapter_declaration_json() -> Json
+
+pub fn adapter_id() -> String
+
+pub fn adapter_protocol() -> String
+
+pub fn decode_moonflow_adapter_request(Json) -> MoonflowAdapterRequest raise
+
+pub fn decode_spatial_operation_request(Json) -> SpatialOperationRequest raise
+
+pub fn find_operation_contract(String) -> AdapterOperationContract?
+
+pub fn moonflow_adapter_capability_json() -> Json
+
+pub fn moonflow_adapter_capability_json_with_health(Bool) -> Json
+
+pub fn operation_contracts() -> Array[AdapterOperationContract]
+
+pub fn operation_refs() -> Array[String]
+
+pub fn pack_version() -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct AdapterHealthAttestation {
+  contract_id : String
+  adapter_id : String
+  product_id : String
+  pack_id : String
+  pack_version : String
+  protocol : String
+  status : String
+  checked_at : String
+  valid_until : String
+  operation_refs : Array[String]
+  evidence_ref : String
+  evidence_digest : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct AdapterOperationContract {
+  operation_id : String
+  authority_class : String
+  input_schema : String
+  output_schema : String
+  claim_ceiling : String
+  review_required : Bool
+} derive(Eq, ToJson, @debug.Debug)
+
+pub(all) struct AdapterResult {
+  result_id : String
+  request_id : String
+  attempt_id : String
+  idempotency_key : String
+  product_id : String
+  external_job_id : String
+  status : String
+  output_digest : String
+  output_artifacts : Array[String]
+  error_kind : String
+  compensable : Bool
+  recorded_at : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct AttemptRecord {
+  contract_id : String
+  adapter_id : String
+  request_id : String
+  attempt_id : String
+  idempotency_key : String
+  operation_id : String
+  status : String
+  request_ref : String
+  input_ref : String
+  receipt_ref : String
+  result_ref : String
+  started_at : String
+  updated_at : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct MoonflowAdapterRequest {
+  request_id : String
+  run_id : String
+  book_id : String
+  work_item_id : String
+  declaration_id : String
+  attempt_id : String
+  idempotency_key : String
+  product_id : String
+  operation : String
+  requested_authority : String
+  acceptance_criteria : Array[String]
+  input_contracts : Array[String]
+  output_contracts : Array[String]
+  required_claim : String
+  input_digest : String
+  input_artifacts : Array[String]
+  timeout_ms : Int
+  created_at : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct ReconciliationReport {
+  contract_id : String
+  adapter_id : String
+  request_id : String
+  attempt_id : String
+  decision : String
+  retry_allowed : Bool
+  evidence_refs : Array[String]
+  result : AdapterResult
+  message : String
+  recorded_at : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct SpatialOperationRequest {
+  contract_id : String
+  request_id : String
+  idempotency_key : String
+  project_id : String
+  model_id : String
+  expected_parent_digest : String
+  authority : String
+  operation : Json
+  intent : String
+  reference_artifacts : Array[String]
+  constraints : Array[String]
+  backend_preference : String
+} derive(Eq, ToJson, @debug.Debug)
+
+// Type aliases
+
+// Traits

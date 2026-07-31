@@ -5,6 +5,26 @@ struct RequestPayload {
 } derive(Debug, FromJson)
 
 ///|
+fn operator_error_message(json : Json) -> String? {
+  match json {
+    { "code": String(code), "message": String(message), .. } =>
+      Some("\{code}: \{message}")
+    _ => None
+  }
+}
+
+///|
+fn parse_request_payload(json : Json) -> Result[RequestPayload, String] {
+  match operator_error_message(json) {
+    Some(error) => Err(error)
+    None =>
+      Ok(@json.from_json(json)) catch {
+        error => Err("Invalid MoonMold request response: \{error}")
+      }
+  }
+}
+
+///|
 struct RunPayload {
   request : Json
   flow_request : Json
@@ -12,13 +32,100 @@ struct RunPayload {
   receipt : Json?
   representations : Array[Json]
   reviews : Array[Json]
-} derive(Debug, FromJson)
+} derive(Debug)
+
+///|
+impl @json.FromJson for RunPayload with fn from_json(
+  json : Json,
+  path : @json.JsonPath,
+) -> RunPayload raise @json.JsonDecodeError {
+  guard json is Object(fields) else {
+    raise JsonDecodeError((path, "RunPayload: expected object"))
+  }
+  let request = match fields.get("request") {
+    Some(value) => value
+    None =>
+      raise JsonDecodeError((path.add_key("request"), "Missing field request"))
+  }
+  let flow_request = match fields.get("flow_request") {
+    Some(value) => value
+    None =>
+      raise JsonDecodeError(
+        (path.add_key("flow_request"), "Missing field flow_request"),
+      )
+  }
+  let result = match fields.get("result") {
+    Some(value) => value
+    None =>
+      raise JsonDecodeError((path.add_key("result"), "Missing field result"))
+  }
+  let receipt = match fields.get("receipt") {
+    Some(Null) | None => None
+    Some(value) => Some(value)
+  }
+  let representations : Array[Json] = match fields.get("representations") {
+    Some(value) => @json.from_json(value, path=path.add_key("representations"))
+    None =>
+      raise JsonDecodeError(
+        (path.add_key("representations"), "Missing field representations"),
+      )
+  }
+  let reviews : Array[Json] = match fields.get("reviews") {
+    Some(Null) | None => []
+    Some(value) => @json.from_json(value, path=path.add_key("reviews"))
+  }
+  { request, flow_request, result, receipt, representations, reviews }
+}
+
+///|
+fn parse_run_payload(json : Json) -> Result[RunPayload, String] {
+  match operator_error_message(json) {
+    Some(error) => Err(error)
+    None =>
+      Ok(@json.from_json(json)) catch {
+        error => Err("Invalid MoonMold run response: \{error}")
+      }
+  }
+}
 
 ///|
 struct ReviewPayload {
   reference : String
   review : Json
 } derive(Debug, FromJson)
+
+///|
+fn parse_review_payload(json : Json) -> Result[ReviewPayload, String] {
+  match operator_error_message(json) {
+    Some(error) => Err(error)
+    None =>
+      Ok(@json.from_json(json)) catch {
+        error => Err("Invalid MoonMold review response: \{error}")
+      }
+  }
+}
+
+///|
+struct RecoveryPayload {
+  recovered : Bool
+  attempt_id : String?
+  next_revision : Int
+  next_request_id : String
+  next_idempotency_key : String
+  run : RunPayload?
+  physical_authority : Bool
+} derive(Debug, FromJson)
+
+///|
+fn parse_recovery_payload(json : Json) -> Result[RecoveryPayload, String] {
+  match operator_error_message(json) {
+    Some(error) => Err(error)
+    None =>
+      Ok(@json.from_json(json)) catch {
+        error => Err("Invalid MoonMold recovery response: \{error}")
+      }
+  }
+}
 
 ///|
 struct Model {
@@ -52,6 +159,7 @@ struct Model {
 ///|
 enum Msg {
   StatusLoaded(Result[Json, String])
+  RecoveryLoaded(Result[RecoveryPayload, String])
   SetRequestId(String)
   SetIdempotencyKey(String)
   SetProjectId(String)

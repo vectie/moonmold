@@ -119,16 +119,77 @@ fn update(
   match msg {
     StatusLoaded(Ok(status)) =>
       (
-        @rabbita.none,
+        recovery_request(emit),
         {
           ..model,
           status: Some(status),
-          notice: "Adapter and provider qualification loaded.",
+          notice: "Adapter qualification loaded; recovering durable state…",
           error: "",
         },
       )
     StatusLoaded(Err(error)) =>
       (@rabbita.none, { ..model, error, busy: false })
+    RecoveryLoaded(Ok(payload)) =>
+      if payload.physical_authority {
+        (
+          @rabbita.none,
+          {
+            ..model,
+            busy: false,
+            error: "Recovery projection exceeded MoonMold’s digital-only authority.",
+          },
+        )
+      } else {
+        match payload.run {
+          None =>
+            (
+              @rabbita.none,
+              {
+                ..model,
+                revision: payload.next_revision,
+                request_id: payload.next_request_id,
+                idempotency_key: payload.next_idempotency_key,
+                busy: false,
+                notice: "No terminal MoonMold attempt is available to recover.",
+                error: "",
+              },
+            )
+          Some(run) =>
+            match request_from_json(model, run.request) {
+              Err(error) =>
+                (@rabbita.none, { ..model, busy: false, error })
+              Ok(loaded) =>
+                (
+                  @rabbita.none,
+                  {
+                    ..loaded,
+                    revision: payload.next_revision,
+                    request_id: payload.next_request_id,
+                    idempotency_key: payload.next_idempotency_key,
+                    expected_parent_digest: receipt_after_digest(run.receipt)
+                    .unwrap_or(loaded.expected_parent_digest),
+                    last_flow_request: Some(run.flow_request),
+                    last_spatial_request: Some(run.request),
+                    last_receipt: run.receipt,
+                    representations: run.representations,
+                    reviews: run.reviews,
+                    busy: false,
+                    notice: "Recovered the latest exact durable receipt and named reviews.",
+                    error: "",
+                  },
+                )
+            }
+        }
+      }
+    RecoveryLoaded(Err(error)) =>
+      (
+        @rabbita.none,
+        {
+          ..model,
+          busy: false,
+          error: "Durable recovery failed closed: " + error,
+        },
+      )
     SetRequestId(value) => (@rabbita.none, { ..model, request_id: value })
     SetIdempotencyKey(value) =>
       (@rabbita.none, { ..model, idempotency_key: value })

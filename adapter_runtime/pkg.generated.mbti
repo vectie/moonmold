@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "vectie/moonmold/adapter_runtime"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+  "vectie/moonmold/suite_adapter",
+}
+
+// Values
+pub fn capability_source_bundle(Json, String, String, String) -> Result[Json, AdapterRuntimeIssue]
+
+pub fn health_attestation(String, String, String) -> Result[@suite_adapter.AdapterHealthAttestation, AdapterRuntimeIssue]
+
+pub fn invoke(String, @suite_adapter.MoonflowAdapterRequest) -> Result[@suite_adapter.AdapterResult, AdapterRuntimeIssue]
+
+pub fn reconcile(String, @suite_adapter.MoonflowAdapterRequest) -> Result[@suite_adapter.ReconciliationReport, AdapterRuntimeIssue]
+
+// Errors
+
+// Types and methods
+pub(all) struct AdapterRuntimeIssue {
+  code : String
+  path : String
+  message : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+// Type aliases
+
+// Traits

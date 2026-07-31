@@ -13,6 +13,20 @@ fn status_request(emit : @rabbita.Emit[Msg]) -> @rabbita.Cmd {
 }
 
 ///|
+fn recovery_request(emit : @rabbita.Emit[Msg]) -> @rabbita.Cmd {
+  @http.get("/api/recovery/latest").expect_json(
+    emit.map(result => {
+      RecoveryLoaded(
+        match result {
+          Ok(value) => parse_recovery_payload(value)
+          Err(error) => Err("\{error}")
+        },
+      )
+    }),
+  )
+}
+
+///|
 fn save_request(
   emit : @rabbita.Emit[Msg],
   request : Json,
@@ -23,7 +37,7 @@ fn save_request(
     emit.map(result => {
       RequestSaved(
         match result {
-          Ok(value) => Ok(value)
+          Ok(value) => parse_request_payload(value)
           Err(error) => Err("\{error}")
         },
       )
@@ -42,7 +56,7 @@ fn load_request(
     emit.map(result => {
       RequestLoaded(
         match result {
-          Ok(value) => Ok(value)
+          Ok(value) => parse_request_payload(value)
           Err(error) => Err("\{error}")
         },
       )
@@ -63,7 +77,7 @@ fn run_request(
     emit.map(result => {
       RunCompleted(
         match result {
-          Ok(value) => Ok(value)
+          Ok(value) => parse_run_payload(value)
           Err(error) => Err("\{error}")
         },
       )
@@ -83,7 +97,7 @@ fn reconcile_request(
     emit.map(result => {
       Reconciled(
         match result {
-          Ok(value) => Ok(value)
+          Ok(value) => parse_run_payload(value)
           Err(error) => Err("\{error}")
         },
       )
@@ -110,7 +124,7 @@ fn submit_review(
     emit.map(result => {
       ReviewSubmitted(
         match result {
-          Ok(value) => Ok(value)
+          Ok(value) => parse_review_payload(value)
           Err(error) => Err("\{error}")
         },
       )
