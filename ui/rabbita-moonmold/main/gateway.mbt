@@ -27,10 +27,7 @@ fn recovery_request(emit : @rabbita.Emit[Msg]) -> @rabbita.Cmd {
 }
 
 ///|
-fn save_request(
-  emit : @rabbita.Emit[Msg],
-  request : Json,
-) -> @rabbita.Cmd {
+fn save_request(emit : @rabbita.Emit[Msg], request : Json) -> @rabbita.Cmd {
   @http.post("/api/request/save")
   .with_json({ "request": request })
   .expect_json(
@@ -46,10 +43,7 @@ fn save_request(
 }
 
 ///|
-fn load_request(
-  emit : @rabbita.Emit[Msg],
-  reference : String,
-) -> @rabbita.Cmd {
+fn load_request(emit : @rabbita.Emit[Msg], reference : String) -> @rabbita.Cmd {
   @http.post("/api/request/load")
   .with_json({ "reference": reference })
   .expect_json(

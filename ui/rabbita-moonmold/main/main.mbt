@@ -6,7 +6,5 @@ fn main {
     update~,
     view~,
   )
-  @rabbita.new(cell)
-  ..with_init(status_request(emit))
-  .mount("app")
+  @rabbita.new(cell)..with_init(status_request(emit)).mount("app")
 }

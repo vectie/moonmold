@@ -252,19 +252,12 @@ fn spatial_request(model : Model) -> Result[Json, String] {
     "reference_artifacts": lines(model.references),
     "constraints": lines(model.constraints),
     "backend_preference": model.backend_preference,
-    "operation": {
-      "method": model.method_name,
-      "params": params,
-    },
+    "operation": { "method": model.method_name, "params": params },
   })
 }
 
 ///|
 fn next_identity(model : Model) -> (Int, String, String) {
   let revision = model.revision + 1
-  (
-    revision,
-    "spatial-request-\{revision}",
-    "spatial-operation-\{revision}",
-  )
+  (revision, "spatial-request-\{revision}", "spatial-operation-\{revision}")
 }

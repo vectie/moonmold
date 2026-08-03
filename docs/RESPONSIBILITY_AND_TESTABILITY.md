@@ -40,6 +40,12 @@ hard-coded home directory. Both the root and every output must be canonical
 absolute paths; traversal, alternate separators, and prefix-confusion paths
 fail closed.
 
+The primary visible path is isolated in
+`ui/rabbita-moonmold/main/workflow_guide.mbt`: define → validate/build → named
+review → accepted digital receipt. Backend qualification, raw receipts and
+lineage remain inspectable through progressive disclosure rather than
+dominating the ordinary task.
+
 ## Definition of responsible completion
 
 A MoonMold result is complete only when its request identity, parent digest,

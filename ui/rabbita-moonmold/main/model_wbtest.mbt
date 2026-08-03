@@ -104,3 +104,24 @@ test "recovery payload preserves the exact terminal run and next identity" {
   inspect(receipt_after_digest(run.receipt), content="Some(mm1-recovered)")
   inspect(run.reviews.length(), content="1")
 }
+
+///|
+test "workflow guide exposes progress without crossing physical authority" {
+  let blank = initial_model()
+  inspect(workflow_stage(blank), content="1")
+  let built = {
+    ..blank,
+    last_receipt: Some({ "after_digest": "mm1-built" }),
+    representations: [{ "representation": "editable-source" }],
+  }
+  inspect(workflow_stage(built), content="3")
+  let accepted = {
+    ..built,
+    reviews: [{ "reviewer": "Named reviewer", "decision": "approve" }],
+  }
+  inspect(workflow_stage(accepted), content="4")
+  inspect(
+    workflow_next_copy(blank, 1).contains("before any model change"),
+    content="true",
+  )
+}

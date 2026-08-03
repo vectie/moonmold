@@ -1,8 +1,5 @@
 ///|
-fn request_from_json(
-  model : Model,
-  request : Json,
-) -> Result[Model, String] {
+fn request_from_json(model : Model, request : Json) -> Result[Model, String] {
   match request {
     {
       "request_id": String(request_id),
@@ -14,11 +11,7 @@ fn request_from_json(
       "reference_artifacts": Array(reference_values),
       "constraints": Array(constraint_values),
       "backend_preference": String(backend_preference),
-      "operation": {
-        "method": String(method_name),
-        "params": params,
-        ..
-      },
+      "operation": { "method": String(method_name), "params": params, .. },
       ..
     } => {
       let references = reference_values.filter_map(value => {
@@ -127,8 +120,7 @@ fn update(
           error: "",
         },
       )
-    StatusLoaded(Err(error)) =>
-      (@rabbita.none, { ..model, error, busy: false })
+    StatusLoaded(Err(error)) => (@rabbita.none, { ..model, error, busy: false })
     RecoveryLoaded(Ok(payload)) =>
       if payload.physical_authority {
         (
@@ -156,8 +148,7 @@ fn update(
             )
           Some(run) =>
             match request_from_json(model, run.request) {
-              Err(error) =>
-                (@rabbita.none, { ..model, busy: false, error })
+              Err(error) => (@rabbita.none, { ..model, busy: false, error })
               Ok(loaded) =>
                 (
                   @rabbita.none,
@@ -166,8 +157,9 @@ fn update(
                     revision: payload.next_revision,
                     request_id: payload.next_request_id,
                     idempotency_key: payload.next_idempotency_key,
-                    expected_parent_digest: receipt_after_digest(run.receipt)
-                    .unwrap_or(loaded.expected_parent_digest),
+                    expected_parent_digest: receipt_after_digest(run.receipt).unwrap_or(
+                      loaded.expected_parent_digest,
+                    ),
                     last_flow_request: Some(run.flow_request),
                     last_spatial_request: Some(run.request),
                     last_receipt: run.receipt,
@@ -200,24 +192,27 @@ fn update(
     SetIntent(value) => (@rabbita.none, { ..model, intent: value })
     SetReferences(value) => (@rabbita.none, { ..model, references: value })
     SetConstraints(value) => (@rabbita.none, { ..model, constraints: value })
-    SetBackend(value) =>
-      (@rabbita.none, { ..model, backend_preference: value })
+    SetBackend(value) => (@rabbita.none, { ..model, backend_preference: value })
     SetMethod(value) => (@rabbita.none, { ..model, method_name: value })
     SetParams(value) => (@rabbita.none, { ..model, params_json: value })
     SetLoadRef(value) => (@rabbita.none, { ..model, load_ref: value })
     SetReviewer(value) => (@rabbita.none, { ..model, reviewer: value })
     SetDecision(value) => (@rabbita.none, { ..model, decision: value })
-    SetReviewNotes(value) =>
-      (@rabbita.none, { ..model, review_notes: value })
+    SetReviewNotes(value) => (@rabbita.none, { ..model, review_notes: value })
     ApplyTemplate(name) =>
       (@rabbita.none, { ..template(model, name), error: "" })
     SaveRequest =>
       match spatial_request(model) {
-        Err(error) => (@rabbita.none, { ..model, error })
+        Err(error) => (@rabbita.none, { ..model, error, })
         Ok(request) =>
           (
             save_request(emit, request),
-            { ..model, busy: true, notice: "Saving governed request…", error: "" },
+            {
+              ..model,
+              busy: true,
+              notice: "Saving governed request…",
+              error: "",
+            },
           )
       }
     RequestSaved(Ok(payload)) =>
@@ -231,12 +226,16 @@ fn update(
           error: "",
         },
       )
-    RequestSaved(Err(error)) =>
-      (@rabbita.none, { ..model, busy: false, error })
+    RequestSaved(Err(error)) => (@rabbita.none, { ..model, busy: false, error })
     LoadRequest =>
       (
         load_request(emit, model.load_ref),
-        { ..model, busy: true, notice: "Loading governed request…", error: "" },
+        {
+          ..model,
+          busy: true,
+          notice: "Loading governed request…",
+          error: "",
+        },
       )
     RequestLoaded(Ok(payload)) =>
       match request_from_json(model, payload.request) {
@@ -257,14 +256,10 @@ fn update(
       (@rabbita.none, { ..model, busy: false, error })
     ValidateRequest =>
       match spatial_request(model) {
-        Err(error) => (@rabbita.none, { ..model, error })
+        Err(error) => (@rabbita.none, { ..model, error, })
         Ok(request) =>
           (
-            run_request(
-              emit,
-              "validate",
-              request,
-            ),
+            run_request(emit, "validate", request),
             {
               ..model,
               busy: true,
@@ -275,7 +270,7 @@ fn update(
       }
     ExecuteRequest =>
       match spatial_request(model) {
-        Err(error) => (@rabbita.none, { ..model, error })
+        Err(error) => (@rabbita.none, { ..model, error, })
         Ok(request) =>
           (
             run_request(emit, "execute", request),
@@ -296,8 +291,9 @@ fn update(
           revision,
           request_id,
           idempotency_key,
-          expected_parent_digest: receipt_after_digest(payload.receipt)
-          .unwrap_or(model.expected_parent_digest),
+          expected_parent_digest: receipt_after_digest(payload.receipt).unwrap_or(
+            model.expected_parent_digest,
+          ),
           last_flow_request: Some(payload.flow_request),
           last_spatial_request: Some(payload.request),
           last_receipt: payload.receipt,
@@ -309,19 +305,26 @@ fn update(
         },
       )
     }
-    RunCompleted(Err(error)) =>
-      (@rabbita.none, { ..model, busy: false, error })
+    RunCompleted(Err(error)) => (@rabbita.none, { ..model, busy: false, error })
     ReconcileRun =>
       match (model.last_flow_request, model.last_spatial_request) {
         (Some(flow), Some(request)) =>
           (
             reconcile_request(emit, flow, request),
-            { ..model, busy: true, notice: "Reconciling durable evidence…", error: "" },
+            {
+              ..model,
+              busy: true,
+              notice: "Reconciling durable evidence…",
+              error: "",
+            },
           )
         _ =>
           (
             @rabbita.none,
-            { ..model, error: "A prior flow request is required for reconciliation." },
+            {
+              ..model,
+              error: "A prior flow request is required for reconciliation.",
+            },
           )
       }
     Reconciled(Ok(payload)) =>
@@ -339,8 +342,7 @@ fn update(
           error: "",
         },
       )
-    Reconciled(Err(error)) =>
-      (@rabbita.none, { ..model, busy: false, error })
+    Reconciled(Err(error)) => (@rabbita.none, { ..model, busy: false, error })
     SubmitReview =>
       match flow_attempt_id(model.last_flow_request) {
         Some(attempt_id) =>
@@ -352,7 +354,12 @@ fn update(
               model.decision,
               model.review_notes,
             ),
-            { ..model, busy: true, notice: "Recording named review…", error: "" },
+            {
+              ..model,
+              busy: true,
+              notice: "Recording named review…",
+              error: "",
+            },
           )
         None =>
           (
