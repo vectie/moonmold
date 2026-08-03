@@ -139,3 +139,4 @@ pub(all) struct SpatialOperationRequest {
 // Type aliases
 
 // Traits
+
