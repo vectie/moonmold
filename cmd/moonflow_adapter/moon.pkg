@@ -3,6 +3,7 @@ import {
   "vectie/moonmold/suite_adapter",
   "moonbitlang/core/env",
   "moonbitlang/core/json",
+  "moonbitlang/core/env",
   "moonbitlang/x/fs" @fsx,
   "moonbitlang/x/sys",
 }

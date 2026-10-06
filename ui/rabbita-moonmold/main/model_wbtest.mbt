@@ -106,6 +106,46 @@ test "recovery payload preserves the exact terminal run and next identity" {
 }
 
 ///|
+test "fresh workspace accepts null recovery identities as no prior attempt" {
+  let result = parse_recovery_payload({
+    "contract_id": "moonmold.operator-recovery.v1",
+    "recovered": false,
+    "attempt_id": null,
+    "next_revision": 1,
+    "next_request_id": "spatial-request-1",
+    "next_idempotency_key": "spatial-operation-1",
+    "run": null,
+    "physical_authority": false,
+  })
+  guard result is Ok(payload) else {
+    fail("fresh workspace recovery should be usable")
+  }
+  assert_true(payload.attempt_id is None)
+  assert_true(payload.run is None)
+  let (_, model) = update(_ => @rabbita.none, RecoveryLoaded(Ok(payload)), initial_model())
+  assert_eq(model.error, "")
+  assert_true(model.notice.contains("No terminal MoonMold attempt"))
+}
+
+///|
+test "validation receipt does not become the model parent digest" {
+  let receipt : Json? = Some({ "after_digest": "sha256:validation-snapshot" })
+  assert_true(
+    executed_after_digest(
+      { "operation": "spatial.operation.validate" },
+      receipt,
+    ) is None,
+  )
+  assert_eq(
+    executed_after_digest(
+      { "operation": "spatial.operation.execute" },
+      receipt,
+    ),
+    Some("sha256:validation-snapshot"),
+  )
+}
+
+///|
 test "workflow guide exposes progress without crossing physical authority" {
   let blank = initial_model()
   inspect(workflow_stage(blank), content="1")
