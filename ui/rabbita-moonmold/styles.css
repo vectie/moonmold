@@ -63,6 +63,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 .empty { color: #9cb2aa; }
 .review p { color: #9fb5ad; line-height: 1.5; }
 .review-ledger { margin-top: 14px; }
+.delivery-brief { padding-bottom: 20px; margin-bottom: 22px; border-bottom: 1px solid #35544a; }
+.delivery-brief p, .delivery-panel p { color: #aac0b7; line-height: 1.55; font-size: 13px; }
+.delivery-brief summary { cursor: pointer; padding: 12px 0; color: #bce3d3; }
+.delivery-brief pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+.delivery-binding { display: grid; gap: 7px; margin: 15px 0; padding: 12px; background: #0b1712; border: 1px solid #35544a; border-radius: 10px; }
+.delivery-binding code, .delivery-file code { overflow-wrap: anywhere; font-size: 11px; color: #bce3d3; }
+.delivery-files { display: grid; gap: 9px; }
+.delivery-file { display: grid; grid-template-columns: minmax(0,1fr); gap: 5px; padding: 10px; border: 1px solid #2e4a40; border-radius: 9px; }
+.delivery-file a { color: #bce3d3; }
+.delivery-file small { color: #aac0b7; font-size: 10px; }
 
 @media (max-width: 1050px) {
   .workspace, .hero { grid-template-columns: 1fr; }

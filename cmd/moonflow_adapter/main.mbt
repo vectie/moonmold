@@ -91,7 +91,7 @@ fn fail_issue(
 
 ///|
 fn main {
-  let args = @sys.get_cli_args()
+  let args = @env.args()
   let index = command_index(args)
   let command = arg(args, index).unwrap_or("capability")
   match command {

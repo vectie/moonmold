@@ -1,0 +1,239 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "units",
+    "coordinateFrame",
+    "recordedAt",
+    "scaleEvidence",
+    "referenceProvenance",
+    "unknowns",
+    "components"
+  ],
+  "properties": {
+    "schema": {
+      "const": "moonmold-building-plan-v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "units": {
+      "const": "mm"
+    },
+    "coordinateFrame": {
+      "const": "z-up-right-handed"
+    },
+    "recordedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "scaleEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "valueMm",
+        "confidence"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "valueMm": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 1000000
+        },
+        "confidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    },
+    "referenceProvenance": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "unknowns": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "position",
+              "materialId",
+              "kind",
+              "dimensions"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              },
+              "position": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "xMm",
+                  "yMm",
+                  "zMm"
+                ],
+                "properties": {
+                  "xMm": {
+                    "type": "number",
+                    "minimum": -1000000,
+                    "maximum": 1000000
+                  },
+                  "yMm": {
+                    "type": "number",
+                    "minimum": -1000000,
+                    "maximum": 1000000
+                  },
+                  "zMm": {
+                    "type": "number",
+                    "minimum": -1000000,
+                    "maximum": 1000000
+                  }
+                }
+              },
+              "materialId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              },
+              "kind": {
+                "const": "box"
+              },
+              "dimensions": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "widthMm",
+                  "depthMm",
+                  "heightMm"
+                ],
+                "properties": {
+                  "widthMm": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 1000000
+                  },
+                  "depthMm": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 1000000
+                  },
+                  "heightMm": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 1000000
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "position",
+              "materialId",
+              "kind",
+              "dimensions"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              },
+              "position": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "xMm",
+                  "yMm",
+                  "zMm"
+                ],
+                "properties": {
+                  "xMm": {
+                    "type": "number",
+                    "minimum": -1000000,
+                    "maximum": 1000000
+                  },
+                  "yMm": {
+                    "type": "number",
+                    "minimum": -1000000,
+                    "maximum": 1000000
+                  },
+                  "zMm": {
+                    "type": "number",
+                    "minimum": -1000000,
+                    "maximum": 1000000
+                  }
+                }
+              },
+              "materialId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              },
+              "kind": {
+                "const": "cylinder"
+              },
+              "dimensions": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "radiusMm",
+                  "heightMm",
+                  "sides"
+                ],
+                "properties": {
+                  "radiusMm": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 1000000
+                  },
+                  "heightMm": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 1000000
+                  },
+                  "sides": {
+                    "type": "integer",
+                    "minimum": 8,
+                    "maximum": 256
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moonmold/primitive-building-plan@1.0.0",
+  "description": "Explicit primitive mm/z-up digital scene; not habitat intent, physics or manufacturing authority."
+}

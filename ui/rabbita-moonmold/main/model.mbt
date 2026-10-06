@@ -74,7 +74,7 @@ impl @json.FromJson for RunPayload with fn from_json(
     Some(Null) | None => []
     Some(value) => @json.from_json(value, path=path.add_key("reviews"))
   }
-  { request, flow_request, result, receipt, representations, reviews }
+  { request, flow_request, result, receipt, representations, reviews, }
 }
 
 ///|
@@ -113,11 +113,62 @@ struct RecoveryPayload {
   next_request_id : String
   next_idempotency_key : String
   run : RunPayload?
+  delivery : DeliveryPayload?
   physical_authority : Bool
-} derive(Debug, FromJson)
+} derive(Debug)
+
+///|
+fn[T : @json.FromJson] recovery_field(
+  fields : Map[String, Json],
+  key : String,
+  path : @json.JsonPath,
+) -> T raise @json.JsonDecodeError {
+  guard fields.get(key) is Some(value) else {
+    raise JsonDecodeError((path.add_key(key), "Missing field " + key))
+  }
+  @json.from_json(value, path=path.add_key(key))
+}
+
+///|
+impl @json.FromJson for RecoveryPayload with fn from_json(
+  json : Json,
+  path : @json.JsonPath,
+) -> RecoveryPayload raise @json.JsonDecodeError {
+  guard json is Object(fields) else {
+    raise JsonDecodeError((path, "RecoveryPayload: expected object"))
+  }
+  {
+    recovered: recovery_field(fields, "recovered", path),
+    attempt_id: match fields.get("attempt_id") {
+      None | Some(Null) => None
+      Some(value) =>
+        Some(@json.from_json(value, path=path.add_key("attempt_id")))
+    },
+    next_revision: recovery_field(fields, "next_revision", path),
+    next_request_id: recovery_field(fields, "next_request_id", path),
+    next_idempotency_key: recovery_field(fields, "next_idempotency_key", path),
+    run: match fields.get("run") {
+      None | Some(Null) => None
+      Some(value) => Some(@json.from_json(value, path=path.add_key("run")))
+    },
+    delivery: match fields.get("delivery") {
+      None | Some(Null) => None
+      Some(value) => Some(@json.from_json(value, path=path.add_key("delivery")))
+    },
+    physical_authority: recovery_field(fields, "physical_authority", path),
+  }
+}
 
 ///|
 fn parse_recovery_payload(json : Json) -> Result[RecoveryPayload, String] {
+  match json {
+    { "delivery": Object(_) as delivery, .. } =>
+      match parse_delivery_payload(delivery) {
+        Err(error) => return Err(error)
+        Ok(_) => ()
+      }
+    _ => ()
+  }
   match operator_error_message(json) {
     Some(error) => Err(error)
     None =>
@@ -145,12 +196,18 @@ struct Model {
   reviewer : String
   decision : String
   review_notes : String
+  brief_json : String
+  frozen_brief : FrozenBrief?
+  delivery_export : DeliveryExport?
+  delivery : DeliveryPayload?
   status : Json?
   last_flow_request : Json?
   last_spatial_request : Json?
   last_receipt : Json?
+  last_result : Json?
   representations : Array[Json]
   reviews : Array[Json]
+  draft_changed : Bool
   busy : Bool
   notice : String
   error : String
@@ -187,6 +244,15 @@ enum Msg {
   Reconciled(Result[RunPayload, String])
   SubmitReview
   ReviewSubmitted(Result[ReviewPayload, String])
+  SetBrief(String)
+  PrepareBrief
+  FreezeBrief
+  BriefFrozen(Result[FrozenBrief, String])
+  BuildDelivery
+  DeliveryLoaded(Result[DeliveryPayload, String])
+  RefreshDelivery
+  SubmitDeliveryReview
+  DeliveryReviewSubmitted(String, String, Result[ReviewPayload, String])
 }
 
 ///|
@@ -214,12 +280,20 @@ fn initial_model() -> Model {
     reviewer: "",
     decision: "approve",
     review_notes: "",
+    brief_json: default_delivery_brief("example-project", "example-model").stringify(
+      indent=2,
+    ),
+    frozen_brief: None,
+    delivery_export: None,
+    delivery: None,
     status: None,
     last_flow_request: None,
     last_spatial_request: None,
     last_receipt: None,
+    last_result: None,
     representations: [],
     reviews: [],
+    draft_changed: false,
     busy: false,
     notice: "Load or create a governed spatial operation.",
     error: "",
@@ -249,7 +323,7 @@ fn spatial_request(model : Model) -> Result[Json, String] {
     "expected_parent_digest": model.expected_parent_digest,
     "authority": "WorkspaceMutation",
     "intent": model.intent,
-    "reference_artifacts": lines(model.references),
+    "reference_artifacts": delivery_references(model),
     "constraints": lines(model.constraints),
     "backend_preference": model.backend_preference,
     "operation": { "method": model.method_name, "params": params },

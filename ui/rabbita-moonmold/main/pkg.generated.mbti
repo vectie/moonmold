@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "vectie/moonmold-rabbita/main"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+type DeliveryExport derive(Eq, @debug.Debug)
+
+type DeliveryFile derive(@debug.Debug, @json.FromJson)
+
+type DeliveryPayload derive(@debug.Debug, @json.FromJson)
+
+type FrozenBrief derive(@debug.Debug, @json.FromJson)
+
+type Model
+
+type Msg
+
+type RecoveryPayload derive(@debug.Debug)
+
+type RequestPayload derive(@debug.Debug, @json.FromJson)
+
+type ReviewPayload derive(@debug.Debug, @json.FromJson)
+
+type RunPayload derive(@debug.Debug)
+
+// Type aliases
+
+// Traits

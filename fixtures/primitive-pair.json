@@ -1,0 +1,50 @@
+{
+  "schema": "moonmold-building-plan-v1",
+  "id": "synthetic-primitive-pair",
+  "units": "mm",
+  "coordinateFrame": "z-up-right-handed",
+  "recordedAt": "2026-10-03T02:06:15Z",
+  "scaleEvidence": {
+    "source": "synthetic test dimensions, no real building or engineering claim",
+    "valueMm": 2000,
+    "confidence": "explicit-synthetic"
+  },
+  "referenceProvenance": [],
+  "unknowns": [
+    "structural behavior",
+    "measured mass",
+    "manufacturing suitability"
+  ],
+  "components": [
+    {
+      "id": "box-a",
+      "kind": "box",
+      "dimensions": {
+        "widthMm": 2000,
+        "depthMm": 1200,
+        "heightMm": 500
+      },
+      "position": {
+        "xMm": 0,
+        "yMm": 0,
+        "zMm": 250
+      },
+      "materialId": "synthetic-purple"
+    },
+    {
+      "id": "cylinder-b",
+      "kind": "cylinder",
+      "dimensions": {
+        "radiusMm": 350,
+        "heightMm": 1600,
+        "sides": 16
+      },
+      "position": {
+        "xMm": 300,
+        "yMm": 0,
+        "zMm": 1300
+      },
+      "materialId": "synthetic-blue"
+    }
+  ]
+}

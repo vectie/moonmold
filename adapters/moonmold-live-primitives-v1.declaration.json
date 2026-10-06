@@ -1,0 +1,16 @@
+{
+  "contract_id": "moonflow.adapter-declaration.v1",
+  "adapter_id": "moonmold-live-primitives-v1",
+  "product_id": "moonmold",
+  "pack_id": "moonmold",
+  "pack_version": "0.3.0",
+  "protocol": "moonflow.adapter.v2",
+  "operations": [
+    {
+      "operation_id": "primitive.build",
+      "claim_ceiling": "digital-artifact",
+      "supports_cancel": false,
+      "supports_reconcile": true
+    }
+  ]
+}

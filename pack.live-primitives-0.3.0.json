@@ -1,0 +1,30 @@
+{
+  "id": "moonmold",
+  "version": "0.3.0",
+  "display_name": "MoonMold Experimental Primitive Digital Building",
+  "product_id": "moonmold",
+  "kind": "DomainPack",
+  "required_runtime_extensions": ["moonclaw"],
+  "book_templates": [],
+  "schemas": [
+    {"id":"primitive-building-plan","version":"1.0.0","path":"schemas/primitive-building-plan.schema.json"},
+    {"id":"primitive-building-result","version":"1.0.0","path":"schemas/primitive-building-result.schema.json"}
+  ],
+  "tools": [
+    {"id":"primitive.build","owner_product":"moonmold","input_schema_id":"primitive-building-plan","output_schema_id":"primitive-building-result","authority":"WorkspaceMutation","idempotent":true,"evidence_outputs":["records/primitive-attempts","artifacts/primitive-models"],"review_required":true}
+  ],
+  "workflows": [],
+  "skills": [],
+  "policies": [
+    {"id":"primitive-digital-boundary","version":"1.0.0","path":"docs/LIVE_PRIMITIVES_FLOW.md"}
+  ],
+  "provider_ports": [
+    {"id":"moonflow-live-adapter-declaration","version":"1.0.0","path":"adapters/moonmold-live-primitives-v1.declaration.json"},
+    {"id":"fixed-live-runtime-package","version":"1.0.0","path":"providers/live-primitives-runtime.package.json"}
+  ],
+  "schedules": [],
+  "app_entrypoints": [],
+  "migrations": [],
+  "evaluations": [],
+  "uninstall_contract": {"id":"moonmold-uninstall","version":"1.0.0","path":"UNINSTALL.md"}
+}

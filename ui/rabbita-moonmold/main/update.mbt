@@ -54,6 +54,47 @@ fn receipt_after_digest(receipt : Json?) -> String? {
 }
 
 ///|
+// Validation receipts describe request bytes, not the scene's new parent.
+fn next_scene_parent(payload : RunPayload, previous : String) -> String {
+  match (payload.receipt, payload.result) {
+    (
+      Some(
+        {
+          "contract_id": String("moonmold.spatial-operation-receipt.v1"),
+          "operation_ref": String("moonmold/spatial.operation.execute@0.2.0"),
+          "outcome": String("applied" | "idempotent-no-op"),
+          "physical_authority": False,
+          ..
+        }
+      ),
+      { "status": String("succeeded"), .. },
+    ) =>
+      match receipt_after_digest(payload.receipt) {
+        Some(after) if !after.is_empty() => after
+        _ => previous
+      }
+    _ => previous
+  }
+}
+
+///|
+// Keep a late result as evidence without changing another draft's scene base.
+fn next_draft_scene_parent(payload : RunPayload, model : Model) -> String {
+  match payload.request {
+    {
+      "project_id": String(project_id),
+      "model_id": String(model_id),
+      "expected_parent_digest": String(parent),
+      ..
+    } if project_id == model.project_id &&
+      model_id == model.model_id &&
+      parent == model.expected_parent_digest =>
+      next_scene_parent(payload, model.expected_parent_digest)
+    _ => model.expected_parent_digest
+  }
+}
+
+///|
 fn flow_attempt_id(flow : Json?) -> String? {
   match flow {
     Some({ "attempt_id": String(value), .. }) => Some(value)
@@ -96,7 +137,7 @@ fn template(model : Model, name : String) -> Model {
         params_json: (
           $|{
           $|  "representation": "\{representation}",
-          $|  "outputPath": ".moonsuite/products/moonmold/projects/\{model.project_id}/\{model.model_id}/representations/\{representation}.json"
+          $|  "outputPath": ".moonsuite/products/moonmold/projects/\{model.project_id}/\{model.model_id}/representations/\{representation}-\{model.revision}.json"
           $|}
         ),
       }
@@ -120,7 +161,8 @@ fn update(
           error: "",
         },
       )
-    StatusLoaded(Err(error)) => (@rabbita.none, { ..model, error, busy: false })
+    StatusLoaded(Err(error)) =>
+      (@rabbita.none, { ..model, error, busy: false, })
     RecoveryLoaded(Ok(payload)) =>
       if payload.physical_authority {
         (
@@ -137,7 +179,7 @@ fn update(
             (
               @rabbita.none,
               {
-                ..model,
+                ..restore_delivery(model, payload.delivery),
                 revision: payload.next_revision,
                 request_id: payload.next_request_id,
                 idempotency_key: payload.next_idempotency_key,
@@ -148,23 +190,26 @@ fn update(
             )
           Some(run) =>
             match request_from_json(model, run.request) {
-              Err(error) => (@rabbita.none, { ..model, busy: false, error })
+              Err(error) => (@rabbita.none, { ..model, busy: false, error, })
               Ok(loaded) =>
                 (
                   @rabbita.none,
                   {
-                    ..loaded,
+                    ..restore_delivery(loaded, payload.delivery),
                     revision: payload.next_revision,
                     request_id: payload.next_request_id,
                     idempotency_key: payload.next_idempotency_key,
-                    expected_parent_digest: receipt_after_digest(run.receipt).unwrap_or(
+                    expected_parent_digest: next_scene_parent(
+                      run,
                       loaded.expected_parent_digest,
                     ),
                     last_flow_request: Some(run.flow_request),
                     last_spatial_request: Some(run.request),
                     last_receipt: run.receipt,
+                    last_result: Some(run.result),
                     representations: run.representations,
                     reviews: run.reviews,
+                    draft_changed: false,
                     busy: false,
                     notice: "Recovered the latest exact durable receipt and named reviews.",
                     error: "",
@@ -182,25 +227,43 @@ fn update(
           error: "Durable recovery failed closed: " + error,
         },
       )
-    SetRequestId(value) => (@rabbita.none, { ..model, request_id: value })
+    SetRequestId(value) =>
+      (@rabbita.none, { ..model, request_id: value, draft_changed: true, })
     SetIdempotencyKey(value) =>
-      (@rabbita.none, { ..model, idempotency_key: value })
-    SetProjectId(value) => (@rabbita.none, { ..model, project_id: value })
-    SetModelId(value) => (@rabbita.none, { ..model, model_id: value })
+      (@rabbita.none, { ..model, idempotency_key: value, draft_changed: true, })
+    SetProjectId(value) =>
+      (@rabbita.none, { ..model, project_id: value, draft_changed: true, })
+    SetModelId(value) =>
+      (@rabbita.none, { ..model, model_id: value, draft_changed: true, })
     SetExpectedParent(value) =>
-      (@rabbita.none, { ..model, expected_parent_digest: value })
-    SetIntent(value) => (@rabbita.none, { ..model, intent: value })
-    SetReferences(value) => (@rabbita.none, { ..model, references: value })
-    SetConstraints(value) => (@rabbita.none, { ..model, constraints: value })
-    SetBackend(value) => (@rabbita.none, { ..model, backend_preference: value })
-    SetMethod(value) => (@rabbita.none, { ..model, method_name: value })
-    SetParams(value) => (@rabbita.none, { ..model, params_json: value })
-    SetLoadRef(value) => (@rabbita.none, { ..model, load_ref: value })
-    SetReviewer(value) => (@rabbita.none, { ..model, reviewer: value })
-    SetDecision(value) => (@rabbita.none, { ..model, decision: value })
-    SetReviewNotes(value) => (@rabbita.none, { ..model, review_notes: value })
+      (
+        @rabbita.none,
+        { ..model, expected_parent_digest: value, draft_changed: true, },
+      )
+    SetIntent(value) =>
+      (@rabbita.none, { ..model, intent: value, draft_changed: true, })
+    SetReferences(value) =>
+      (@rabbita.none, { ..model, references: value, draft_changed: true, })
+    SetConstraints(value) =>
+      (@rabbita.none, { ..model, constraints: value, draft_changed: true, })
+    SetBackend(value) =>
+      (
+        @rabbita.none,
+        { ..model, backend_preference: value, draft_changed: true, },
+      )
+    SetMethod(value) =>
+      (@rabbita.none, { ..model, method_name: value, draft_changed: true, })
+    SetParams(value) =>
+      (@rabbita.none, { ..model, params_json: value, draft_changed: true, })
+    SetLoadRef(value) => (@rabbita.none, { ..model, load_ref: value, })
+    SetReviewer(value) => (@rabbita.none, { ..model, reviewer: value, })
+    SetDecision(value) => (@rabbita.none, { ..model, decision: value, })
+    SetReviewNotes(value) => (@rabbita.none, { ..model, review_notes: value, })
     ApplyTemplate(name) =>
-      (@rabbita.none, { ..template(model, name), error: "" })
+      (
+        @rabbita.none,
+        { ..template(model, name), draft_changed: true, error: "", },
+      )
     SaveRequest =>
       match spatial_request(model) {
         Err(error) => (@rabbita.none, { ..model, error, })
@@ -226,7 +289,8 @@ fn update(
           error: "",
         },
       )
-    RequestSaved(Err(error)) => (@rabbita.none, { ..model, busy: false, error })
+    RequestSaved(Err(error)) =>
+      (@rabbita.none, { ..model, busy: false, error, })
     LoadRequest =>
       (
         load_request(emit, model.load_ref),
@@ -244,16 +308,17 @@ fn update(
             @rabbita.none,
             {
               ..loaded,
+              draft_changed: true,
               busy: false,
               load_ref: payload.reference,
               notice: "Loaded " + payload.reference,
               error: "",
             },
           )
-        Err(error) => (@rabbita.none, { ..model, busy: false, error })
+        Err(error) => (@rabbita.none, { ..model, busy: false, error, })
       }
     RequestLoaded(Err(error)) =>
-      (@rabbita.none, { ..model, busy: false, error })
+      (@rabbita.none, { ..model, busy: false, error, })
     ValidateRequest =>
       match spatial_request(model) {
         Err(error) => (@rabbita.none, { ..model, error, })
@@ -291,21 +356,26 @@ fn update(
           revision,
           request_id,
           idempotency_key,
-          expected_parent_digest: receipt_after_digest(payload.receipt).unwrap_or(
-            model.expected_parent_digest,
-          ),
+          expected_parent_digest: next_draft_scene_parent(payload, model),
           last_flow_request: Some(payload.flow_request),
           last_spatial_request: Some(payload.request),
           last_receipt: payload.receipt,
+          last_result: Some(payload.result),
           representations: payload.representations,
           reviews: payload.reviews,
+          delivery_export: next_delivery_export(model, payload),
+          draft_changed: match spatial_request(model) {
+            Ok(request) => request != payload.request
+            Err(_) => true
+          },
           busy: false,
           notice: "Terminal receipt is durable. Named review remains separate.",
           error: "",
         },
       )
     }
-    RunCompleted(Err(error)) => (@rabbita.none, { ..model, busy: false, error })
+    RunCompleted(Err(error)) =>
+      (@rabbita.none, { ..model, busy: false, error, })
     ReconcileRun =>
       match (model.last_flow_request, model.last_spatial_request) {
         (Some(flow), Some(request)) =>
@@ -332,17 +402,20 @@ fn update(
         @rabbita.none,
         {
           ..model,
+          expected_parent_digest: next_draft_scene_parent(payload, model),
           last_flow_request: Some(payload.flow_request),
           last_spatial_request: Some(payload.request),
           last_receipt: payload.receipt,
+          last_result: Some(payload.result),
           representations: payload.representations,
           reviews: payload.reviews,
+          delivery_export: next_delivery_export(model, payload),
           busy: false,
           notice: "Reconciliation completed without replaying a new attempt.",
           error: "",
         },
       )
-    Reconciled(Err(error)) => (@rabbita.none, { ..model, busy: false, error })
+    Reconciled(Err(error)) => (@rabbita.none, { ..model, busy: false, error, })
     SubmitReview =>
       match flow_attempt_id(model.last_flow_request) {
         Some(attempt_id) =>
@@ -364,7 +437,7 @@ fn update(
         None =>
           (
             @rabbita.none,
-            { ..model, error: "Execute or validate before recording review." },
+            { ..model, error: "Execute or validate before recording review.", },
           )
       }
     ReviewSubmitted(Ok(payload)) =>
@@ -379,6 +452,7 @@ fn update(
         },
       )
     ReviewSubmitted(Err(error)) =>
-      (@rabbita.none, { ..model, busy: false, error })
+      (@rabbita.none, { ..model, busy: false, error, })
+    _ => update_delivery(emit, msg, model)
   }
 }

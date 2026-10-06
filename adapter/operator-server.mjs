@@ -14,6 +14,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverBlender } from "./blender.mjs";
 import {
+  buildDelivery, deliveryProjection, freezeDeliveryBrief,
+  latestDeliveryId, verifiedDelivery,
+} from "./delivery.mjs";
+import {
   AdapterRejection,
   assertWorkspaceRoot,
   canonicalJson,
@@ -210,11 +214,21 @@ async function replaceableJson(target, value) {
   await writeFile(target, serializedJson(value), "utf8");
 }
 
+export function adapterCommandArgs(command, workspaceRoot, requestPath) {
+  if (!["invoke", "reconcile-report"].includes(command)) {
+    throw new AdapterRejection("invalid-operation", "unsupported operator adapter command");
+  }
+  return [
+    "run", "--strip", "-j1", "cmd/moonflow_adapter", "--",
+    command, workspaceRoot, requestPath,
+  ];
+}
+
 function runAdapter(command, workspaceRoot, requestPath) {
   return new Promise((resolve, reject) => {
     const child = spawn(
       "moon",
-      ["run", "cmd/moonflow_adapter", "--", command, workspaceRoot, requestPath],
+      adapterCommandArgs(command, workspaceRoot, requestPath),
       { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] },
     );
     let stdout = "";
@@ -300,6 +314,8 @@ async function boundReviews(
         "reviewed_at",
         "self_approved",
         "physical_authority",
+        "delivery_id",
+        "delivery_digest",
       ], "durable named review");
       recoveryIntegrity(
         review.contract_id === "moonmold.named-review.v1" &&
@@ -315,6 +331,15 @@ async function boundReviews(
           review.physical_authority === false,
         `review record is not bound to the exact receipt for ${attemptId}`,
       );
+      if (review.delivery_id !== undefined || review.delivery_digest !== undefined) {
+        const delivery = await verifiedDelivery(workspaceRoot, review.delivery_id);
+        recoveryIntegrity(
+          delivery.manifest.attempt_id === attemptId &&
+            delivery.manifest.receipt_digest === expectedDigest &&
+            delivery.manifest_digest === review.delivery_digest,
+          `package review is not bound to the exact delivery for ${attemptId}`,
+        );
+      }
       reviews.push(review);
     }
   } catch (error) {
@@ -477,14 +502,29 @@ async function recoverAttempt(workspaceRoot, entry) {
       ]),
     `MoonFlow input digest is invalid for ${attemptId}`,
   );
+  const validatesInput = flow.operation === "spatial.operation.validate";
+  recoveryIntegrity(
+    validatesInput || flow.operation === "spatial.operation.execute",
+    `MoonFlow operation is invalid for ${attemptId}`,
+  );
+  // Validation observes the exact request artifact, not the scene it proposes
+  // to mutate. Execution must remain bound to that scene's expected parent.
+  const receiptSubjectDigest = validatesInput
+    ? `sha256:${createHash("sha256").update(operatorInputBytes).digest("hex")}`
+    : spatial.expected_parent_digest;
   recoveryIntegrity(
     receipt &&
       receipt.contract_id === "moonmold.spatial-operation-receipt.v1" &&
+      receipt.operation_ref === `moonmold/${flow.operation}@0.2.0` &&
       receipt.attempt_id === attemptId &&
       receipt.request_id === flow.request_id &&
       receipt.source_request_id === spatial.request_id &&
       receipt.idempotency_key === flow.idempotency_key &&
-      receipt.before_digest === spatial.expected_parent_digest &&
+      receipt.before_digest === receiptSubjectDigest &&
+      (!validatesInput || (
+        receipt.after_digest === receiptSubjectDigest &&
+        receipt.validation_evidence?.subject_digest === receiptSubjectDigest
+      )) &&
       receipt.physical_authority === false,
     `operation receipt binding is invalid for ${attemptId}`,
   );
@@ -536,6 +576,9 @@ async function recoverLatest(workspaceRoot) {
     right.attempt_id.localeCompare(left.attempt_id)
   );
   const latest = candidates[0] ?? null;
+  const deliveryId = latest
+    ? await latestDeliveryId(workspaceRoot, latest.run.request.project_id, latest.run.request.model_id)
+    : null;
   return {
     contract_id: "moonmold.operator-recovery.v1",
     recovered: latest !== null,
@@ -545,7 +588,30 @@ async function recoverLatest(workspaceRoot) {
     next_idempotency_key: identity.idempotency_key,
     run: latest?.run ?? null,
     physical_authority: false,
+    delivery: deliveryId ? await deliveryView(workspaceRoot, deliveryId) : null,
   };
+}
+
+async function loadVerifiedRun(workspaceRoot, attemptId) {
+  safeIdentity(attemptId, "attempt_id");
+  const root = resolveRef(workspaceRoot, `.moonsuite/products/moonmold/adapter-attempts/${attemptId}`);
+  const info = await stat(root);
+  const recovered = await recoverAttempt(workspaceRoot, { name: attemptId, isDirectory: () => info.isDirectory() });
+  return recovered?.run ?? null;
+}
+
+async function deliveryView(workspaceRoot, packageId) {
+  const delivery = await verifiedDelivery(workspaceRoot, packageId);
+  const attemptId = delivery.manifest.attempt_id;
+  safeIdentity(attemptId, "attempt_id");
+  const receiptRef = `.moonsuite/products/moonmold/adapter-attempts/${attemptId}/operation-receipt.json`;
+  const receiptBytes = await readFile(resolveRef(workspaceRoot, receiptRef));
+  recoveryIntegrity(
+    delivery.manifest.receipt_digest === `sha256:${createHash("sha256").update(receiptBytes).digest("hex")}`,
+    "delivery does not match its exact adapter receipt",
+  );
+  const reviews = await boundReviews(workspaceRoot, attemptId, receiptRef, receiptBytes);
+  return deliveryProjection(workspaceRoot, packageId, reviews);
 }
 
 async function runSpatial(workspaceRoot, body) {
@@ -631,7 +697,7 @@ async function loadSpatial(workspaceRoot, body) {
 }
 
 async function recordReview(workspaceRoot, body) {
-  exactKeys(body, ["attempt_id", "reviewer", "decision", "notes"], "named review");
+  exactKeys(body, ["attempt_id", "reviewer", "decision", "notes", "delivery_id", "delivery_digest"], "named review");
   const attemptId = safeIdentity(body.attempt_id, "attempt_id");
   if (typeof body.reviewer !== "string" || body.reviewer.trim().length < 2) {
     throw new AdapterRejection("named-review-required", "a named human reviewer is required");
@@ -657,6 +723,16 @@ async function recordReview(workspaceRoot, body) {
     self_approved: false,
     physical_authority: false,
   };
+  if (body.delivery_id !== undefined || body.delivery_digest !== undefined) {
+    const delivery = await verifiedDelivery(workspaceRoot, body.delivery_id);
+    if (delivery.manifest.attempt_id !== attemptId ||
+        delivery.manifest.receipt_digest !== review.receipt_digest ||
+        delivery.manifest_digest !== body.delivery_digest) {
+      throw new AdapterRejection("stale-delivery-review", "Refresh the selected package before reviewing its exact manifest and receipt");
+    }
+    review.delivery_id = body.delivery_id;
+    review.delivery_digest = body.delivery_digest;
+  }
   const identity = createHash("sha256").update(canonicalJson(review)).digest("hex").slice(0, 16);
   const reference = `.moonsuite/products/moonmold/reviews/${attemptId}-${identity}.json`;
   await immutableJson(resolveRef(workspaceRoot, reference), review);
@@ -748,6 +824,41 @@ export function createOperatorServer({
         sendJson(response, 200, await reconcileSpatial(workspace, await bodyJson(request)));
       } else if (request.method === "POST" && url.pathname === "/api/review") {
         sendJson(response, 200, await recordReview(workspace, await bodyJson(request)));
+      } else if (request.method === "POST" && url.pathname === "/api/delivery/brief") {
+        sendJson(response, 200, await freezeDeliveryBrief(workspace, await bodyJson(request)));
+      } else if (request.method === "POST" && url.pathname === "/api/delivery/build") {
+        const packageId = await buildDelivery(workspace, await bodyJson(request), (id) => loadVerifiedRun(workspace, id));
+        sendJson(response, 200, await deliveryView(workspace, packageId));
+      } else if (request.method === "GET" && url.pathname.startsWith("/api/delivery/")) {
+        const match = /^\/api\/delivery\/(delivery-[a-f0-9]{64})(?:\/(bundle|reviewed\/([a-f0-9]{64})|file\/([a-zA-Z0-9.-]+)))?$/.exec(url.pathname);
+        if (!match) throw new AdapterRejection("invalid-delivery-id", "Select an exact package or file download");
+        const [, packageId, download, reviewDigest, filename] = match;
+        const projection = await deliveryView(workspace, packageId);
+        if (!download) {
+          sendJson(response, 200, projection);
+        } else {
+          const delivery = await verifiedDelivery(workspace, packageId);
+          const file = filename ? delivery.files.find((item) => item.name === filename) : null;
+          if (filename && !file) throw new AdapterRejection("invalid-delivery-file", "File is not a member of the selected delivery");
+          const review = reviewDigest ? projection.reviews.find((item) =>
+            createHash("sha256").update(canonicalJson(item)).digest("hex") === reviewDigest) : null;
+          if (reviewDigest && !review) throw new AdapterRejection("invalid-delivery-review", "Select a retained exact package review");
+          const bytes = file ? file.text : serializedJson({
+            contract_id: "moonmold.digital-delivery-bundle.v1",
+            manifest: delivery.manifest,
+            manifest_digest: delivery.manifest_digest,
+            review_status: review?.decision ?? "pending",
+            reviews: review ? [review] : [],
+            file_contents: delivery.files,
+          });
+          response.writeHead(200, {
+            "Content-Type": file?.media_type ?? "application/json; charset=utf-8",
+            "Content-Length": Buffer.byteLength(bytes),
+            "Content-Disposition": `attachment; filename="${filename ?? `${packageId}${reviewDigest ? `-${reviewDigest}` : ""}.json`}"`,
+            "Cache-Control": "no-store",
+          });
+          response.end(bytes);
+        }
       } else if (request.method === "GET") {
         if (!await serveStatic(response, builtUi, url.pathname)) {
           sendJson(response, 404, { error: "not-found" });

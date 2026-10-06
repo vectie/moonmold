@@ -9,6 +9,10 @@ function argument(name) {
   return process.argv[index + 1];
 }
 
+if (process.argv[2] === "live-flow") {
+  process.argv.splice(2, 1);
+  await import("./moonmold-live-flow.mjs");
+} else {
 const command = process.argv[2];
 const subcommand = process.argv[3];
 if (command !== "build" && command !== "live-blender" && command !== "flow-adapter") {
@@ -76,4 +80,6 @@ if (command !== "build" && command !== "live-blender" && command !== "flow-adapt
     })}\n`);
     process.exitCode = 1;
   }
+}
+
 }

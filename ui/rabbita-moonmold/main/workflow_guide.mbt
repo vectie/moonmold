@@ -1,17 +1,4 @@
 ///|
-fn workflow_stage(model : Model) -> Int {
-  if model.last_receipt is None {
-    1
-  } else if model.representations.is_empty() {
-    2
-  } else if model.reviews.is_empty() {
-    3
-  } else {
-    4
-  }
-}
-
-///|
 fn workflow_step(
   number : Int,
   label : String,
@@ -69,20 +56,53 @@ fn workflow_next_action(
     match stage {
       1 =>
         action(
-          "Validate request",
+          if model.method_name == "representation.export" {
+            "Validate representation"
+          } else {
+            "Validate request"
+          },
           emit(ValidateRequest),
           primary=true,
           disabled=model.busy,
         )
-      2 =>
-        action(
-          "Build representation",
-          emit(ExecuteRequest),
-          primary=true,
-          disabled=model.busy,
-        )
+      2 => {
+        let title = workflow_build_action(model)
+        if title == "Choose representation" {
+          @html.a(
+            class="action primary",
+            href="#representation-templates",
+            title,
+          )
+        } else {
+          action(
+            title,
+            if title == "Execute request" || title == "Build representation" {
+              emit(ExecuteRequest)
+            } else if title == "Reconcile representation" {
+              emit(ReconcileRun)
+            } else {
+              emit(ValidateRequest)
+            },
+            primary=true,
+            disabled=model.busy,
+          )
+        }
+      }
       3 =>
-        if model.reviewer.trim().is_empty() {
+        if workflow_review_decision(model) is ("request-changes" | "reject") {
+          @html.a(
+            class="action primary",
+            href="#spatial-request",
+            "Revise request",
+          )
+        } else if workflow_review_decision(model) == "unverified" {
+          action(
+            "Reconcile reviews",
+            emit(ReconcileRun),
+            primary=true,
+            disabled=model.busy,
+          )
+        } else if model.reviewer.trim().is_empty() {
           @html.a(
             class="action primary",
             href="#named-review",
@@ -115,13 +135,40 @@ fn workflow_next_copy(model : Model, stage : Int) -> String {
   } else {
     match stage {
       1 =>
-        "Check the semantic request and workspace references before any model change."
+        if model.draft_changed {
+          "This draft has changed. Validate it before the next operation. Retained receipts and reviews describe the previous result."
+        } else if model.last_receipt
+          is Some({ "outcome": String("rejected"), .. }) {
+          "The operation was rejected. Inspect the receipt findings, correct the request, and validate again."
+        } else {
+          "Check the semantic request and workspace references before any model change."
+        }
       2 =>
-        "Validation is durable. Build the selected digital representation next."
+        match workflow_build_action(model) {
+          "Execute request" =>
+            "Validation is durable. Execute the selected semantic request next."
+          "Build representation" =>
+            "Export validation is durable. Build the selected digital representation next."
+          "Choose representation" =>
+            "The semantic operation is durable. Choose an editable or derived sibling, then validate its export request."
+          "Reconcile representation" =>
+            "The export receipt is available, but its current representation is missing or has different lineage. Reconcile the exact attempt before continuing."
+          _ =>
+            "Validate the selected request before executing it. Choosing a representation only prepares the export parameters."
+        }
       3 =>
-        "Inspect the derived sibling, then bind a named decision to its receipt."
+        match workflow_review_decision(model) {
+          "request-changes" =>
+            "Changes requested. Read the named review notes, revise the request, and validate a separately identified change."
+          "reject" =>
+            "Rejected by the named reviewer. Read the review notes and revise the request before seeking a new decision."
+          "unverified" =>
+            "The available reviews do not establish a current decision. Inspect the review ledger and reconcile the exact receipt."
+          _ =>
+            "Inspect the derived sibling, then bind a named decision to its receipt."
+        }
       _ =>
-        "The receipt and named review are durable. Begin a separately identified change when ready."
+        "The latest receipt-bound named review approves this digital result. Begin a separately identified change when ready."
     }
   }
 }
@@ -154,8 +201,33 @@ fn workflow_guide(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
       @html.div(class="workflow-rail", [
         workflow_step(1, "Define", "brief", stage, blocked),
         workflow_step(2, "Build", "build", stage, blocked),
-        workflow_step(3, "Review", "review", stage, blocked),
-        workflow_step(4, "Accepted", "check", stage, blocked),
+        workflow_step(
+          3,
+          match
+            (if model.draft_changed {
+              ""
+            } else {
+              workflow_review_decision(model)
+            }) {
+            "request-changes" => "Changes requested"
+            "reject" => "Rejected"
+            _ => "Review"
+          },
+          "review",
+          stage,
+          blocked,
+        ),
+        workflow_step(
+          4,
+          if stage == 4 {
+            "Accepted"
+          } else {
+            "Acceptance"
+          },
+          "check",
+          stage,
+          blocked,
+        ),
       ]),
       @html.div(
         class=if blocked {
@@ -168,6 +240,8 @@ fn workflow_guide(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
           @html.strong(
             if blocked {
               "Stopped safely"
+            } else if model.draft_changed {
+              "Previous result"
             } else {
               "Current result"
             },

@@ -28,4 +28,3 @@ pub(all) struct AdapterRuntimeIssue {
 // Type aliases
 
 // Traits
-

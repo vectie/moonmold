@@ -1,0 +1,412 @@
+///|
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/fs",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/x@0.4.50/crypto",
+  "moonbitlang/x@0.4.50/path",
+}
+
+// Product-specific explicit runtime transport. The generic MoonPack installer
+// transports only schemas, declarations and policy, never executable source.
+
+///|
+fn field(value : Json, key : String) -> Json raise {
+  guard value is Object(fields) && fields.get(key) is Some(value) else {
+    fail("missing " + key)
+  }
+  value
+}
+
+///|
+fn text(value : Json) -> String raise {
+  guard value is String(value) else { fail("string required") }
+  value
+}
+
+///|
+fn items(value : Json) -> Array[Json] raise {
+  guard value is Array(value) else { fail("array required") }
+  value
+}
+
+///|
+fn sha(bytes : Bytes) -> String {
+  @crypto.bytes_to_hex_string(@crypto.sha256(bytes))
+}
+
+///|
+async fn read_json(file : String) -> Json {
+  @json.parse(@fs.read_file(file).text())
+}
+
+///|
+fn safe(value : String) -> String raise {
+  assert_false(
+    value.is_empty() ||
+    value.has_prefix("/") ||
+    value.contains("..") ||
+    value.contains("\\"),
+  )
+  value
+}
+
+///|
+async fn checked(root : String, relative : String) -> String {
+  let file = root + "/" + safe(relative)
+  guard @fs.kind(file, follow_symlink=false) is Regular else {
+    fail("regular file required: " + relative)
+  }
+  assert_eq(
+    @fs.realpath(file),
+    file,
+    msg="symlink or noncanonical source: " + relative,
+  )
+  file
+}
+
+///|
+async fn ensure(dir : String) -> Unit {
+  if !@fs.exists(dir) {
+    @fs.mkdir(dir, recursive=true)
+  }
+}
+
+///|
+async fn write_new(file : String, bytes : Bytes) -> Unit {
+  ensure(@path.Path::dirname(file).to_string())
+  @fs.write_file(file, bytes, create_mode=CreateNew)
+}
+
+///|
+async fn json_new(file : String, value : Json) -> Unit {
+  ensure(@path.Path::dirname(file).to_string())
+  @fs.write_file(file, value.stringify(indent=2) + "\n", create_mode=CreateNew)
+}
+
+///|
+fn resources() -> Array[(String, String, String)] {
+  [
+    ("adapter/live-flow.mjs", "node-module", "text/javascript"),
+    ("adapter/live-contract.mjs", "node-module", "text/javascript"),
+    ("adapter/live-store.mjs", "node-module", "text/javascript"),
+    ("adapter/flow.mjs", "node-module", "text/javascript"),
+    ("adapter/live-blender.mjs", "node-module", "text/javascript"),
+    ("adapter/blender.mjs", "node-module", "text/javascript"),
+    ("adapter/experiment.mjs", "node-module", "text/javascript"),
+    ("adapter/protocol.mjs", "node-module", "text/javascript"),
+    ("adapter/runtime.mjs", "node-module", "text/javascript"),
+    ("adapter/blender_bridge.py", "fixed-blender-bridge", "text/x-python"),
+    ("bin/moonmold.mjs", "node-entrypoint", "text/javascript"),
+    ("bin/moonmold-live-flow.mjs", "node-entrypoint", "text/javascript"),
+    (
+      "pack.live-primitives-0.3.0.json", "capability-source-identity", "application/json",
+    ),
+    (
+      "adapters/moonmold-live-primitives-v1.declaration.json", "adapter-declaration",
+      "application/json",
+    ),
+    (
+      "schemas/primitive-building-plan.schema.json", "json-schema", "application/schema+json",
+    ),
+    (
+      "schemas/primitive-building-result.schema.json", "json-schema", "application/schema+json",
+    ),
+    ("docs/LIVE_PRIMITIVES_FLOW.md", "documentation", "text/markdown"),
+  ]
+}
+
+///|
+fn npm_manifest() -> Json {
+  {
+    "name": "@vectie/moonmold-live-primitives",
+    "version": "0.3.0",
+    "private": true,
+    "type": "module",
+    "description": "Explicit local experimental MoonMold primitive runtime; no publication or installed execution authority",
+    "engines": { "node": ">=20" },
+    "bin": { "moonmold-live-primitives": "bin/moonmold-live-flow.mjs" },
+    "files": resources().map(resource => resource.0),
+  }
+}
+
+///|
+async fn stage(source_arg : String, destination : String) -> Unit {
+  let source = @fs.realpath(source_arg)
+  assert_false(@fs.exists(destination), msg="export destination must be new")
+  assert_eq(
+    @fs.realpath(@path.Path::dirname(destination).to_string()) +
+    "/" +
+    @path.Path::basename(destination).to_string(),
+    destination,
+  )
+  let manifest_bytes = @fs.read_file(
+    checked(source, "pack.live-primitives-0.3.0.json"),
+  ).binary()
+  let manifest = @json.parse(
+    @fs.read_file(source + "/pack.live-primitives-0.3.0.json").text(),
+  )
+  assert_eq(field(manifest, "id"), "moonmold".to_json())
+  assert_eq(field(manifest, "version"), "0.3.0".to_json())
+  ensure(destination)
+  let installer_bytes = @fs.read_file(
+    checked(source, "scripts/live_runtime.mbtx"),
+  ).binary()
+  write_new(destination + "/install-runtime.mbtx", installer_bytes)
+  write_new(destination + "/pack.json", manifest_bytes)
+  // These are actual declarative contracts, not source files disguised as ports.
+  for
+    relative in [
+      "schemas/primitive-building-plan.schema.json", "schemas/primitive-building-result.schema.json",
+      "adapters/moonmold-live-primitives-v1.declaration.json", "docs/LIVE_PRIMITIVES_FLOW.md",
+      "UNINSTALL.md",
+    ] {
+    write_new(
+      destination + "/" + relative,
+      @fs.read_file(checked(source, relative)).binary(),
+    )
+  }
+  let files : Array[Json] = []
+  for (relative, role, media) in resources() {
+    let bytes = @fs.read_file(checked(source, relative)).binary()
+    write_new(destination + "/runtime-payload/" + relative, bytes)
+    files.push({
+      "path": relative,
+      "role": role,
+      "media_type": media,
+      "sha256": sha(bytes),
+      "bytes": bytes.length(),
+    })
+  }
+  json_new(destination + "/runtime-payload/package.json", npm_manifest())
+  let npm_bytes = @fs.read_file(destination + "/runtime-payload/package.json").binary()
+  files.push({
+    "path": "package.json",
+    "role": "npm-package-metadata",
+    "media_type": "application/json",
+    "sha256": sha(npm_bytes),
+    "bytes": npm_bytes.length(),
+  })
+  let descriptor : Json = {
+    "contract_id": "moonmold.live-runtime-package.v1",
+    "pack_id": "moonmold",
+    "pack_version": "0.3.0",
+    "product_id": "moonmold",
+    "runtime_id": "moonmold-live-primitives-node-v1",
+    "source_root": "runtime-payload",
+    "entrypoint": "bin/moonmold.mjs",
+    "interpreter": { "id": "node", "minimum_major": 20 },
+    "external_tool": {
+      "id": "blender",
+      "selection": "explicit-host-runtime",
+      "documented_target": "Blender 4.5.11 LTS",
+      "qualified": false,
+    },
+    "installation": "explicit-product-owned-runtime-copy-v1",
+    "execution_authority_granted": false,
+    "files": files,
+  }
+  json_new(
+    destination + "/providers/live-primitives-runtime.package.json",
+    descriptor,
+  )
+  println(
+    (
+      {
+        "contract_id": "moonmold.live-runtime-export.v1",
+        "stage_root": destination,
+        "root_pack_version": "0.3.0",
+        "runtime_resources": files.length(),
+        "generic_install_then_explicit_runtime_install_required": true,
+        "execution_authority_granted": false,
+        "exported_installer": "install-runtime.mbtx",
+        "exported_installer_sha256": sha(installer_bytes),
+      } : Json).stringify(indent=2),
+  )
+}
+
+///|
+async fn verify_runtime(root : String, descriptor : Json) -> Unit {
+  guard descriptor is Object(descriptor_fields) else {
+    fail("typed runtime descriptor required")
+  }
+  assert_eq(descriptor_fields.length(), 12)
+  assert_eq(
+    field(descriptor, "contract_id"),
+    "moonmold.live-runtime-package.v1".to_json(),
+  )
+  assert_eq(field(descriptor, "product_id"), "moonmold".to_json())
+  assert_eq(field(descriptor, "pack_id"), "moonmold".to_json())
+  assert_eq(field(descriptor, "pack_version"), "0.3.0".to_json())
+  assert_eq(
+    field(descriptor, "runtime_id"),
+    "moonmold-live-primitives-node-v1".to_json(),
+  )
+  assert_eq(field(descriptor, "source_root"), "runtime-payload".to_json())
+  assert_eq(field(descriptor, "entrypoint"), "bin/moonmold.mjs".to_json())
+  assert_eq(
+    field(descriptor, "installation"),
+    "explicit-product-owned-runtime-copy-v1".to_json(),
+  )
+  assert_eq(field(descriptor, "execution_authority_granted"), false.to_json())
+  assert_eq(field(descriptor, "interpreter"), {
+    "id": "node",
+    "minimum_major": 20,
+  })
+  assert_eq(field(descriptor, "external_tool"), {
+    "id": "blender",
+    "selection": "explicit-host-runtime",
+    "documented_target": "Blender 4.5.11 LTS",
+    "qualified": false,
+  })
+  let files = items(field(descriptor, "files"))
+  let expected = resources()
+  assert_eq(files.length(), expected.length() + 1)
+  for index in 0..<files.length() {
+    let item = files[index]
+    guard item is Object(resource_fields) else {
+      fail("typed runtime resource required")
+    }
+    assert_eq(resource_fields.length(), 5)
+    let relative = text(field(item, "path"))
+    if index < expected.length() {
+      assert_eq(relative, expected[index].0)
+      assert_eq(text(field(item, "role")), expected[index].1)
+      assert_eq(text(field(item, "media_type")), expected[index].2)
+    } else {
+      assert_eq(relative, "package.json")
+      assert_eq(text(field(item, "role")), "npm-package-metadata")
+      assert_eq(text(field(item, "media_type")), "application/json")
+    }
+    let bytes = @fs.read_file(checked(root, relative)).binary()
+    assert_eq(sha(bytes).to_json(), field(item, "sha256"), msg=relative)
+    assert_eq(bytes.length().to_json(), field(item, "bytes"), msg=relative)
+  }
+}
+
+///|
+async fn install(export_arg : String, workspace_arg : String) -> Unit {
+  let export_root = @fs.realpath(export_arg)
+  let workspace = @fs.realpath(workspace_arg)
+  let pack_root = workspace + "/.moonsuite/packs/versions/moonmold/0.3.0"
+  let receipt = read_json(checked(pack_root, "receipt.json"))
+  assert_eq(
+    field(receipt, "contract"),
+    "moonsuite.pack-installation.v1".to_json(),
+  )
+  assert_eq(field(receipt, "pack_id"), "moonmold".to_json())
+  assert_eq(field(receipt, "version"), "0.3.0".to_json())
+  assert_eq(field(receipt, "installed_root"), pack_root.to_json())
+  let installed_manifest = @fs.read_file(checked(pack_root, "pack.json")).binary()
+  assert_eq(
+    sha(installed_manifest).to_json(),
+    field(receipt, "manifest_sha256"),
+  )
+  let descriptor_ref = "providers/live-primitives-runtime.package.json"
+  let descriptors = items(field(receipt, "artifacts")).filter(item => {
+    field(item, "path") == descriptor_ref.to_json()
+  })
+  assert_eq(descriptors.length(), 1)
+  // Revalidate every generic receipt entry before trusting its runtime descriptor.
+  for item in items(field(receipt, "artifacts")) {
+    let bytes = @fs.read_file(checked(pack_root, text(field(item, "path")))).binary()
+    assert_eq(sha(bytes).to_json(), field(item, "sha256"))
+    assert_eq(bytes.length().to_json(), field(item, "size"))
+  }
+  let descriptor_bytes = @fs.read_file(checked(pack_root, descriptor_ref)).binary()
+  let descriptor = read_json(pack_root + "/" + descriptor_ref)
+  assert_eq(
+    field(descriptor, "contract_id"),
+    "moonmold.live-runtime-package.v1".to_json(),
+  )
+  assert_eq(field(descriptor, "pack_id"), "moonmold".to_json())
+  assert_eq(field(descriptor, "pack_version"), "0.3.0".to_json())
+  assert_eq(field(descriptor, "source_root"), "runtime-payload".to_json())
+  assert_eq(field(descriptor, "entrypoint"), "bin/moonmold.mjs".to_json())
+  assert_eq(field(descriptor, "execution_authority_granted"), false.to_json())
+  let source = @fs.realpath(export_root + "/runtime-payload")
+  assert_eq(
+    source,
+    export_root + "/runtime-payload",
+    msg="runtime payload must not be redirected",
+  )
+  verify_runtime(source, descriptor)
+  assert_eq(
+    read_json(source + "/pack.live-primitives-0.3.0.json"),
+    read_json(pack_root + "/pack.json"),
+  )
+  let identity = sha(descriptor_bytes)
+  let mut parent = workspace
+  for
+    part in [".moonsuite", "products", "moonmold", "runtime-packages", "0.3.0"] {
+    parent = parent + "/" + part
+    if @fs.exists(parent) {
+      guard @fs.kind(parent, follow_symlink=false) is Directory else {
+        fail("runtime parent must be a directory")
+      }
+      assert_eq(
+        @fs.realpath(parent),
+        parent,
+        msg="runtime parent must not be redirected",
+      )
+    } else {
+      @fs.mkdir(parent)
+    }
+  }
+  let destination = parent + "/" + identity
+  let runtime_receipt : Json = {
+    "contract_id": "moonmold.live-runtime-installation.v1",
+    "pack_id": "moonmold",
+    "pack_version": "0.3.0",
+    "generic_installation_receipt": pack_root + "/receipt.json",
+    "generic_manifest_sha256": field(receipt, "manifest_sha256"),
+    "descriptor_sha256": identity,
+    "descriptor_ref": pack_root + "/" + descriptor_ref,
+    "runtime_root": destination,
+    "entrypoint": "bin/moonmold.mjs",
+    "files": field(descriptor, "files"),
+    "execution_authority_granted": false,
+  }
+  if @fs.exists(destination) {
+    verify_runtime(destination, descriptor)
+    assert_eq(
+      read_json(checked(destination, "runtime-receipt.json")),
+      runtime_receipt,
+    )
+  } else {
+    let staging = destination + ".staging"
+    assert_false(
+      @fs.exists(staging),
+      msg="partial runtime stage requires inspection; no implicit cleanup/retry",
+    )
+    ensure(staging)
+    for item in items(field(descriptor, "files")) {
+      let relative = text(field(item, "path"))
+      write_new(
+        staging + "/" + relative,
+        @fs.read_file(checked(source, relative)).binary(),
+      )
+    }
+    verify_runtime(staging, descriptor)
+    json_new(staging + "/runtime-receipt.json", runtime_receipt)
+    @fs.rename(staging, destination, replace=false)
+  }
+  println(runtime_receipt.stringify(indent=2))
+}
+
+///|
+async fn main {
+  match @env.args()[1:] {
+    ["stage", source, destination] => stage(source, destination)
+    ["install", export_root, workspace] => install(export_root, workspace)
+    ["verify", runtime_root, descriptor_path] => {
+      verify_runtime(@fs.realpath(runtime_root), read_json(descriptor_path))
+      println("{\"verified\":true,\"execution_authority_granted\":false}")
+    }
+    _ =>
+      fail(
+        "usage: live_runtime.mbtx stage <product-source> <new-export-root> | install <export-root> <suite> | verify <runtime-root> <installed-descriptor>",
+      )
+  }
+}

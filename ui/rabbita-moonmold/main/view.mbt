@@ -113,7 +113,8 @@ fn view(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
     ]),
     workflow_guide(emit, model),
     div(class="workspace", [
-      section(class="panel request-panel", [
+      section(id="spatial-request", class="panel request-panel", [
+        delivery_brief_panel(emit, model),
         div(class="panel-title", [
           div([
             small(class="eyebrow", "REQUEST"),
@@ -178,7 +179,7 @@ fn view(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
           model.backend_preference,
           emit.map(value => SetBackend(value)),
         ),
-        div(class="templates", [
+        div(id="representation-templates", class="templates", [
           action("Create model", emit(ApplyTemplate("model"))),
           action("Add box", emit(ApplyTemplate("box"))),
           action("Editable", emit(ApplyTemplate("editable-source"))),
@@ -217,6 +218,7 @@ fn view(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
         ]),
       ]),
       section(class="right-column", [
+        delivery_panel(emit, model),
         json_panel("Backend qualification", model.status),
         json_panel("Latest operation receipt", model.last_receipt),
         section(class="panel", [

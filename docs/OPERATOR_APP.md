@@ -34,3 +34,11 @@ The default backend is `mock-reference`. This is useful for deterministic
 workflow and UI validation only. Entering `live-blender` fails explicitly until
 the separately qualified live provider is connected; the host never silently
 falls back.
+# Downloadable digital delivery
+
+The operator's digital delivery panel freezes a revisioned brief, packages the
+selected deterministic presentation export into editable semantic JSON plus
+OBJ/SVG siblings and loss/change reports, and downloads exact immutable files.
+It extends the existing named receipt review with an exact package digest.
+See [DIGITAL_DELIVERY.md](DIGITAL_DELIVERY.md) for the supported box-only workflow,
+unit conventions, API and remaining qualification limits.

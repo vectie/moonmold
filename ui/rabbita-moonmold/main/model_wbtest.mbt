@@ -109,16 +109,9 @@ test "recovery payload preserves the exact terminal run and next identity" {
 test "workflow guide exposes progress without crossing physical authority" {
   let blank = initial_model()
   inspect(workflow_stage(blank), content="1")
-  let built = {
-    ..blank,
-    last_receipt: Some({ "after_digest": "mm1-built" }),
-    representations: [{ "representation": "editable-source" }],
-  }
+  let built = workflow_test_built([])
   inspect(workflow_stage(built), content="3")
-  let accepted = {
-    ..built,
-    reviews: [{ "reviewer": "Named reviewer", "decision": "approve" }],
-  }
+  let accepted = { ..built, reviews: [workflow_test_review("approve")], }
   inspect(workflow_stage(accepted), content="4")
   inspect(
     workflow_next_copy(blank, 1).contains("before any model change"),
