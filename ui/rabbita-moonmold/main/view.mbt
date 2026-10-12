@@ -129,7 +129,11 @@ fn view(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
             emit.map(value => SetLoadRef(value)),
           ),
           action("Load", emit(LoadRequest), disabled=model.busy),
-          action("Save", emit(SaveRequest), disabled=model.busy),
+          action(
+            "Save",
+            emit(SaveRequest),
+            disabled=model.busy || !primitive_draft_error(model).is_empty(),
+          ),
         ]),
         div(class="two", [
           field(
@@ -179,36 +183,60 @@ fn view(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
           model.backend_preference,
           emit.map(value => SetBackend(value)),
         ),
+        primitive_panel(emit, model),
+        h3("Export a representation"),
         div(id="representation-templates", class="templates", [
-          action("Create model", emit(ApplyTemplate("model"))),
-          action("Add box", emit(ApplyTemplate("box"))),
-          action("Editable", emit(ApplyTemplate("editable-source"))),
-          action("Engineering", emit(ApplyTemplate("engineering"))),
-          action("Presentation", emit(ApplyTemplate("presentation"))),
-          action("Simulation", emit(ApplyTemplate("simulation"))),
+          action(
+            "Editable",
+            emit(ApplyTemplate("editable-source")),
+            disabled=model.busy,
+          ),
+          action(
+            "Engineering",
+            emit(ApplyTemplate("engineering")),
+            disabled=model.busy,
+          ),
+          action(
+            "Presentation",
+            emit(ApplyTemplate("presentation")),
+            disabled=model.busy,
+          ),
+          action(
+            "Simulation",
+            emit(ApplyTemplate("simulation")),
+            disabled=model.busy,
+          ),
           action(
             "Manufacturing candidate",
             emit(ApplyTemplate("manufacturing-candidate")),
+            disabled=model.busy,
           ),
         ]),
-        field(
-          "Semantic method",
-          model.method_name,
-          emit.map(value => SetMethod(value)),
-        ),
-        area(
-          "Exact parameter object",
-          model.params_json,
-          emit.map(value => SetParams(value)),
-          rows=8,
-        ),
+        details(class="json-card", [
+          summary("Advanced semantic JSON"),
+          field(
+            "Semantic method",
+            model.method_name,
+            emit.map(value => SetMethod(value)),
+          ),
+          area(
+            "Exact parameter object",
+            model.params_json,
+            emit.map(value => SetParams(value)),
+            rows=8,
+          ),
+        ]),
         div(class="actions", [
-          action("Validate", emit(ValidateRequest), disabled=model.busy),
+          action(
+            "Validate",
+            emit(ValidateRequest),
+            disabled=model.busy || !primitive_draft_error(model).is_empty(),
+          ),
           action(
             "Execute reference path",
             emit(ExecuteRequest),
             primary=true,
-            disabled=model.busy,
+            disabled=model.busy || !primitive_draft_error(model).is_empty(),
           ),
           action(
             "Reconcile same attempt",

@@ -1,0 +1,733 @@
+[
+  {
+    "flow_request": {
+      "request_id": "flow-material-1-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-1-exec",
+      "idempotency_key": "material-1/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:c586d5e821338a133b79d2e24cccd7f968a584858d1ba173b22eb25ddffa1a1f",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-1.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.063Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-1",
+      "idempotency_key": "material-1",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-empty-scene",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-model",
+        "params": {
+          "name": "material-fixture",
+          "units": "mm",
+          "coordinateFrame": "z-up-right-handed"
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-2-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-2-exec",
+      "idempotency_key": "material-2/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:4977910c9d14a98ef965cdce524403eb2768c55fa63eba73bc95894c75e31ca4",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-2.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.134Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-2",
+      "idempotency_key": "material-2",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-7618608",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-box",
+        "params": {
+          "objectId": "primary-mass",
+          "widthMm": 10,
+          "depthMm": 20,
+          "heightMm": 30
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-3-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-3-exec",
+      "idempotency_key": "material-3/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:61f6fc89a41bf17fe7e3ee54356cf6d50c6e548f91582b1db3112215192e1ea8",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-3.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.169Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-3",
+      "idempotency_key": "material-3",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-8076022",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-cylinder",
+        "params": {
+          "objectId": "cylinder-b",
+          "radiusMm": 5,
+          "heightMm": 25,
+          "sides": 9
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-4-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-4-exec",
+      "idempotency_key": "material-4/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:20c59ef89b2ac01054e6420eab72fcb23c992abe2d9ec0607b883b993376d729",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-4.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.206Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-4",
+      "idempotency_key": "material-4",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-4445878",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.set-transform",
+        "params": {
+          "objectId": "primary-mass",
+          "xMm": -12,
+          "yMm": 22,
+          "zMm": 33
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-5-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-5-exec",
+      "idempotency_key": "material-5/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:1050246406048af8aa9243243653a253c145cc7c47a5f37f1cc7872c65ad7f37",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-5.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.238Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-5",
+      "idempotency_key": "material-5",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-5574359",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.set-transform",
+        "params": {
+          "objectId": "cylinder-b",
+          "xMm": 42,
+          "yMm": -5,
+          "zMm": 9
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-6-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-6-exec",
+      "idempotency_key": "material-6/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:55c4f544f58a8f0cc50b847c169dcd9f621cb5cfb60d5fa92e12dc1fc8778b18",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-6.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.381Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-6",
+      "idempotency_key": "material-6",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-14021164",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.assign-material",
+        "params": {
+          "objectId": "primary-mass",
+          "materialId": "label-A_2:west.v1"
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-7-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-7-exec",
+      "idempotency_key": "material-7/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:156bab83815427d5e6a2fe50c1560fc09ad4d37b22badb7ec8aa6abbc4980f90",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-7.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.637Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-7",
+      "idempotency_key": "material-7",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-6971228",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.assign-material",
+        "params": {
+          "objectId": "cylinder-b",
+          "materialId": "reference-cylinder"
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-8-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-8-exec",
+      "idempotency_key": "material-6/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:40ecbc528fe4eee09ebbae01afdb77eef4554a0db237756acc11218b70f45900",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-8.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.754Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-8",
+      "idempotency_key": "material-6",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-5041908",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.assign-material",
+        "params": {
+          "objectId": "primary-mass",
+          "materialId": "label-A_2:west.v1"
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-19-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-b-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-19-exec",
+      "idempotency_key": "material-19/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:87477e4377a14a6d8e7b98b638095ba8b4de6d1b5be94b3b31146d3581c5dba4",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-19.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.875Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-19",
+      "idempotency_key": "material-19",
+      "project_id": "material-project",
+      "model_id": "model-b",
+      "expected_parent_digest": "mm1-5041908",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-model",
+        "params": {
+          "name": "material-fixture",
+          "units": "mm",
+          "coordinateFrame": "z-up-right-handed"
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-20-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-b-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-20-exec",
+      "idempotency_key": "material-20/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:f99e4e4d05e10ea2593cc4277813b4078d261a7e13d3fa8706460446392ff8ef",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-20.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:15.919Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-20",
+      "idempotency_key": "material-20",
+      "project_id": "material-project",
+      "model_id": "model-b",
+      "expected_parent_digest": "mm1-621991",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-box",
+        "params": {
+          "objectId": "foreign-only",
+          "widthMm": 10,
+          "depthMm": 20,
+          "heightMm": 30
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-23-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-23-exec",
+      "idempotency_key": "material-23/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:f8772020dfa99787a9ab65dfcba2444102071ab4efba50d2e77ae620790fef44",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-23.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:16.177Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-23",
+      "idempotency_key": "material-23",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-4160924",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "representation.export",
+        "params": {
+          "representation": "presentation",
+          "outputPath": ".moonsuite/products/moonmold/projects/material-project/model-a/representations/material.json"
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-24-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-24-exec",
+      "idempotency_key": "material-24/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:7b0599768c770446db0a57fe6e80667c3800a4fe816a2925d2d509b06eb3efbd",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-24.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:16.286Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-24",
+      "idempotency_key": "material-24",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-5182072",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-box",
+        "params": {
+          "objectId": "primary-mass",
+          "widthMm": 10,
+          "depthMm": 20,
+          "heightMm": 30
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  },
+  {
+    "flow_request": {
+      "request_id": "flow-material-25-exec",
+      "run_id": "operator-material-project",
+      "book_id": "moonmold-material-project",
+      "work_item_id": "model-a-exec",
+      "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+      "attempt_id": "attempt-material-25-exec",
+      "idempotency_key": "material-25/exec",
+      "product_id": "moonmold",
+      "operation": "spatial.operation.execute",
+      "requested_authority": "workspace-mutation",
+      "acceptance_criteria": [
+        "physical_authority=false",
+        "representation lineage and declared losses remain inspectable"
+      ],
+      "input_contracts": [
+        "moonmold/spatial-operation-request@1.0.0"
+      ],
+      "output_contracts": [
+        "moonmold/spatial-operation-receipt@1.0.0"
+      ],
+      "required_claim": "digital-artifact",
+      "input_digest": "sha256:33a720a15f4a1ead6d39a6350ecf8f890bc196554f5aa86c920695cf3b522306",
+      "input_artifacts": [
+        ".moonsuite/products/moonmold/operator-inputs/material-25.json"
+      ],
+      "timeout_ms": 120000,
+      "created_at": "2026-10-07T08:48:16.324Z"
+    },
+    "spatial_request": {
+      "contract_id": "moonmold.spatial-operation-request.v1",
+      "request_id": "material-25",
+      "idempotency_key": "material-25",
+      "project_id": "material-project",
+      "model_id": "model-a",
+      "expected_parent_digest": "mm1-3214739",
+      "authority": "WorkspaceMutation",
+      "operation": {
+        "method": "scene.create-cylinder",
+        "params": {
+          "objectId": "cylinder-b",
+          "radiusMm": 5,
+          "heightMm": 25,
+          "sides": 9
+        }
+      },
+      "intent": "Semantic identity regression fixture",
+      "reference_artifacts": [
+        ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+      ],
+      "constraints": [
+        "No physical authority"
+      ],
+      "backend_preference": "mock-reference"
+    }
+  }
+]

@@ -16,7 +16,7 @@ fn delivery_brief_panel(
         ),
         if brief.brief is Null {
           @html.p(
-            "Recovered binding only. Download brief.json from the package to inspect the frozen content; the text below is a separate draft.",
+            "Recovered binding only. Load selected package brief to inspect and revise its exact content in the draft, or download brief.json. The draft remains separate from this frozen binding.",
           )
         } else {
           @html.details([
@@ -30,29 +30,34 @@ fn delivery_brief_panel(
     @html.small(class="eyebrow", "1 · FREEZE THE DIGITAL BRIEF"),
     @html.h2("A usable digital model delivery"),
     @html.p(
-      "Freeze before Create model and Add box for your first delivery. For a revision, freeze a revised brief before the changed box operation. Dimensions describe the single primary-mass box; inspect constraints, units, losses, and review criteria.",
+      "Freeze before Create model and Add box or Add cylinder for your first delivery. For a revision, freeze a revised brief before changed operations. Dimensions describe primary-mass: box width/depth/height, or cylinder nominal diameter/diameter/height. Inspect constraints, units, losses, and review criteria.",
     ),
     @html.p(
       "Then explicitly execute the model operations, choose Presentation, validate and execute its export, and build the package. No step silently runs the next one.",
     ),
+    brief_editor_panel(emit, model),
     @html.details([
-      @html.summary("Edit the brief draft · JSON"),
-      area(
-        "Digital brief draft",
-        model.brief_json,
-        emit.map(value => SetBrief(value)),
-        rows=15,
-      ),
-      action(
-        "Prepare brief for current model",
-        emit(PrepareBrief),
-        disabled=model.busy,
-      ),
+      @html.summary("Advanced brief JSON"),
+      @html.label(class="field", [
+        @html.span("Digital brief draft JSON"),
+        @html.textarea(
+          value=model.brief_json,
+          rows=15,
+          disabled=model.busy,
+          on_input=emit.map(value => SetBrief(value)),
+          "",
+        ),
+      ]),
       @html.small(
-        "Uses the current Project and Model fields below. Review the default dimensions and increment revision for a new commitment.",
+        "Editing JSON replaces the structured draft. Extra fields and unsupported values remain here without being discarded or interpreted as supported operations.",
       ),
     ]),
-    action("Freeze brief", emit(FreezeBrief), primary=true, disabled=model.busy),
+    action(
+      "Freeze brief",
+      emit(FreezeBrief),
+      primary=true,
+      disabled=model.busy || delivery_brief_body(model) is Err(_),
+    ),
     frozen,
   ])
 }
@@ -134,6 +139,7 @@ fn delivery_panel(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
           ". Building or downloading a package is not human approval.",
         ),
         delivery_downloads(delivery),
+        delivery_report_panel(delivery),
         @html.div(class="actions", [
           action(
             "Refresh selected package",
@@ -172,7 +178,7 @@ fn delivery_panel(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
       "DETERMINISTIC MOCK REFERENCE · FIXTURE EVIDENCE ONLY · NOT BLENDER EVIDENCE",
     ),
     @html.p(
-      "Digital box visualization only. No fabrication or physical authority. OBJ is a presentation sibling; editable-source.json remains the editable source.",
+      "Digital box/cylinder visualization only. Cylinder radius/height are millimeters and sides must be an explicit integer from 8 through 256. Cylinders are faceted, not smooth CAD surfaces. No fabrication or physical authority. OBJ is a presentation sibling; editable-source.json remains the editable source.",
     ),
     match model.delivery_export {
       Some(target) =>
@@ -194,5 +200,16 @@ fn delivery_panel(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
       disabled=model.busy || delivery_build_body(model) is Err(_),
     ),
     selected,
+    @html.label(class="field", [
+      @html.span("Saved delivery ID"),
+      @html.textarea(
+        value=model.delivery_selection,
+        rows=2,
+        disabled=model.busy,
+        on_input=emit.map(value => SetDeliverySelection(value)),
+        "",
+      ),
+    ]),
+    action("Open saved delivery", emit(OpenDelivery), disabled=model.busy),
   ])
 }

@@ -1,0 +1,35 @@
+{
+  "contract_id": "moonmold.spatial-operation-receipt.v1",
+  "operation_ref": "moonmold/spatial.operation.validate@0.2.0",
+  "request_id": "flow-material-6-validation",
+  "source_request_id": "material-6",
+  "attempt_id": "attempt-material-6-validation",
+  "idempotency_key": "material-6/validation",
+  "outcome": "applied",
+  "before_digest": "sha256:5150e84c87071f7cb4fbd0bd7ded4a92334892fcbdd4b4acbae17939b4c8c5e5",
+  "after_digest": "sha256:5150e84c87071f7cb4fbd0bd7ded4a92334892fcbdd4b4acbae17939b4c8c5e5",
+  "claim_ceiling": "observation",
+  "physical_authority": false,
+  "artifacts": [],
+  "changed_objects": [],
+  "warnings": [],
+  "validation_evidence": {
+    "validator": "moonmold-pack-local-validator",
+    "validator_version": "1",
+    "subject_digest": "sha256:5150e84c87071f7cb4fbd0bd7ded4a92334892fcbdd4b4acbae17939b4c8c5e5",
+    "accepted": true,
+    "findings": []
+  },
+  "backend_qualification": {
+    "selected_backend": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "production_qualified": false,
+    "blender_evidence": false,
+    "physical_authority": false
+  },
+  "review_required": false,
+  "reconciliation": {
+    "supported": true,
+    "state": "terminal"
+  }
+}

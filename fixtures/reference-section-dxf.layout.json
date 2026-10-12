@@ -1,0 +1,65 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "cad-section-study",
+  "instances": [
+    {
+      "id": "rotated-box",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "text": "v 0 0 0\nv 2 0 0\nv 2 3 0\nv 0 3 0\nv 0 0 4\nv 2 0 4\nv 2 3 4\nv 0 3 4\nf 1 4 3 2\nf 5 6 7 8\nf 1 2 6 5\nf 2 3 7 6\nf 3 4 8 7\nf 4 1 5 8\n"
+      },
+      "transform": {
+        "rotation_deg": [
+          0,
+          0,
+          90
+        ],
+        "translation_mm": [
+          100,
+          50,
+          5
+        ]
+      }
+    },
+    {
+      "id": "binary-tetra",
+      "source": {
+        "input_format": "stl",
+        "units": "cm",
+        "data_base64": "c29saWQgc3ludGhldGljIHRldHJhaGVkcm9uIGNtOyBiaW5hcnkgU1RMICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAgEAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAAAAAAACAQAAAAAAAAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIBAAAA="
+      },
+      "transform": {
+        "translation_mm": [
+          150,
+          0,
+          5
+        ]
+      }
+    },
+    {
+      "id": "point-contact",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "text": "v 0 0 25\nv 0 1 30\nv 1 0 30\nf 1 2 3\n"
+      }
+    },
+    {
+      "id": "coplanar-sheet",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "text": "v 0 0 25\nv 2 0 25\nv 0 2 25\nf 1 2 3\n"
+      }
+    },
+    {
+      "id": "above-plane",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "text": "v 0 0 100\nv 2 0 100\nv 0 2 100\nf 1 2 3\n"
+      }
+    }
+  ]
+}

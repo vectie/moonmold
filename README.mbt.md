@@ -1,5 +1,43 @@
 # MoonMold
 
+Space existing differently sized references between fixed endpoints with
+[equal-gap distribution](docs/REFERENCE_DISTRIBUTION.md), preserving original sources
+and independently editable placements.
+
+Create open cutaways from placed reference surfaces with an explicit world plane,
+retain originals in a portable recut recipe and save an independently editable
+derivative with [reference surface cutting](docs/REFERENCE_CUT.md).
+
+Reuse a complete saved arrangement inside the current layout, preserving its
+originals and relative placements, with [saved-layout merging](docs/REFERENCE_LAYOUT_MERGE.md).
+
+Revise embedded reference meshes in chosen instances while keeping their applied
+placements with [source replacement](docs/REFERENCE_REPLACEMENT.md).
+
+Export a portable top/front/right SVG drawing with overall mm dimensions and
+source identities from the reference-layout workbench. See
+[three-view drawings](docs/REFERENCE_DRAWING.md).
+
+Import a static GLB scene as independently editable named placements, retaining
+original bytes and explicit unit/frame conversion with
+[GLB scene intake](docs/REFERENCE_GLB_IMPORT.md).
+
+Open existing OBJ or ASCII/binary STL geometry in a wireframe workbench, resize, rotate, center/ground
+and move it, then export reference JSON/OBJ/STL with the
+[local reference mesh workbench](docs/REFERENCE_MESH.md).
+Compose several references with independent placements, save and reopen their
+original sources and transforms, and export combined OBJ/STL with the
+[reference layout workbench](docs/REFERENCE_LAYOUT.md).
+Align a selected placement's minimum, center or maximum to another instance's
+placed world bounds, with a signed millimetre offset, using
+[reference alignment](docs/REFERENCE_ALIGNMENT.md). The result remains editable.
+Measure two placed reference vertices with signed XYZ deltas, a wireframe
+overlay and a separate identity-bound JSON report using
+[reference measurements](docs/REFERENCE_MEASUREMENTS.md).
+Inspect named object/group occurrences inside one OBJ, extract selected panels,
+save/reopen their exact original source and place them independently with
+[named OBJ parts](docs/REFERENCE_PARTS.md). This reference workflow needs Node only.
+
 > **Domain pack · early digital-model alpha.** Read the
 > [product contract](docs/PRODUCT_CONTRACT.md) for representation truth,
 > Blender qualification, authority limits and release gates.
@@ -82,3 +120,42 @@ The Rabbita operator at `ui/rabbita-moonmold` creates and loads governed
 requests, shows backend qualification and representation lineage, runs the
 bounded adapter, and records a named-human review without adding another agent
 runtime. See [`docs/OPERATOR_APP.md`](docs/OPERATOR_APP.md).
+
+### Editable reference arrays
+
+Generate rows, grids and stacks from a placed OBJ/STL/PLY reference through the
+operator layout page, API or CLI. Each copy preserves its original source and is
+independently editable after save/reopen. See [reference arrays](docs/REFERENCE_ARRAYS.md).
+
+For radial placements, use the [circular reference array](docs/REFERENCE_CIRCULAR_ARRAY.md)
+CLI: choose a world axis, millimeter pivot, angular step and count. It retains
+the original source units and bytes, appends independently editable placements,
+and exports ordinary layout, inspection JSON, OBJ or STL.
+
+## Reference layout GLB export
+
+Export placed references as self-contained glTF 2.0 GLB with separately named
+instance nodes, explicit metre/Y-up coordinates and source/loss metadata. Use
+`--format glb` in the existing layout CLI, or **Prepare GLB for 3D viewers** in
+the layout workbench. Keep editable layout JSON for original bytes and placements.
+See [the GLB workflow and limits](docs/REFERENCE_GLB.md).
+
+
+### Binary PLY reference intake
+
+The Node-only mesh and layout workbenches import ASCII and little-/big-endian
+binary PLY 1.0 indexed triangles. Explicit source units, exact original bytes,
+encoding and normal/color losses survive portable layout save/reopen. Use the
+[PLY workflow](docs/REFERENCE_PLY.md) and `fixtures/reference-binary-ply.layout.json`
+to place and export the supplied pair as OBJ/STL/GLB. This is reference geometry,
+with no live Blender, engineering or physical-readiness claim.
+
+### Batch placement CSV editing
+
+Export an applied reference layout to a source-bound CSV, edit several independent
+scales/angles/mm offsets, then preview and apply one undoable batch in the Node
+operator. Save/reopen ordinary layout JSON and reuse existing OBJ/STL/GLB exports.
+See [placement table workflow](docs/REFERENCE_PLACEMENTS_CSV.md) for CLI/API, the
+worked example and spreadsheet/qualification limits.
+
+- [Saved layout revision comparison](docs/REFERENCE_REVISION_COMPARISON.md) — inspect source/placement changes and before/after overlays without changing either revision.

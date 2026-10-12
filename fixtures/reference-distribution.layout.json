@@ -1,0 +1,86 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "display-panels",
+  "instances": [
+    {
+      "id": "left",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "left.obj",
+        "text": "v 0 0 0\nv 10 0 0\nv 0 1 0\nf 1 2 3\n"
+      },
+      "transform": {
+        "translation_mm": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "wide",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "name": "wide.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 1 0\nf 1 2 3\n"
+      },
+      "transform": {
+        "translation_mm": [
+          87,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "tall",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "tall.obj",
+        "text": "v 0 0 0\nv 30 0 0\nv 0 1 0\nf 1 2 3\n"
+      },
+      "transform": {
+        "translation_mm": [
+          12,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "right",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "right.obj",
+        "text": "v 0 0 0\nv 10 0 0\nv 0 1 0\nf 1 2 3\n"
+      },
+      "transform": {
+        "translation_mm": [
+          120,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "unchosen",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "unchosen.obj",
+        "text": "v 0 0 0\nv 5 0 0\nv 0 1 0\nf 1 2 3\n"
+      },
+      "transform": {
+        "translation_mm": [
+          45,
+          0,
+          0
+        ]
+      }
+    }
+  ]
+}

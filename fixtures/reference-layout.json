@@ -1,0 +1,36 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "synthetic-placement-study",
+  "instances": [
+    {
+      "id": "base-triangle",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "triangle-mm.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 3 0\nf 1 2 3\n"
+      },
+      "transform": {}
+    },
+    {
+      "id": "inch-reference",
+      "source": {
+        "input_format": "stl",
+        "units": "in",
+        "name": "triangle-inches.stl",
+        "text": "solid triangle\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid triangle\n"
+      },
+      "transform": { "translation_mm": [10, 20, 5] }
+    },
+    {
+      "id": "scaled-copy",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "triangle-mm.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 3 0\nf 1 2 3\n"
+      },
+      "transform": { "scale": 2, "rotation_deg": [90, 0, 0], "center_and_ground": true, "translation_mm": [-20, 0, 0] }
+    }
+  ]
+}

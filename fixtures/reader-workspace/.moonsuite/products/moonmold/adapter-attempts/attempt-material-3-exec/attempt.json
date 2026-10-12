@@ -1,0 +1,15 @@
+{
+  "contract_id": "moonmold.adapter-attempt.v1",
+  "adapter_id": "moonmold-pack-local-v1",
+  "request_id": "flow-material-3-exec",
+  "attempt_id": "attempt-material-3-exec",
+  "idempotency_key": "material-3/exec",
+  "operation_id": "spatial.operation.execute",
+  "status": "succeeded",
+  "request_ref": ".moonsuite/products/moonmold/adapter-attempts/attempt-material-3-exec/request.json",
+  "input_ref": ".moonsuite/products/moonmold/adapter-attempts/attempt-material-3-exec/input.json",
+  "receipt_ref": ".moonsuite/products/moonmold/adapter-attempts/attempt-material-3-exec/operation-receipt.json",
+  "result_ref": ".moonsuite/products/moonmold/adapter-attempts/attempt-material-3-exec/adapter-result.json",
+  "started_at": "2026-10-07T08:48:15.169Z",
+  "updated_at": "2026-10-07T08:48:15.169Z"
+}

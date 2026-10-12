@@ -1,0 +1,61 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "turn-paired-panels",
+  "instances": [
+    {
+      "id": "fixed",
+      "source": {
+        "input_format": "obj",
+        "name": "base.obj",
+        "units": "mm",
+        "text": "v 0 0 0\nv 160 0 0\nv 160 120 0\nv 0 120 0\nf 1 2 3\nf 1 3 4\n"
+      }
+    },
+    {
+      "id": "panel",
+      "source": {
+        "input_format": "obj",
+        "name": "panel.obj",
+        "units": "cm",
+        "text": "# original panel\r\nv 0 0 0\r\nv 4 0 0\r\nv 4 2 0\r\nv 0 2 0\r\nf 1 2 3\r\nf 1 3 4\r\n"
+      },
+      "transform": {
+        "scale": 1.5,
+        "rotation_deg": [
+          0,
+          0,
+          90
+        ],
+        "center_and_ground": true,
+        "translation_mm": [
+          10,
+          0,
+          5
+        ]
+      }
+    },
+    {
+      "id": "rear",
+      "source": {
+        "input_format": "obj",
+        "name": "panel.obj",
+        "units": "cm",
+        "text": "# original panel\r\nv 0 0 0\r\nv 4 0 0\r\nv 4 2 0\r\nv 0 2 0\r\nf 1 2 3\r\nf 1 3 4\r\n"
+      },
+      "transform": {
+        "scale": 0.5,
+        "rotation_deg": [
+          0,
+          0,
+          180
+        ],
+        "center_and_ground": false,
+        "translation_mm": [
+          40,
+          50,
+          8
+        ]
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import test from "node:test";
 import path from "node:path";
 import { createOperatorServer } from "./operator-server.mjs";
@@ -23,9 +24,7 @@ async function getJson(base, pathname) {
 }
 
 test("operator execution binds aggregate input digest to named review", { timeout: 30_000 }, async (t) => {
-  const workspace =
-    `/Users/kq/moonsuite/.tmp/moonmold-operator-server-${process.pid}-${Date.now()}`;
-  await mkdir(workspace, { recursive: true });
+  const workspace = await mkdtemp(path.join(os.tmpdir(), "moonmold-operator-server-"));
   const server = createOperatorServer({ workspaceRoot: workspace });
   await new Promise((resolve, reject) => {
     server.once("error", reject);

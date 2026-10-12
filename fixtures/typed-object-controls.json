@@ -1,0 +1,7 @@
+[
+  {"method":"scene.create-model","params":{"name":"example-model","units":"cm","coordinateFrame":"z-up-right-handed"}},
+  {"method":"scene.create-box","params":{"objectId":"primary-mass","widthMm":1200,"depthMm":800,"heightMm":600}},
+  {"method":"scene.set-transform","params":{"objectId":"primary-mass","xMm":200,"yMm":-100,"zMm":300}},
+  {"method":"scene.create-cylinder","params":{"objectId":"support-cylinder","radiusMm":350,"heightMm":1600,"sides":9}},
+  {"method":"scene.set-transform","params":{"objectId":"support-cylinder","xMm":-450,"yMm":200,"zMm":800}}
+]

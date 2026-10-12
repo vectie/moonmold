@@ -335,7 +335,7 @@ test "rejected or unidentified receipts never advance scene parent or advertise 
       workflow_test_run(model, "execute", outcome="idempotent-no-op"),
       model.expected_parent_digest,
     ),
-    "mm1-built",
+    model.expected_parent_digest,
   )
 }
 

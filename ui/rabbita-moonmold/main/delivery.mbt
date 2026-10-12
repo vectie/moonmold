@@ -21,6 +21,7 @@ struct DeliveryPayload {
   review_status : String
   reviews : Array[Json]
   stale : Bool?
+  reports : Array[DeliveryReport]?
 } derive(Debug, FromJson)
 
 ///|
@@ -38,7 +39,7 @@ fn default_delivery_brief(project_id : String, model_id : String) -> Json {
     "revision": 1,
     "project_id": project_id,
     "model_id": model_id,
-    "intended_use": "Digital box visualization",
+    "intended_use": "Digital box/cylinder visualization",
     "units": "mm",
     "coordinate_frame": "z-up-right-handed",
     "dimensions_mm": { "width": 1200, "depth": 800, "height": 600 },
@@ -134,6 +135,10 @@ fn delivery_references(model : Model) -> Array[String] {
 
 ///|
 fn delivery_brief_body(model : Model) -> Result[Json, String] {
+  let error = brief_draft_error(model)
+  if !error.is_empty() {
+    return Err(error)
+  }
   let brief = @json.parse(model.brief_json) catch {
     error => return Err("Brief is invalid JSON: \{error}")
   }
@@ -233,7 +238,9 @@ fn delivery_review_body(model : Model) -> Result[Json, String] {
 
 ///|
 fn delivery_is_historical(model : Model, delivery : DeliveryPayload) -> Bool {
-  if model.draft_changed || delivery.stale == Some(true) {
+  if model.draft_changed ||
+    model.brief_draft_dirty ||
+    delivery.stale == Some(true) {
     return true
   }
   match delivery.manifest {
@@ -260,6 +267,7 @@ fn restore_delivery(model : Model, delivery : DeliveryPayload?) -> Model {
   {
     ..model,
     delivery: Some(value),
+    delivery_generation: model.delivery_generation + 1,
     frozen_brief: Some({ reference, digest, brief: Json::null(), }),
     delivery_export: Some({ attempt_id, brief_ref: reference, receipt_digest, }),
   }

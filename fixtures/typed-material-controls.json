@@ -1,0 +1,4 @@
+[
+  { "method": "scene.assign-material", "params": { "objectId": "primary-mass", "materialId": "label-A_2:west.v1" } },
+  { "method": "scene.assign-material", "params": { "objectId": "cylinder-b", "materialId": "reference-cylinder" } }
+]

@@ -1,0 +1,30 @@
+{
+  "contract_id": "moonmold.spatial-artifact.v1",
+  "artifact_id": "model-a:presentation",
+  "project_id": "material-project",
+  "model_id": "model-a",
+  "representation": "presentation",
+  "digest": "sha256:762f8ca33cdeae43cad16d4f432ce8b295dcc94b1d3994fdf7f43639340d5eda",
+  "parent_digest": "mm1-5182072",
+  "lineage_relation": "styled-from",
+  "units": "declared-by-editable-source",
+  "coordinate_frame": "declared-by-editable-source",
+  "known_losses": [
+    "engineering material fidelity",
+    "collision fidelity"
+  ],
+  "claim_ceiling": "presentation-only",
+  "physical_authority": false,
+  "backend": {
+    "mode": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "blender_evidence": false
+  },
+  "intent": "Semantic identity regression fixture",
+  "reference_artifacts": [
+    ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+  ],
+  "constraints": [
+    "No physical authority"
+  ]
+}

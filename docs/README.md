@@ -12,3 +12,17 @@
 - [Pack adapter](PACK_ADAPTER.md) — exact MoonFlow capabilities, durable
   execution, reconciliation and health.
 - [Spatial operator](OPERATOR_APP.md) — Rabbita workflow and named review.
+
+- [GLB scene import](REFERENCE_GLB_IMPORT.md) — static mesh nodes as byte-retaining, independently editable reference placements.
+
+- [Three-view reference drawings](REFERENCE_DRAWING.md) — inspectable SVG sheets with applied geometry, dimensions and source identities.
+
+- [Named dimension sheets](REFERENCE_DIMENSIONS.md) — source-bound named vertex pairs, annotated SVG, and reopenable companion JSON.
+
+- [Applied layout Undo/Redo](REFERENCE_LAYOUT_HISTORY.md) — return to earlier editable source/placement states in the current workbench session.
+
+- [Saved layout revision comparison](REFERENCE_REVISION_COMPARISON.md) — inspect source/placement changes and before/after overlays without changing either revision.
+
+- [Equal-gap reference distribution](REFERENCE_DISTRIBUTION.md): arrange existing differently sized references between fixed endpoints, then save and reopen the editable layout.
+
+- [Reference surface-area schedules](REFERENCE_SURFACE_AREA.md): select placed references, inspect triangle-sum areas and surface centroids, and export source-bound JSON/CSV.

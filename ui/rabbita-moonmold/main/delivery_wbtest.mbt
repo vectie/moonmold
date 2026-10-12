@@ -127,7 +127,7 @@ test "delivery builds only a real successful brief-bound presentation export" {
   assert_true(delivery_build_body(frozen) is Err(_))
   for
     representation in [
-      "model", "box", "editable-source", "engineering", "presentation",
+      "model", "box", "cylinder", "editable-source", "engineering", "presentation",
     ] {
     let selected = template(frozen, representation)
     for mode in ["validate", "execute"] {
@@ -242,6 +242,7 @@ test "package errors and draft edits retain downloads and never approve the new 
       SetParams("{}"),
       SetBrief("{}"),
       ApplyTemplate("box"),
+      ApplyTemplate("cylinder"),
     ] {
     let changed = workflow_test_update(model, msg)
     assert_eq(
@@ -284,6 +285,35 @@ test "package errors and draft edits retain downloads and never approve the new 
   }
   let stale = { ..delivery_test_payload(), stale: Some(true), }
   assert_true(delivery_is_historical(model, stale))
+}
+
+///|
+test "cylinder template is a bounded editable draft and preserves frozen brief" {
+  let before = delivery_test_frozen(initial_model())
+  let selected = workflow_test_update(before, ApplyTemplate("cylinder"))
+  assert_eq(selected.method_name, "scene.create-cylinder")
+  let params = @json.parse(selected.params_json)
+  assert_eq(params, {
+    "objectId": "support-cylinder",
+    "radiusMm": 200,
+    "heightMm": 600,
+    "sides": 32,
+  })
+  assert_eq(selected.last_flow_request, None)
+  assert_eq(selected.last_receipt, None)
+  assert_eq(
+    selected.frozen_brief.map(value => value.digest),
+    before.frozen_brief.map(value => value.digest),
+  )
+  assert_true(delivery_build_body(selected) is Err(_))
+  let html = workflow_test_html(selected)
+  for
+    text in [
+      "Add cylinder", "nominal diameter/diameter/height", "8 through 256", "faceted",
+      "No fabrication or physical authority",
+    ] {
+    assert_true(html.contains(text))
+  }
 }
 
 ///|

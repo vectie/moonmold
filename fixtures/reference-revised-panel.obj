@@ -1,0 +1,6 @@
+# Revised synthetic open panel; source units are cm
+v 0 0 0
+v 8 0 0
+v 8 3 0
+v 0 3 0
+f 1 2 3 4

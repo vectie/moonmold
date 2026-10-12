@@ -1,0 +1,16 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "ply-tetrahedron-layout",
+  "instances": [
+    {
+      "id": "ply-tetrahedron",
+      "source": {
+        "input_format": "ply",
+        "name": "tetrahedron",
+        "units": "cm",
+        "text": "ply\nformat ascii 1.0\ncomment Synthetic tetrahedron; choose cm explicitly\nelement vertex 4\nproperty float x\nproperty float y\nproperty float z\nproperty float nx\nproperty float ny\nproperty float nz\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face 4\nproperty list uchar int vertex_indices\nend_header\n0 0 0 0 0 1 255 0 0\n2 0 0 0 0 1 0 255 0\n0 3 0 0 0 1 0 0 255\n0 0 4 0 0 1 255 255 255\n3 0 2 1\n3 0 1 3\n3 0 3 2\n3 1 2 3\n"
+      },
+      "transform": { "scale": 2, "translation_mm": [10, 0, 0] }
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+[
+  {
+    "units": "mm",
+    "first": {
+      "contract_id": "moonmold.digital-brief.v1",
+      "commitment_ref": "typed-brief-mm",
+      "revision": 1,
+      "project_id": "example-project",
+      "model_id": "example-model",
+      "intended_use": "Synthetic structured brief parity",
+      "units": "mm",
+      "coordinate_frame": "z-up-right-handed",
+      "dimensions_mm": {
+        "width": 1200,
+        "depth": 800,
+        "height": 600
+      },
+      "constraints": [
+        "Digital only"
+      ],
+      "deliverables": [
+        "editable-source",
+        "presentation"
+      ],
+      "review_criteria": [
+        "Inspect dimensions and losses"
+      ],
+      "physical_authority": false
+    },
+    "revised": {
+      "contract_id": "moonmold.digital-brief.v1",
+      "commitment_ref": "typed-brief-mm",
+      "revision": 2,
+      "project_id": "example-project",
+      "model_id": "example-model",
+      "intended_use": "Synthetic structured brief parity",
+      "units": "mm",
+      "coordinate_frame": "z-up-right-handed",
+      "dimensions_mm": {
+        "width": 1500,
+        "depth": 800,
+        "height": 600
+      },
+      "constraints": [
+        "Digital only"
+      ],
+      "deliverables": [
+        "editable-source",
+        "presentation"
+      ],
+      "review_criteria": [
+        "Inspect dimensions and losses"
+      ],
+      "physical_authority": false
+    }
+  },
+  {
+    "units": "cm",
+    "first": {
+      "contract_id": "moonmold.digital-brief.v1",
+      "commitment_ref": "typed-brief-cm",
+      "revision": 1,
+      "project_id": "example-project",
+      "model_id": "example-model",
+      "intended_use": "Synthetic structured brief parity",
+      "units": "cm",
+      "coordinate_frame": "z-up-right-handed",
+      "dimensions_mm": {
+        "width": 1200,
+        "depth": 800,
+        "height": 600
+      },
+      "constraints": [
+        "Digital only"
+      ],
+      "deliverables": [
+        "editable-source",
+        "presentation"
+      ],
+      "review_criteria": [
+        "Inspect dimensions and losses"
+      ],
+      "physical_authority": false
+    },
+    "revised": {
+      "contract_id": "moonmold.digital-brief.v1",
+      "commitment_ref": "typed-brief-cm",
+      "revision": 2,
+      "project_id": "example-project",
+      "model_id": "example-model",
+      "intended_use": "Synthetic structured brief parity",
+      "units": "cm",
+      "coordinate_frame": "z-up-right-handed",
+      "dimensions_mm": {
+        "width": 1500,
+        "depth": 800,
+        "height": 600
+      },
+      "constraints": [
+        "Digital only"
+      ],
+      "deliverables": [
+        "editable-source",
+        "presentation"
+      ],
+      "review_criteria": [
+        "Inspect dimensions and losses"
+      ],
+      "physical_authority": false
+    }
+  },
+  {
+    "units": "m",
+    "first": {
+      "contract_id": "moonmold.digital-brief.v1",
+      "commitment_ref": "typed-brief-m",
+      "revision": 1,
+      "project_id": "example-project",
+      "model_id": "example-model",
+      "intended_use": "Synthetic structured brief parity",
+      "units": "m",
+      "coordinate_frame": "z-up-right-handed",
+      "dimensions_mm": {
+        "width": 1200,
+        "depth": 800,
+        "height": 600
+      },
+      "constraints": [
+        "Digital only"
+      ],
+      "deliverables": [
+        "editable-source",
+        "presentation"
+      ],
+      "review_criteria": [
+        "Inspect dimensions and losses"
+      ],
+      "physical_authority": false
+    },
+    "revised": {
+      "contract_id": "moonmold.digital-brief.v1",
+      "commitment_ref": "typed-brief-m",
+      "revision": 2,
+      "project_id": "example-project",
+      "model_id": "example-model",
+      "intended_use": "Synthetic structured brief parity",
+      "units": "m",
+      "coordinate_frame": "z-up-right-handed",
+      "dimensions_mm": {
+        "width": 1500,
+        "depth": 800,
+        "height": 600
+      },
+      "constraints": [
+        "Digital only"
+      ],
+      "deliverables": [
+        "editable-source",
+        "presentation"
+      ],
+      "review_criteria": [
+        "Inspect dimensions and losses"
+      ],
+      "physical_authority": false
+    }
+  }
+]

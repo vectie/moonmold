@@ -1,0 +1,40 @@
+{
+  "contract_id": "moonmold.reference-dimensions.v1",
+  "expected_layout_sha256": "9795aee108fb99b7c1a3c9b70792ed9e89cf38e1c75a6afccd304f92d201f0ba",
+  "expected_geometry_sha256": "1f11457477f7be4818ac3af6a2532dce75a1ca5934bc390879d4cfefc451ef1a",
+  "dimensions": [
+    {
+      "name": "Base width",
+      "endpoint_a": {
+        "instance_id": "base",
+        "vertex_index": 0
+      },
+      "endpoint_b": {
+        "instance_id": "base",
+        "vertex_index": 1
+      }
+    },
+    {
+      "name": "Base diagonal",
+      "endpoint_a": {
+        "instance_id": "base",
+        "vertex_index": 0
+      },
+      "endpoint_b": {
+        "instance_id": "base",
+        "vertex_index": 2
+      }
+    },
+    {
+      "name": "Raised block offset",
+      "endpoint_a": {
+        "instance_id": "base",
+        "vertex_index": 0
+      },
+      "endpoint_b": {
+        "instance_id": "raised-block",
+        "vertex_index": 0
+      }
+    }
+  ]
+}

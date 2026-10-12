@@ -1,0 +1,56 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "surface-panels",
+  "instances": [
+    {
+      "id": "base",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "name": "base-panel.obj",
+        "text": "o panel\nv 0 0 0\nv 2 0 0\nv 2 1 0\nv 0 1 0\nv 99 99 99\nf 1 2 3 4\n"
+      }
+    },
+    {
+      "id": "upright",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "upright-panel.obj",
+        "text": "v 0 0 0\nv 30 0 0\nv 30 20 0\nv 0 20 0\nf 1 2 3 4\n"
+      },
+      "transform": {
+        "scale": 1.5,
+        "rotation_deg": [
+          90,
+          0,
+          0
+        ],
+        "translation_mm": [
+          100,
+          20,
+          5
+        ]
+      }
+    },
+    {
+      "id": "selected-bracket",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "name": "bracket-and-offcut.obj",
+        "text": "o bracket\nv 0 0 0\nv 3 0 0\nv 0 2 0\nf 1 2 3\no offcut\nv 100 0 0\nv 200 0 0\nv 100 100 0\nf 4 5 6\n",
+        "part_ids": [
+          "object-1"
+        ]
+      },
+      "transform": {
+        "translation_mm": [
+          -40,
+          0,
+          0
+        ]
+      }
+    }
+  ]
+}

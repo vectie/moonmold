@@ -1,0 +1,31 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "four-radial-display-panels",
+  "instances": [
+    {
+      "id": "base",
+      "source": {
+        "input_format": "obj",
+        "name": "base.obj",
+        "units": "mm",
+        "text": "v -60 -50 0\nv 80 -50 0\nv 80 90 0\nv -60 90 0\nf 1 2 3\nf 1 3 4\n"
+      }
+    },
+    {
+      "id": "panel",
+      "source": {
+        "input_format": "obj",
+        "name": "display-panel.obj",
+        "units": "cm",
+        "text": "# original centimeter source\r\no panel\r\nv 0 0 0\r\nv 2 0 0\r\nv 2 6 0\r\nv 0 6 0\r\nf 1 2 3\r\nf 1 3 4\r\no unused\r\nv 100 0 0\r\nv 101 0 0\r\nv 100 1 0\r\nf 5 6 7\r\n",
+        "part_ids": ["object-1"]
+      },
+      "transform": {
+        "scale": 0.5,
+        "rotation_deg": [90, 0, 0],
+        "center_and_ground": true,
+        "translation_mm": [65, 20, 5]
+      }
+    }
+  ]
+}

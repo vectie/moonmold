@@ -1,6 +1,12 @@
 ///|
 fn test_workspace() -> String {
-  "/Users/kq/moonsuite/.tmp/moonmold-adapter-v2-20260731-v2"
+  // A verifier can supply an absolute fixture root without changing module
+  // manifests or writing into a developer's machine-specific home directory.
+  @fsx.read_file_to_string(".tmp/moonmold-native-test-workspace.txt")
+  .trim()
+  .to_owned() catch {
+    _ => "/Users/kq/moonsuite/.tmp/moonmold-adapter-v2-20260731-v2"
+  }
 }
 
 ///|

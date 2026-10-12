@@ -1,0 +1,76 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "revised-shelf-layout",
+  "instances": [
+    {
+      "id": "left",
+      "source": {
+        "name": "panel-and-triangle.obj",
+        "input_format": "obj",
+        "units": "cm",
+        "text": "# Synthetic open panels, not solids\nv 0 0 0\nv 6 0 0\nv 6 4 0\nv 0 4 0\nv 0 0 3\no shelf\nf 1 2 3 4\no extra\nf 1 2 5\n",
+        "part_ids": [
+          "object-1"
+        ]
+      },
+      "transform": {
+        "scale": 2,
+        "rotation_deg": [
+          0,
+          0,
+          90
+        ],
+        "center_and_ground": true,
+        "translation_mm": [
+          100,
+          20,
+          5
+        ]
+      }
+    },
+    {
+      "id": "right",
+      "source": {
+        "name": "panel-and-triangle.obj",
+        "input_format": "obj",
+        "units": "cm",
+        "text": "# Synthetic open panels, not solids\nv 0 0 0\nv 6 0 0\nv 6 4 0\nv 0 4 0\nv 0 0 3\no shelf\nf 1 2 3 4\no extra\nf 1 2 5\n",
+        "part_ids": [
+          "object-1"
+        ]
+      },
+      "transform": {
+        "scale": 0.5,
+        "rotation_deg": [
+          0,
+          0,
+          180
+        ],
+        "translation_mm": [
+          -50,
+          10,
+          2
+        ]
+      }
+    },
+    {
+      "id": "untouched",
+      "source": {
+        "name": "panel-and-triangle.obj",
+        "input_format": "obj",
+        "units": "cm",
+        "text": "# Synthetic open panels, not solids\nv 0 0 0\nv 6 0 0\nv 6 4 0\nv 0 4 0\nv 0 0 3\no shelf\nf 1 2 3 4\no extra\nf 1 2 5\n",
+        "part_ids": [
+          "object-1"
+        ]
+      },
+      "transform": {
+        "translation_mm": [
+          0,
+          100,
+          0
+        ]
+      }
+    }
+  ]
+}

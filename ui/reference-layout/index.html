@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoonMold · Reference layout</title>
+<style>body{font:16px system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem;background:#10212b;color:#edf6f7}label{display:block;margin:.6rem 0}select,input,button{font:inherit;padding:.45rem}input[type=number]{width:7rem}button{cursor:pointer;margin:.4rem}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#91e1cf}.row{display:flex;gap:1rem;flex-wrap:wrap}small{color:#b2c7d2}canvas{width:100%;height:360px;background:#09161e;border:1px solid #476170}fieldset{margin:1rem 0;border:1px solid #476170}button:disabled{cursor:wait}h1{margin-bottom:.3rem}</style>
+<h1>Reference layout</h1>
+<p>Place several OBJ, STL or PLY references together. Save the editable layout with its originals, or export the combined millimetre geometry.</p>
+<p><a href="/reference-mesh">Single-reference workbench and sections</a></p>
+<small>Up to 16 independent references. No welding, boolean union, collision check or fabrication authority. Overlapping and disconnected geometry stays as placed. Z is the grounding axis.</small>
+<form id="load-form"><fieldset id="load-controls"><legend>Reopen a layout, cut recipe or island recipe</legend><label>Saved layout or recipe JSON <input id="layout-file" type="file" accept=".json" required></label><button>Open layout</button></fieldset></form>
+<form id="merge-form"><fieldset id="merge-controls" disabled><legend>Merge a saved arrangement into this layout</legend>
+<label>Incoming editable layout JSON <input id="merge-file" type="file" accept=".json" required></label>
+<div class="row"><label>ID prefix <input id="merge-prefix" value="imported" maxlength="79" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,78}" required></label><label>World X offset (mm) <input id="merge-x" type="number" value="0" min="-1000000000" max="1000000000" step="any" required></label><label>World Y offset (mm) <input id="merge-y" type="number" value="0" min="-1000000000" max="1000000000" step="any" required></label><label>World Z offset (mm) <input id="merge-z" type="number" value="0" min="-1000000000" max="1000000000" step="any" required></label></div>
+<small>Appends every saved instance as prefix.original-id, with the same world-axis offset for all. Sources, units and relative placements stay editable. Current instances stay in place. Choose another prefix to add the same arrangement again. Apply pending placement edits first. Maximum 16 total instances; no fitting, grouping constraint or collision check.</small><br><button>Merge saved arrangement</button>
+</fieldset></form>
+<form id="add-form"><fieldset id="add-controls"><legend>Add a reference</legend><div class="row"><label>OBJ, STL or PLY file <input id="mesh-file" type="file" accept=".obj,.stl,.ply" required></label><label>Source units <select id="source-units" required><option value="">Choose units</option><option value="mm">Millimetres</option><option value="cm">Centimetres</option><option value="m">Metres</option><option value="in">Inches</option></select></label></div><button>Add reference</button><small>400000 bytes per source. ASCII and binary STL are supported. PLY 1.0 supports ASCII and little-/big-endian binary XYZ triangles; normal/color fields are explicitly discarded. Polygons, point clouds, extra elements and other properties are unsupported. Choose the original exporter units.</small></fieldset></form>
+<form id="glb-import-form"><fieldset id="glb-import-controls"><legend>Import a GLB scene as editable placements</legend><label>Static GLB 2.0 file <input id="glb-file" type="file" accept=".glb" required></label><button>Import GLB mesh nodes</button><small>Appends each default-scene mesh node as an independent reference. Fixed metres/Y-up converts to mm/Z-up; node hierarchy transforms are baked, original bytes retained. 400000-byte file and 16-instance layout limits. Uncompressed static triangles only; no animations, skins, morphs or extensions. Styling is omitted. Save editable layout to keep placements.</small></fieldset></form>
+<fieldset><legend>Applied layout history</legend>
+<button type="button" id="layout-undo" disabled>Undo layout change</button><button type="button" id="layout-redo" disabled>Redo layout change</button><button type="button" id="discard-placement" disabled>Discard unapplied placement fields</button>
+<p id="history-status" role="status" aria-live="polite">No applied changes in this session.</p>
+<small>History is kept only in this page, for up to 20 states and 16 MiB of serialized UTF-16 snapshot text. Save editable layouts before closing. Opening a saved layout starts a new history. Apply or discard placement fields before Undo/Redo. Measurements, named dimensions and generated drawings must be prepared again after restoring.</small>
+</fieldset>
+<canvas id="preview" width="1000" height="400" aria-label="Combined reference wireframe; selected instance and measured endpoints A and B are highlighted"></canvas>
+<div class="row"><label>View yaw <input id="yaw" type="range" min="-180" max="180" value="35"></label><label>View elevation <input id="pitch" type="range" min="-90" max="90" value="25"></label><button id="top">Top view</button><button id="iso">Isometric</button></div>
+<small>Orthographic wireframe auto-fits all placed vertices and includes hidden edges. View changes do not edit the layout.</small>
+<form id="edit-form"><fieldset id="edit-controls" disabled><legend>Edit selected placement</legend>
+<div class="row"><label>Layout name <input id="layout-name" value="reference-layout" maxlength="80" required pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}"></label><label>Selected instance <select id="selected"></select></label><label>Instance ID <input id="instance-id" maxlength="80" required pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}"></label></div>
+<div class="row"><label>Uniform scale <input id="scale" type="number" value="1" min="0.000001" max="1000000" step="any" required></label><label>Rotate X (degrees) <input id="rx" type="number" value="0" step="any" required></label><label>Rotate Y <input id="ry" type="number" value="0" step="any" required></label><label>Rotate Z <input id="rz" type="number" value="0" step="any" required></label></div>
+<label><input id="ground" type="checkbox"> Center this instance X/Y and ground its lowest Z before moving</label>
+<div class="row"><label>Move X (mm) <input id="tx" type="number" value="0" step="any" required></label><label>Move Y <input id="ty" type="number" value="0" step="any" required></label><label>Move Z <input id="tz" type="number" value="0" step="any" required></label></div>
+<small>Each placement starts from its own original: convert units, scale, rotate X/Y/Z, center/ground, then move. Apply edits before saving.</small><br>
+<button>Apply placement</button><button type="button" id="duplicate">Duplicate selected</button><button type="button" id="remove">Remove selected</button><button type="button" id="reset">Reset selected placement</button>
+</fieldset></form>
+<fieldset id="islands-controls" disabled><legend>Separate mesh islands</legend>
+<p>Inspect the selected placement for edge-connected triangle regions, then separate all regions into independently editable references.</p>
+<button id="islands-inspect" type="button">Inspect selected islands</button><button id="islands-split" type="button" disabled>Separate all inspected islands</button><button id="islands-restore" type="button" disabled>Restore pre-split layout</button>
+<small>Triangles connect only through an entire edge with exactly equal endpoint XYZ coordinates. Vertex-only contacts and geometric intersections do not connect; separate indices at the same coordinates do. No tolerance, welding or repair. Derived sources bake world placement into mm OBJ; unreferenced vertices and names are omitted. Save the island recipe with originals before editing the result. Maximum 16 resulting placements.</small>
+<pre id="islands-status" role="status" aria-live="polite">Select a placement and inspect its islands.</pre><div id="islands-download"></div>
+</fieldset>
+<form id="placements-form"><fieldset id="placements-controls" disabled><legend>Edit several placements with a CSV table</legend>
+<button type="button" id="placements-export">Prepare placement CSV</button><div id="placements-download"></div>
+<label>Edited placement CSV <input id="placements-file" type="file" accept=".csv,text/csv" required></label>
+<button>Preview CSV changes</button><button type="button" id="placements-apply" disabled>Apply previewed placements</button><button type="button" id="placements-cancel" disabled>Discard CSV preview</button>
+<small>Export from this applied layout, edit scale/rotation/center-and-ground/translation columns, then preview all changes before applying. Keep every row and the six identity columns unchanged. Translations are absolute millimetres; rotations are degrees. CSV does not contain meshes. No formulas, constraints or collision checks. Save editable layout after applying; Undo restores the whole batch.</small>
+<pre id="placements-status" role="status" aria-live="polite">Export the current layout to start a placement table.</pre>
+</fieldset></form>
+<form id="cut-form"><fieldset id="cut-controls" disabled><legend>Cut reference surfaces at a world plane</legend>
+<label>Instances to cut (Ctrl/Command to select several)<select id="cut-targets" multiple size="4" required></select></label>
+<div class="row"><label>World plane axis <select id="cut-axis"><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label><label>Plane position (mm) <input id="cut-position" type="number" value="0" min="-1000000000" max="1000000000" step="any" required></label><label>Retain side <select id="cut-keep"><option value="positive">At or above position</option><option value="negative">At or below position</option></select></label></div>
+<small>Extracts the chosen triangle surfaces on one side of the plane. No caps are added: a closed input can become open. Selected geometry is baked into new mm OBJ sources with identity placements; empty selected instances are removed, and unselected instances stay unchanged. Save the cut recipe to retain original bytes and change this cut later. Save editable layout to work on the derivative. A later edit clears this recipe link. Apply pending placement edits first.</small><br><button>Cut chosen surfaces</button><button id="cut-restore" type="button" disabled>Restore originals to revise cut</button>
+</fieldset></form>
+<form id="arrange-form"><fieldset id="arrange-controls" disabled><legend>Move or turn an arrangement together</legend>
+<label>Instances to move (Ctrl/Command to select several)<select id="arrange-targets" multiple size="4" required></select></label>
+<div class="row"><label>Shared pivot X (mm) <input id="pivot-x" type="number" value="0" step="any" required></label><label>Pivot Y <input id="pivot-y" type="number" value="0" step="any" required></label><label>Pivot Z <input id="pivot-z" type="number" value="0" step="any" required></label></div>
+<div class="row"><label>Turn world X (degrees) <input id="arrange-rx" type="number" value="0" step="any" required></label><label>Turn world Y <input id="arrange-ry" type="number" value="0" step="any" required></label><label>Turn world Z <input id="arrange-rz" type="number" value="0" step="any" required></label></div>
+<div class="row"><label>Then move world X (mm) <input id="arrange-tx" type="number" value="0" step="any" required></label><label>Move Y <input id="arrange-ty" type="number" value="0" step="any" required></label><label>Move Z <input id="arrange-tz" type="number" value="0" step="any" required></label></div>
+<small>One shared rigid move: turn the chosen arrangement around the pivot in world X/Y/Z order, then translate. Sources and relative spacing are retained; the other instances stay in place. Existing per-instance Euler angles and translations are recalculated, including center/ground compensation. This is a one-time edit, not a persistent group or constraint. Apply pending placement edits first. Clicking again applies another move; save the original layout if you need to return.</small><br><button>Move chosen arrangement</button>
+</fieldset></form>
+<form id="replace-form"><fieldset id="replace-controls" disabled><legend>Replace embedded source with a revised file</legend>
+<p>Keep each chosen instance's ID and applied placement recipe while updating its geometry. Select only the instances you want to revise.</p>
+<div class="row"><label>Instances to replace (Ctrl/Command to select several)<select id="replace-targets" multiple size="4" required></select></label><label>Revised OBJ, STL or PLY <input id="replace-file" type="file" accept=".obj,.stl,.ply" required></label><label>New file's source units <select id="replace-units" required><option value="">Choose units</option><option value="mm">Millimetres</option><option value="cm">Centimetres</option><option value="m">Metres</option><option value="in">Inches</option></select></label></div>
+<small>The entire new file replaces the old source, including any old named-part or GLB-node selection. Other instances stay unchanged. Source origin changes affect placement; center/ground recalculates from the new shape. Apply pending placement edits first. Save your old layout separately if you need to return to it. 400000 bytes maximum; no automatic resizing, alignment or geometry repair.</small><br><button>Replace chosen sources</button>
+</fieldset></form>
+<form id="array-form"><fieldset id="array-controls" disabled><legend>Repeat selected placement</legend>
+<p>Create a line, grid or stack from the last applied selected instance. Counts include the original; at most 16 total layout instances. Each copy remains independently editable.</p>
+<div class="row"><label>Count X <input id="count-x" type="number" value="2" min="1" max="16" step="1" required></label><label>Count Y <input id="count-y" type="number" value="1" min="1" max="16" step="1" required></label><label>Count Z <input id="count-z" type="number" value="1" min="1" max="16" step="1" required></label></div>
+<div class="row"><label>World X pitch (mm) <input id="array-x" type="number" value="50" step="any" required></label><label>World Y pitch (mm) <input id="array-y" type="number" value="0" step="any" required></label><label>World Z pitch (mm) <input id="array-z" type="number" value="0" step="any" required></label></div>
+<small>Pitch measures matching origins, not edge clearance. Negative pitch reverses direction. Repeated axes need nonzero pitch. Copies may overlap; no collision check is performed. Apply placement edits first.</small><br><button>Create editable array</button>
+</fieldset></form>
+<form id="align-form"><fieldset id="align-controls" disabled><legend>Align selected placement</legend>
+<p>Move the last applied selected instance relative to another instance's placed world-axis bounds. Only the chosen translation axis changes.</p>
+<div class="row"><label>Reference instance <select id="align-reference" required></select></label><label>World axis <select id="align-axis"><option value="x">X</option><option value="y">Y</option><option value="z" selected>Z</option></select></label><label>Selected instance anchor <select id="moving-anchor"><option value="min">Minimum</option><option value="center">Center</option><option value="max">Maximum</option></select></label><label>Reference anchor <select id="reference-anchor"><option value="min">Minimum</option><option value="center">Center</option><option value="max" selected>Maximum</option></select></label><label>Signed offset (mm) <input id="align-offset" type="number" value="0" min="-1000000000" max="1000000000" step="any" required></label></div>
+<small>Selected anchor = reference anchor + offset. Positive offsets move toward the positive world axis; for the negative side use a negative offset. Bounds include unreferenced vertices. This is not surface snapping, a persistent constraint or a collision/physical-clearance check. Apply placement edits first.</small><br><button>Align selected</button>
+</fieldset></form>
+<pre id="part-status" role="status" aria-live="polite"></pre>
+<form id="surface-area-form"><fieldset id="surface-area-controls" disabled><legend>Measure triangle surface area</legend>
+<label>Instances to measure (Ctrl/Command to select several)<select id="surface-area-targets" multiple size="4" required></select></label>
+<button>Calculate surface-area schedule</button>
+<small>Counts each placed triangle once, regardless of winding. Duplicate, overlapping and internal faces count independently; this is not exposed exterior area or material quantity. No inferred second side, thickness, volume, mass or physical-use qualification. Apply placement edits first. Save the editable layout beside the read-only report.</small>
+<pre id="surface-area-status" role="status" aria-live="polite">Open a layout and choose references to measure.</pre><div id="surface-area-downloads"></div>
+</fieldset></form>
+<form id="measure-form"><fieldset id="measure-controls" disabled><legend>Measure two placed vertices</legend>
+<div class="row"><label>Endpoint A instance <select id="measure-a-instance" required></select></label><label>A local vertex (zero-based) <input id="measure-a-vertex" type="number" min="0" step="1" required></label><label>Endpoint B instance <select id="measure-b-instance" required></select></label><label>B local vertex (zero-based) <input id="measure-b-vertex" type="number" min="0" step="1" required></label></div>
+<small>Choose a local vertex from each current imported/part-selected instance. The same instance or vertex is allowed. Measures placed XYZ coordinates in mm, including retained unreferenced vertices. STL vertices may repeat per triangle. This is a point observation, not minimum mesh separation, collision, clearance or engineering/physical suitability evidence. Apply placement edits first. A new layout or placement clears endpoint choices and the old report.</small><br><button>Measure A to B</button>
+</fieldset></form>
+<pre id="measure-status" role="status" aria-live="polite">Choose endpoints after opening or adding references.</pre><div id="measure-download"></div>
+<fieldset id="dimension-controls" disabled><legend>Save named dimensions and an annotated drawing</legend>
+<p>Measure a pair above, give it a name, and add it to this revision's dimension set. Up to 12 named pairs; zero lengths and cross-instance pairs are allowed.</p>
+<label>Dimension name <input id="dimension-name" maxlength="60" placeholder="Support diagonal"></label><button type="button" id="dimension-add" disabled>Add measured pair</button>
+<label>Saved named pairs <select id="dimension-list" size="4"></select></label><button type="button" id="dimension-remove" disabled>Remove selected pair</button><button type="button" id="dimension-clear" disabled>Clear named pairs</button>
+<label>Reopen companion dimension JSON <input id="dimension-file" type="file" accept=".json"></label><button type="button" id="dimension-open">Open dimension set</button>
+<button type="button" id="dimension-export" disabled>Prepare named dimension sheet</button>
+<small>Save the companion JSON and editable layout together. Reopening requires exact layout and geometry identities. Applied changes clear the set; pending placement edits disable export. Dashed lines are projections; the ledger gives true 3D distances and signed XYZ deltas. Markers may overlap. These point observations are not minimum separation, tolerances, collision checks or engineering/physical suitability evidence.</small>
+<pre id="dimension-status" role="status" aria-live="polite">No named pairs in this revision.</pre><div id="dimension-save"></div><div id="dimension-download"></div>
+</fieldset>
+<form id="calibrate-form"><fieldset id="calibrate-controls" disabled><legend>Calibrate a reference to a known length</legend>
+<label>Desired A-to-B length (mm) <input id="calibrate-length" type="number" min="0" max="1000000000" step="any" required></label><button>Scale measured instance, keep A fixed</button><br>
+<small>First measure two distinct vertices on the same instance above. This scales that entire instance uniformly around A; other instances stay in place. Original source bytes and units are preserved. Save the original layout separately before editing, then save the new editable layout and inspection report. This is a one-time placement edit; your supplied length is not independently verified or physical-use qualification.</small>
+</fieldset></form>
+<form id="section-form"><fieldset id="section-controls" disabled><legend>Export a placed cross-section for CAD</legend>
+<div class="row"><label>World plane axis <select id="section-axis"><option value="x">X</option><option value="y">Y</option><option value="z" selected>Z</option></select></label><label>Plane position (mm) <input id="section-position" type="number" value="0" min="-1000000000" max="1000000000" step="any" required></label><button type="button" id="section-middle">Use layout midpoint</button><button>Calculate section and DXF</button></div>
+<small>Sections every last-applied instance. DXF is unscaled projected millimetres: X planes use Y/Z, Y use X/Z, Z use X/Y, all at DXF Z=0. Each instance has its own layer, including coincident or empty parts. Independent LINE segments and POINT contacts only; coplanar faces are omitted. No closed contours or physical-use qualification. Keep section JSON and editable layout too. Apply pending placement edits first.</small>
+</fieldset></form>
+<pre id="section-status" role="status" aria-live="polite">Open a layout, choose a plane, then calculate.</pre>
+<img id="section-preview" alt="Calculated placed reference cross-section" hidden style="width:100%;height:auto;background:white">
+<div id="section-downloads" class="row"></div>
+<pre id="status" role="status" aria-live="polite">Add a reference or open a saved layout to begin.</pre>
+<div id="downloads" class="row"></div>
+<p><button id="glb-export" disabled>Prepare GLB for 3D viewers</button> <span id="glb-download"></span><br>
+<small>GLB keeps named instances, converts mm/Z-up to metres/Y-up and rounds positions to float32. Neutral double-sided styling replaces original materials. Save editable layout JSON too; GLB bakes placement and omits original source bytes.</small></p>
+<p><button id="drawing-export" disabled>Prepare three-view drawing</button> <span id="drawing-download"></span><br>
+<small>Top, front and right SVG views with overall dimensions in mm and source identities. All triangle edges are visible. Common auto-fit scale; not a print-scale template. Apply placement changes first and save editable layout JSON too.</small></p>
+<fieldset id="revision-controls" disabled><legend>Compare a saved revision with this applied layout</legend>
+<label>Previous editable layout JSON <input id="revision-file" type="file" accept=".json"></label>
+<label><input id="revision-frame" type="checkbox"> I have checked that both layouts use the same intended world origin and axes</label>
+<small>Explicit source units convert to millimetres. Matches use exact instance IDs; renaming appears as removal plus addition. No automatic alignment, tolerances, physical acceptance or changes to either layout.</small><br>
+<button id="revision-compare" type="button">Compare saved revision</button>
+<pre id="revision-status" role="status" aria-live="polite">Choose an earlier saved layout to inspect the revision.</pre>
+<div id="revision-download"></div><img id="revision-preview" hidden alt="Before orange dashed and after blue solid in a shared three-view reference overlay" style="max-width:100%">
+</fieldset>
+<script type="module">
+const $ = id => document.getElementById(id), canvas = $('preview'), ctx = canvas.getContext('2d');
+let layout = { contract_id: 'moonmold.reference-layout.v1', name: 'reference-layout', instances: [] }, result = null, selected = '', busy = false, urls = [];
+let cutRecipe = null, sectionUrls = [];
+let islandRecipe = null, islandsCatalog = null, islandsUrl = null, islandsGeneration = 0;
+let revisionUrls = [], revisionGeneration = 0;
+let surfaceAreaUrls = [], surfaceAreaGeneration = 0;
+let placementsPreview = null, placementsUrl = null, placementsRevision = 0;
+let dimensionSet = null, dimensionRevision = 0, dimensionUrls = [], dimensionSetUrl = null;
+let measurement = null, measurementUrl = null, measurementRevision = 0, placementDirty = false, glbUrl = null, drawingUrls = [];
+const copy = value => JSON.parse(JSON.stringify(value));
+// Retain editable source snapshots, not potentially much larger derived geometry.
+const HISTORY_STATES = 20, HISTORY_TEXT_BYTES = 16 * 1024 * 1024;
+let undoStates = [], redoStates = [], historyTrimmed = false;
+function snapshot() {
+ return { layout: JSON.stringify(layout), selected, recipe: cutRecipe ? JSON.stringify(cutRecipe) : null, island_recipe: islandRecipe ? JSON.stringify(islandRecipe) : null,
+  layout_sha256: result?.layout_sha256 ?? null, geometry_sha256: result?.geometry_sha256 ?? null };
+}
+function sameState(a, b) { return a.layout === b.layout && a.recipe === b.recipe && a.island_recipe === b.island_recipe; }
+function snapshotBytes(state) { return 2 * (state.layout.length + state.selected.length + (state.recipe?.length ?? 0) + (state.island_recipe?.length ?? 0) + (state.layout_sha256?.length ?? 0) + (state.geometry_sha256?.length ?? 0)); }
+function trimHistory() {
+ while (undoStates.length + redoStates.length > HISTORY_STATES || [...undoStates, ...redoStates].reduce((sum, state) => sum + snapshotBytes(state), 0) > HISTORY_TEXT_BYTES) {
+  (undoStates.length >= redoStates.length ? undoStates : redoStates).shift(); historyTrimmed = true;
+ }
+}
+function updateHistoryControls() {
+ $('layout-undo').disabled = busy || placementDirty || !undoStates.length;
+ $('layout-redo').disabled = busy || placementDirty || !redoStates.length;
+ $('discard-placement').disabled = busy || !placementDirty;
+ $('history-status').textContent = `${undoStates.length} undo · ${redoStates.length} redo. Session only.` + (historyTrimmed ? ' History limit reached; distant states were dropped.' : '') + (placementDirty ? ' Apply or discard placement fields first.' : '');
+}
+function rememberChange(before) {
+ if (sameState(before, snapshot())) return;
+ undoStates.push(before); redoStates = []; trimHistory(); updateHistoryControls();
+}
+function resetHistory() { undoStates = []; redoStates = []; historyTrimmed = false; updateHistoryControls(); }
+
+const number = id => { if ($(id).value.trim() === '') throw Error('Enter all placement numbers'); return Number($(id).value); };
+const display = values => values.map(n => Number(n.toPrecision(8))).join(' × ');
+function calibrationReady() { return !!result && !placementDirty && !!measurement && measurement.distance_mm > 0 && measurement.endpoint_a.instance_id === measurement.endpoint_b.instance_id && measurement.layout_sha256 === result.layout_sha256 && measurement.geometry_sha256 === result.geometry_sha256; }
+function lock(value) { busy = value; $('islands-controls').disabled = value || !result || placementDirty; $('islands-split').disabled = value || placementDirty || !islandsCatalog || islandsCatalog.component_count < 2 || islandsCatalog.resulting_instance_count > 16; $('islands-restore').disabled = value || placementDirty || !islandRecipe; $('surface-area-controls').disabled = value || !result || placementDirty; $('revision-controls').disabled = value || !result || placementDirty; $('placements-controls').disabled = value || !result || placementDirty; $('placements-apply').disabled = value || !placementsPreview || placementDirty; $('placements-cancel').disabled = value || !placementsPreview; $('calibrate-controls').disabled = value || !calibrationReady(); $('section-controls').disabled = value || !result || placementDirty; $('cut-controls').disabled = value || !result || placementDirty; $('cut-restore').disabled = value || !cutRecipe || placementDirty; $('arrange-controls').disabled = value || !result || placementDirty; $('merge-controls').disabled = value || !result || placementDirty; $('replace-controls').disabled = value || !result || placementDirty; $('drawing-export').disabled = value || !result || placementDirty; $('glb-import-controls').disabled = value; $('glb-export').disabled = value || !result || placementDirty; $('load-controls').disabled = value; $('add-controls').disabled = value; $('edit-controls').disabled = value || !layout.instances.length; $('array-controls').disabled = value || !layout.instances.length; $('align-controls').disabled = value || layout.instances.length < 2; $('measure-controls').disabled = value || !result || placementDirty; updateDimensionControls(); updateHistoryControls(); }
+function clearMeasurement(message) {
+ measurement = null; measurementRevision++; $('calibrate-controls').disabled = true;
+ if (measurementUrl) URL.revokeObjectURL(measurementUrl); measurementUrl = null;
+ $('measure-download').replaceChildren(); $('measure-status').textContent = message; updateDimensionControls(); render();
+}
+function resetEndpoints() {
+ for (const side of ['a','b']) {
+  const menu = $('measure-'+side+'-instance'); menu.replaceChildren();
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose instance'; menu.append(placeholder);
+  for (const part of result?.parts ?? []) { const option = document.createElement('option'); option.value = part.id; option.textContent = `${part.id} (vertices 0–${part.vertex_range.count-1})`; menu.append(option); }
+  menu.value = ''; $('measure-'+side+'-vertex').value = ''; $('measure-'+side+'-vertex').removeAttribute?.('max');
+ }
+}
+function clearSection() {
+ sectionUrls.forEach(URL.revokeObjectURL); sectionUrls = [];
+ $('section-downloads').replaceChildren(); $('section-preview').hidden = true; $('section-preview').removeAttribute?.('src');
+ $('section-status').textContent = 'Layout or placement changed. Calculate a section of the current applied layout.';
+}
+function clearDrawing() { drawingUrls.forEach(URL.revokeObjectURL); drawingUrls = []; $('drawing-download').replaceChildren(); }
+function clearRevision() {
+ revisionGeneration++; revisionUrls.forEach(URL.revokeObjectURL); revisionUrls = [];
+ $('revision-download').replaceChildren(); $('revision-preview').hidden = true; $('revision-preview').removeAttribute?.('src');
+ $('revision-status').textContent = 'Choose a saved revision and compare it with the current applied layout.';
+}
+function clearDownloads() { clearIslands(); clearSurfaceArea(); clearRevision(); clearPlacements(); clearSection(); clearDrawing(); clearDimensionDrawing(); if (glbUrl) URL.revokeObjectURL(glbUrl); glbUrl = null; $('glb-download').replaceChildren(); urls.forEach(URL.revokeObjectURL); urls = []; $('downloads').replaceChildren(); }
+function currentDimensionSet() {
+ return !!dimensionSet && !!result && dimensionSet.expected_layout_sha256 === result.layout_sha256 && dimensionSet.expected_geometry_sha256 === result.geometry_sha256;
+}
+function updateDimensionControls() {
+ const ready = !busy && !!result && !placementDirty, count = currentDimensionSet() ? dimensionSet.dimensions.length : 0;
+ $('dimension-controls').disabled = !ready;
+ $('dimension-add').disabled = !ready || count >= 12 || !measurement || measurement.layout_sha256 !== result?.layout_sha256 || measurement.geometry_sha256 !== result?.geometry_sha256;
+ $('dimension-remove').disabled = !ready || !count; $('dimension-clear').disabled = !ready || !count; $('dimension-export').disabled = !ready || !count;
+}
+function clearDimensionDrawing() {
+ dimensionUrls.forEach(URL.revokeObjectURL); dimensionUrls = []; $('dimension-download').replaceChildren();
+}
+function clearDimensions(message = 'No named pairs in this revision.') {
+ dimensionSet = null; dimensionRevision++; clearDimensionDrawing();
+ if (dimensionSetUrl) URL.revokeObjectURL(dimensionSetUrl); dimensionSetUrl = null;
+ $('dimension-save').replaceChildren(); $('dimension-list').replaceChildren(); $('dimension-status').textContent = message; updateDimensionControls();
+}
+function showDimensionSet(set) {
+ clearDimensions(); dimensionSet = copy(set);
+ for (const [i, item] of set.dimensions.entries()) { const option = document.createElement('option'); option.value = String(i); option.textContent = `D${i + 1}: ${item.name} (${item.endpoint_a.instance_id}[${item.endpoint_a.vertex_index}] → ${item.endpoint_b.instance_id}[${item.endpoint_b.vertex_index}])`; $('dimension-list').append(option); }
+ $('dimension-list').value = '0';
+ dimensionSetUrl = URL.createObjectURL(new Blob([JSON.stringify(set, null, 2)+'\n'], { type: 'application/json' }));
+ const link = document.createElement('a'); link.href = dimensionSetUrl; link.download = `${layout.name}.dimensions.json`; link.textContent = 'Save named dimension set'; $('dimension-save').append(link);
+ $('dimension-status').textContent = `${set.dimensions.length} named pairs bound to layout ${set.expected_layout_sha256}. Save the companion JSON and editable layout.`; updateDimensionControls();
+}
+function dimensionRequestMatches(sheet, applied, set) {
+ const canonical = value => JSON.stringify({ contract_id: value?.contract_id, expected_layout_sha256: value?.expected_layout_sha256, expected_geometry_sha256: value?.expected_geometry_sha256, dimensions: value?.dimensions?.map(item => ({ name: item.name, endpoint_a: { instance_id: item.endpoint_a?.instance_id, vertex_index: item.endpoint_a?.vertex_index }, endpoint_b: { instance_id: item.endpoint_b?.instance_id, vertex_index: item.endpoint_b?.vertex_index } })) });
+ return sheet.contract_id === 'moonmold.reference-dimension-drawing.v1' && sheet.layout_sha256 === applied.layout_sha256 && sheet.geometry_sha256 === applied.geometry_sha256 && sheet.dimension_count === set.dimensions.length && canonical(JSON.parse(sheet.exports?.dimensions ?? 'null')) === canonical(set);
+}
+$('dimension-add').addEventListener('click', () => {
+ if (busy || !result || placementDirty || !measurement || $('dimension-add').disabled) return;
+ try {
+  const name = $('dimension-name').value;
+  if (!name.trim() || name !== name.trim() || name.length > 60 || /[\x00-\x1f\x7f\uD800-\uDFFF\uFFFE\uFFFF]/u.test(name)) throw Error('Enter a 1–60 character name of XML-compatible text without outer whitespace or ASCII control characters');
+  const set = currentDimensionSet() ? copy(dimensionSet) : { contract_id: 'moonmold.reference-dimensions.v1', expected_layout_sha256: result.layout_sha256, expected_geometry_sha256: result.geometry_sha256, dimensions: [] };
+  if (set.dimensions.some(item => item.name === name)) throw Error('Choose a unique dimension name');
+  if (set.dimensions.length >= 12) throw Error('At most 12 named pairs are supported');
+  const endpoint = value => ({ instance_id: value.instance_id, vertex_index: value.vertex_index });
+  set.dimensions.push({ name, endpoint_a: endpoint(measurement.endpoint_a), endpoint_b: endpoint(measurement.endpoint_b) }); showDimensionSet(set); $('dimension-name').value = '';
+ } catch (error) { $('dimension-status').textContent = error.message; }
+});
+$('dimension-remove').addEventListener('click', () => {
+ if (busy || placementDirty || !currentDimensionSet()) return;
+ const index = Number($('dimension-list').value); if (!Number.isInteger(index) || index < 0 || index >= dimensionSet.dimensions.length) return;
+ const set = copy(dimensionSet); set.dimensions.splice(index, 1); if (set.dimensions.length) showDimensionSet(set); else clearDimensions();
+});
+$('dimension-clear').addEventListener('click', () => { if (!busy && !placementDirty) clearDimensions(); });
+$('dimension-open').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, revision = dimensionRevision, snapshot = copy(layout), file = $('dimension-file').files[0];
+  if (!file || file.size > 32000) throw Error('Choose a dimension JSON file no larger than 32000 bytes');
+  const contents = file.arrayBuffer ? new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer()) : await file.text();
+  const set = JSON.parse(contents);
+  const response = await fetch('/api/reference-layout/dimension-drawing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, dimensions: set }) });
+  const sheet = await response.json(); if (!response.ok) throw Error(sheet.message);
+  if (result !== applied || placementDirty || dimensionRevision !== revision) return;
+  const normalized = JSON.parse(sheet.exports?.dimensions ?? 'null');
+  if (!dimensionRequestMatches(sheet, applied, set)) throw Error('Dimension response does not match the requested set');
+  showDimensionSet(normalized);
+ });
+});
+$('dimension-export').addEventListener('click', () => {
+ if (busy || placementDirty || !currentDimensionSet()) return;
+ return action(async () => {
+  const applied = result, revision = dimensionRevision, set = copy(dimensionSet), snapshot = copy(layout);
+  const response = await fetch('/api/reference-layout/dimension-drawing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, dimensions: set }) });
+  const sheet = await response.json(); if (!response.ok) throw Error(sheet.message);
+  if (result !== applied || placementDirty || dimensionRevision !== revision) return;
+  if (!dimensionRequestMatches(sheet, applied, set)) throw Error('Dimension response does not match the requested set');
+  clearDimensionDrawing(); const { exports, ...report } = sheet;
+  for (const [contents, type, suffix, label] of [[exports.svg, 'image/svg+xml', 'dimensions.svg', 'Download named dimension SVG'], [JSON.stringify(report, null, 2)+'\n', 'application/json', 'dimensions-report.json', 'Dimension drawing report']]) {
+   const url = URL.createObjectURL(new Blob([contents], { type })); dimensionUrls.push(url);
+   const link = document.createElement('a'); link.href = url; link.download = `${snapshot.name}.${suffix}`; link.textContent = label; $('dimension-download').append(link);
+  }
+  $('dimension-status').textContent = `${sheet.dimension_count} named pairs prepared. True 3D distances and signed XYZ deltas are in the SVG ledger; dashed lines are projections. Set SHA-256: ${sheet.dimension_set_sha256}`;
+ });
+});
+function nextId() { let n = 1; while (layout.instances.some(item => item.id === `reference-${n}`)) n++; return `reference-${n}`; }
+function render() {
+ ctx.clearRect(0, 0, canvas.width, canvas.height); if (!result) return;
+ const yaw = Number($('yaw').value)*Math.PI/180, pitch = Number($('pitch').value)*Math.PI/180;
+ const center = result.bounds.min.map((n,i) => (n + result.bounds.max[i])/2);
+ let extent = 1e-12;
+ const points = result.vertices.map(point => { const [x,y,z] = point.map((n,i) => n-center[i]); const u = x*Math.cos(yaw)-y*Math.sin(yaw), v = (x*Math.sin(yaw)+y*Math.cos(yaw))*Math.sin(pitch)-z*Math.cos(pitch); extent = Math.max(extent, Math.abs(u), Math.abs(v)); return [u,v]; });
+ const zoom = 170/extent;
+ for (const part of result.parts) {
+  ctx.strokeStyle = part.id === selected ? '#ffe6a6' : '#63aaa5'; ctx.lineWidth = part.id === selected ? 1.5 : 1; ctx.beginPath();
+  const end = part.triangle_range.start + part.triangle_range.count;
+  for (let n = part.triangle_range.start; n < end; n++) { const face = result.triangles[n]; for (let i = 0; i < 3; i++) { const a = points[face[i]], b = points[face[(i+1)%3]]; ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom); ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom); } }
+  ctx.stroke();
+ }
+ ctx.fillStyle = '#b2c7d2'; ctx.font = '15px system-ui'; ctx.fillText(`${result.instance_count} instances · selected: ${selected}`,15,25);
+ if (measurement && measurement.layout_sha256 === result.layout_sha256 && measurement.geometry_sha256 === result.geometry_sha256) {
+  const ends = [measurement.endpoint_a, measurement.endpoint_b].map(endpoint => { const p = points[endpoint.layout_vertex_index]; return [500+p[0]*zoom,200+p[1]*zoom]; });
+  ctx.strokeStyle = '#ff80d5'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(...ends[0]); ctx.lineTo(...ends[1]); ctx.stroke();
+  ends.forEach(([x,y],i) => { ctx.strokeStyle = i ? '#ff80d5' : '#73dcff'; ctx.beginPath(); ctx.moveTo(x-7,y); ctx.lineTo(x+7,y); ctx.moveTo(x,y-7); ctx.lineTo(x,y+7); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.fillText(i ? 'B' : 'A',x+10,y+(i ? 18 : -10)); });
+ }
+}
+function selectPart() {
+ clearIslands();
+ placementDirty = false;
+ $('cut-targets').replaceChildren();
+ for (const instance of layout.instances) { const option = document.createElement('option'); option.value = instance.id; option.textContent = instance.id; option.selected = instance.id === selected; $('cut-targets').append(option); }
+ $('arrange-targets').replaceChildren();
+ for (const instance of layout.instances) { const option = document.createElement('option'); option.value = instance.id; option.textContent = instance.id; option.selected = instance.id === selected; $('arrange-targets').append(option); }
+ $('replace-targets').replaceChildren();
+ for (const instance of layout.instances) { const option = document.createElement('option'); option.value = instance.id; option.textContent = instance.id; option.selected = instance.id === selected; $('replace-targets').append(option); }
+ const previousReference = $('align-reference').value;
+ const references = layout.instances.filter(item => item.id !== selected);
+ $('align-reference').replaceChildren(); for (const reference of references) { const option = document.createElement('option'); option.value = reference.id; option.textContent = reference.id; $('align-reference').append(option); }
+ $('align-reference').value = references.some(item => item.id === previousReference) ? previousReference : (references[0]?.id ?? '');
+ const item = layout.instances.find(item => item.id === selected); if (!item) { $('part-status').textContent = ''; return; }
+ $('selected').value = selected; $('instance-id').value = item.id; $('layout-name').value = layout.name;
+ $('scale').value = String(item.transform.scale); $('ground').checked = item.transform.center_and_ground;
+ ['rx','ry','rz'].forEach((id,i) => $(id).value = String(item.transform.rotation_deg[i]));
+ ['tx','ty','tz'].forEach((id,i) => $(id).value = String(item.transform.translation_mm[i]));
+ const part = result.parts.find(part => part.id === selected);
+ $('part-status').textContent = `${part.id}: ${part.source_format.toUpperCase()}${part.source_encoding ? ' ('+part.source_encoding+')' : ''} · original units ${part.source_units}\nPlaced dimensions (mm): ${display(part.bounds.size)}\nBounds: ${part.bounds.min.join(', ')} to ${part.bounds.max.join(', ')}\nSource SHA-256: ${part.source_sha256}\nSource fields omitted from geometry: ${part.losses.join(', ') || 'none'}`;
+ render();
+}
+function show(next, wanted, record = true) {
+ const before = record ? snapshot() : null;
+ cutRecipe = next.cut ? JSON.parse(next.exports.recipe) : null;
+ islandRecipe = next.island_split ? JSON.parse(next.exports.recipe) : null;
+ if (dimensionSet && (dimensionSet.expected_layout_sha256 !== next.layout_sha256 || dimensionSet.expected_geometry_sha256 !== next.geometry_sha256)) clearDimensions('Applied layout changed. Inspect and add named pairs for this revision.');
+ result = next; layout = next.layout; selected = layout.instances.some(item => item.id === wanted) ? wanted : layout.instances[0].id;
+ clearMeasurement('Layout composed. Choose endpoints and measure this revision.'); resetEndpoints();
+ $('selected').replaceChildren(); for (const item of layout.instances) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.id; $('selected').append(option); }
+ selectPart(); clearDownloads();
+ $('surface-area-targets').replaceChildren();
+ for (const instance of layout.instances) { const option = document.createElement('option'); option.value = instance.id; option.textContent = instance.id; option.selected = true; $('surface-area-targets').append(option); }
+ $('status').textContent = `${next.instance_count} instances · ${next.vertex_count} vertices · ${next.triangle_count} triangles\nCombined dimensions (mm): ${display(next.bounds.size)}\nBounds: ${next.bounds.min.join(', ')} to ${next.bounds.max.join(', ')}\n${next.qualification}\nLayout SHA-256: ${next.layout_sha256}\nGeometry SHA-256: ${next.geometry_sha256}`;
+ const downloadFormats = [['layout','Save editable layout','layout.json'],['obj','Combined OBJ','obj'],['stl','Combined STL','stl'],['json','Inspection report','report.json']];
+ if (cutRecipe) downloadFormats.push(['recipe','Save cut recipe with originals','cut.json']);
+ if (islandRecipe) downloadFormats.push(['recipe','Save island recipe with originals','islands.json']);
+ for (const [format,label,suffix] of downloadFormats) {
+  const text = format === 'json' ? JSON.stringify(next,null,2) : next.exports[format], url = URL.createObjectURL(new Blob([text], { type: format === 'obj' || format === 'stl' ? 'text/plain' : 'application/json' })); urls.push(url);
+  const a = document.createElement('a'); a.href = url; a.download = `${layout.name}.${suffix}`; a.textContent = label; $('downloads').append(a);
+ }
+ if (record) rememberChange(before);
+}
+async function commit(candidate, wanted, record = true) {
+ const response = await fetch('/api/reference-layout/compose', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(candidate) });
+ const next = await response.json(); if (!response.ok) throw Error(next.message); show(next, wanted, record);
+}
+async function action(operation) {
+ if (busy) return; lock(true);
+ try { await operation(); } catch (error) { $('status').textContent = `${error.message}. Last successful layout, preview and downloads are unchanged.`; } finally { lock(false); }
+}
+async function sourceFromFile(file) {
+ if (!file || file.size > 400000) throw Error('Choose an OBJ, STL or PLY no larger than 400000 bytes');
+ const input_format = file.name.split('.').at(-1).toLowerCase();
+ const name = file.name.replace(/[^a-zA-Z0-9._-]/g,'_').replace(/^[^a-zA-Z0-9]+/,'').slice(0,80) || 'reference';
+ const source = { name, input_format, units: $('source-units').value };
+ if (input_format === 'obj') source.text = await file.text();
+ else if (['stl','ply'].includes(input_format)) { let binary = ''; for (const byte of new Uint8Array(await file.arrayBuffer())) binary += String.fromCharCode(byte); source.data_base64 = btoa(binary); }
+ else throw Error('Choose an .obj, .stl or .ply file');
+ return source;
+}
+function clearIslands() {
+ islandsGeneration++; islandsCatalog = null;
+ if (islandsUrl) URL.revokeObjectURL(islandsUrl); islandsUrl = null;
+ $('islands-download').replaceChildren(); $('islands-split').disabled = true;
+ $('islands-status').textContent = 'Select a placement and inspect its islands.';
+}
+$('islands-inspect').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, wanted = selected, generation = islandsGeneration;
+  const response = await fetch('/api/reference-layout/islands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout, instance_id: wanted }) });
+  const report = await response.json(); if (!response.ok) throw Error(report.message);
+  if (result !== applied || selected !== wanted || placementDirty || generation !== islandsGeneration) return;
+  if (report.contract_id !== 'moonmold.reference-islands.v1' || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || report.instance_id !== wanted || !Array.isArray(report.components) || report.component_count !== report.components.length) throw Error('Island catalog does not match the selected applied reference');
+  clearIslands(); islandsCatalog = report;
+  islandsUrl = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)+'\n'], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = islandsUrl; link.download = `${layout.name}.${wanted}.island-catalog.json`; link.textContent = 'Download island catalog'; $('islands-download').append(link);
+  $('islands-status').textContent = `${wanted}: ${report.component_count} edge-connected islands; ${report.unused_vertex_count} unused vertices will be omitted.\n` + report.components.map(component => `${component.id}: ${component.triangle_count} triangles; bounds [${component.bounds.min.join(', ')}] to [${component.bounds.max.join(', ')}] mm`).join('\n') + `\n${report.connectivity}\n${report.qualification}\n` + (report.component_count < 2 ? 'Nothing to separate.' : report.resulting_instance_count > 16 ? `Cannot split: ${report.resulting_instance_count} resulting placements exceeds 16. Use a smaller reference or layout.` : `Ready to replace ${wanted} with ${report.component_count} independently editable placements. Current layout is unchanged until you separate.`);
+ });
+});
+$('islands-split').addEventListener('click', () => {
+ if (busy || !result || placementDirty || !islandsCatalog || islandsCatalog.component_count < 2 || islandsCatalog.resulting_instance_count > 16) return;
+ return action(async () => {
+  const applied = result, catalog = islandsCatalog, generation = islandsGeneration;
+  const response = await fetch('/api/reference-layout/split-islands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout, instance_id: catalog.instance_id }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || islandsCatalog !== catalog || placementDirty || generation !== islandsGeneration) return;
+  const report = next.island_split;
+  if (report?.contract_id !== 'moonmold.reference-island-split-report.v1' || report.parent_layout_sha256 !== applied.layout_sha256 || report.parent_geometry_sha256 !== applied.geometry_sha256 || report.layout_sha256 !== next.layout_sha256 || report.geometry_sha256 !== next.geometry_sha256 || report.inspection?.instance_id !== catalog.instance_id || JSON.stringify(report.inspection.components) !== JSON.stringify(catalog.components)) throw Error('Island split does not match the inspected applied reference');
+  show(next, report.components[0].instance_id);
+  $('status').textContent += `\nSeparated ${catalog.instance_id} into ${catalog.component_count} placements. Choose any island above and apply an independent move. Save the island recipe with originals and the editable derivative; Undo restores the original layout.`;
+ });
+});
+$('islands-restore').addEventListener('click', () => {
+ if (busy || !islandRecipe || placementDirty) return;
+ return action(async () => { const recipe = copy(islandRecipe); await commit(recipe.layout, recipe.instance_id); $('status').textContent += '\nOriginal sources and placements restored from the island recipe.'; });
+});
+function clearSurfaceArea() {
+ surfaceAreaGeneration++; surfaceAreaUrls.forEach(URL.revokeObjectURL); surfaceAreaUrls = [];
+ $('surface-area-downloads').replaceChildren();
+ $('surface-area-status').textContent = 'Choose references and calculate area for the current applied layout.';
+}
+$('surface-area-targets').addEventListener('change', clearSurfaceArea);
+$('surface-area-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, generation = surfaceAreaGeneration, snapshot = copy(layout);
+  const instance_ids = Array.from($('surface-area-targets').selectedOptions, option => option.value);
+  if (!instance_ids.length) throw Error('Choose at least one instance to measure');
+  const response = await fetch('/api/reference-layout/surface-area', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, instance_ids }) });
+  const report = await response.json(); if (!response.ok) throw Error(report.message);
+  if (result !== applied || placementDirty || surfaceAreaGeneration !== generation) return;
+  const expectedIds = snapshot.instances.filter(item => instance_ids.includes(item.id)).map(item => item.id);
+  if (report.contract_id !== 'moonmold.reference-surface-area.v1' || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || JSON.stringify(report.instance_ids) !== JSON.stringify(expectedIds) || typeof report.exports?.csv !== 'string' || typeof report.exports?.json !== 'string') throw Error('Surface-area report does not match the requested layout and selection');
+  clearSurfaceArea();
+  for (const [format, label, type] of [['json', 'Download area report JSON', 'application/json'], ['csv', 'Download area schedule CSV', 'text/csv;charset=utf-8']]) {
+   const url = URL.createObjectURL(new Blob([report.exports[format]], { type })); surfaceAreaUrls.push(url);
+   const link = document.createElement('a'); link.href = url; link.download = `${layout.name}.surface-area.${format}`; link.textContent = label; $('surface-area-downloads').append(link);
+  }
+  const describe = item => `${item.triangle_sum_area_mm2} mm² (${item.triangle_sum_area_m2} m²); ${item.triangle_count} triangles. Surface centroid XYZ mm: ${item.surface_centroid_mm.join(', ')}`;
+  $('surface-area-status').textContent = `Triangle-sum area, ${report.instance_count} chosen instances\nTotal: ${describe(report.total)}\n` + report.parts.map(part => `${part.instance_id}: ${describe(part)}`).join('\n') + `\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
+ });
+});
+function clearPlacementsPreview() {
+ placementsPreview = null; placementsRevision++;
+ $('placements-apply').disabled = true; $('placements-cancel').disabled = true;
+ $('placements-status').textContent = 'No CSV changes are applied. Export from the current layout, or preview an edited table for this exact revision.';
+}
+function clearPlacements() {
+ clearPlacementsPreview();
+ if (placementsUrl) URL.revokeObjectURL(placementsUrl); placementsUrl = null;
+ $('placements-download').replaceChildren();
+}
+$('placements-file').addEventListener('change', clearPlacementsPreview);
+$('placements-cancel').addEventListener('click', () => { if (!busy) clearPlacementsPreview(); });
+$('placements-export').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result;
+  const response = await fetch('/api/reference-layout/placements/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(layout) });
+  const table = await response.json(); if (!response.ok) throw Error(table.message);
+  if (result !== applied || placementDirty) return;
+  if (table.contract_id !== 'moonmold.reference-placements.v1' || table.layout_sha256 !== applied.layout_sha256 || table.geometry_sha256 !== applied.geometry_sha256 || typeof table.csv !== 'string') throw Error('Placement CSV does not match this applied layout');
+  if (placementsUrl) URL.revokeObjectURL(placementsUrl);
+  placementsUrl = URL.createObjectURL(new Blob([table.csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a'); link.href = placementsUrl; link.download = `${layout.name}.placements.csv`; link.textContent = 'Download editable placement CSV';
+  $('placements-download').replaceChildren(); $('placements-download').append(link);
+ });
+});
+$('placements-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ clearPlacementsPreview();
+ return action(async () => {
+  const applied = result, revision = placementsRevision, file = $('placements-file').files[0];
+  if (!file || file.size > 16000) throw Error('Choose a placement CSV no larger than 16000 bytes');
+  const csv = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(await file.arrayBuffer());
+  const response = await fetch('/api/reference-layout/placements/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout, csv }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || placementDirty || revision !== placementsRevision) return;
+  const report = next.placement_table;
+  if (report?.contract_id !== 'moonmold.reference-placements.v1' || report.parent_layout_sha256 !== applied.layout_sha256 || report.parent_geometry_sha256 !== applied.geometry_sha256 || report.layout_sha256 !== next.layout_sha256 || report.geometry_sha256 !== next.geometry_sha256 || !Array.isArray(report.changed_instances)) throw Error('CSV preview does not match the applied layout');
+  placementsPreview = { applied, next };
+  const describe = t => `scale ${t.scale}; XYZ degrees [${t.rotation_deg.join(', ')}]; center/ground ${t.center_and_ground}; XYZ mm [${t.translation_mm.join(', ')}]`;
+  $('placements-status').textContent = `${report.changed_instances.length} changed placements. Preview only; current geometry and downloads are unchanged.\n` + report.changed_instances.map(item => `${item.instance_id} (source ${item.source_units})\n  Before: ${describe(item.before_transform)}\n  After:  ${describe(item.after_transform)}`).join('\n') + '\nApply the preview to update the layout, or discard it.';
+ });
+});
+$('placements-apply').addEventListener('click', () => {
+ if (busy || !result || placementDirty || !placementsPreview) return;
+ const preview = placementsPreview;
+ if (preview.applied !== result) { clearPlacementsPreview(); return; }
+ const count = preview.next.placement_table.changed_instances.length;
+ show(preview.next, selected); lock(false);
+ $('status').textContent += `\nApplied ${count} changed placements from CSV. Original sources and units retained. Save editable layout and inspection report; Undo reverses this batch.`;
+});
+$('merge-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout), id_prefix = $('merge-prefix').value;
+  const translation_mm = ['merge-x','merge-y','merge-z'].map(number);
+  const file = $('merge-file').files[0];
+  if (!file || file.size > 3000000) throw Error('Choose a saved layout no larger than 3000000 bytes');
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.length > 3000000) throw Error('Incoming layout exceeds 3000000 bytes');
+  const incoming_layout = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes));
+  const response = await fetch('/api/reference-layout/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, incoming_layout, id_prefix, translation_mm }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || placementDirty) return;
+  if (next.merge?.parent_layout_sha256 !== applied.layout_sha256 || next.merge?.parent_geometry_sha256 !== applied.geometry_sha256) throw Error('Merge does not match the applied layout');
+  show(next, next.merge.instances[0].instance_id);
+  $('merge-file').value = '';
+  $('status').textContent += `\nMerged ${next.merge.added_instance_count} instances from ${next.merge.incoming_name}: ${next.merge.instances.map(item => item.instance_id).join(', ')}. Shared world offset: ${next.merge.translation_mm.join(', ')} mm. Save the editable layout and inspection report; imported placements can now be edited independently.`;
+ });
+});
+$('cut-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout), wanted = selected;
+  const instance_ids = Array.from($('cut-targets').selectedOptions, option => option.value);
+  if (!instance_ids.length) throw Error('Choose at least one instance to cut');
+  const plane = { axis: $('cut-axis').value, position_mm: number('cut-position'), keep: $('cut-keep').value };
+  const response = await fetch('/api/reference-layout/cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, instance_ids, plane }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || placementDirty) return;
+  if (next.cut?.parent_layout_sha256 !== applied.layout_sha256 || next.cut?.parent_geometry_sha256 !== applied.geometry_sha256) throw Error('Surface cut does not match the applied layout');
+  show(next, wanted);
+  for (const option of $('cut-targets').children) option.selected = instance_ids.includes(option.value);
+  $('status').textContent += `\nCut surfaces at ${plane.axis.toUpperCase()}=${plane.position_mm} mm, keep ${plane.keep}. Removed empty instances: ${next.cut.parts.filter(part => part.status === 'removed-empty').map(part => part.instance_id).join(', ') || 'none'}. No caps added. Save the cut recipe with originals before making further edits, and save the editable derived layout.`;
+ });
+});
+$('cut-restore').addEventListener('click', () => {
+ if (busy || !cutRecipe || placementDirty) return;
+ return action(async () => {
+  const recipe = copy(cutRecipe); await commit(recipe.layout, recipe.instance_ids[0]);
+  for (const option of $('cut-targets').children) option.selected = recipe.instance_ids.includes(option.value);
+  $('cut-axis').value = recipe.plane.axis; $('cut-position').value = String(recipe.plane.position_mm); $('cut-keep').value = recipe.plane.keep;
+  $('status').textContent += '\nOriginal sources and placements restored. Change the plane or side, then cut again. No previous source file was changed.';
+ });
+});
+$('arrange-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout), wanted = selected;
+  const instance_ids = Array.from($('arrange-targets').selectedOptions, option => option.value);
+  if (!instance_ids.length) throw Error('Choose at least one instance to move');
+  const pivot_mm = ['pivot-x','pivot-y','pivot-z'].map(number);
+  const rotation_deg = ['arrange-rx','arrange-ry','arrange-rz'].map(number);
+  const translation_mm = ['arrange-tx','arrange-ty','arrange-tz'].map(number);
+  const response = await fetch('/api/reference-layout/arrange', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, instance_ids, pivot_mm, rotation_deg, translation_mm }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || placementDirty) return;
+  if (next.arrangement?.parent_layout_sha256 !== applied.layout_sha256 || next.arrangement?.parent_geometry_sha256 !== applied.geometry_sha256) throw Error('Arrangement move does not match the applied layout');
+  show(next, wanted);
+  for (const option of $('arrange-targets').children) option.selected = instance_ids.includes(option.value);
+  $('status').textContent += `\nMoved together: ${next.arrangement.instance_ids.join(', ')}. Pivot: ${pivot_mm.join(', ')} mm. World X/Y/Z turn: ${rotation_deg.join(', ')} degrees; then translation: ${translation_mm.join(', ')} mm. Save editable layout and inspection report. Each placement remains independently editable.`;
+ });
+});
+$('replace-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout), wanted = selected;
+  const instance_ids = Array.from($('replace-targets').selectedOptions, option => option.value);
+  if (!instance_ids.length) throw Error('Choose at least one instance to replace');
+  const file = $('replace-file').files[0];
+  if (!file || file.size > 400000) throw Error('Choose a revised OBJ, STL or PLY no larger than 400000 bytes');
+  const input_format = file.name.split('.').at(-1).toLowerCase();
+  if (!['obj','stl','ply'].includes(input_format)) throw Error('Choose an .obj, .stl or .ply replacement');
+  const units = $('replace-units').value;
+  if (!['mm','cm','m','in'].includes(units)) throw Error('Choose the revised file source units');
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.length > 400000) throw Error('Replacement exceeds 400000 bytes');
+  const name = file.name.replace(/[^a-zA-Z0-9._-]/g,'_').replace(/^[^a-zA-Z0-9]+/,'').slice(0,80) || 'reference';
+  const source = { name, input_format, units };
+  if (input_format === 'obj') source.text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  else { let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte); source.data_base64 = btoa(binary); }
+  const response = await fetch('/api/reference-layout/replace-source', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, instance_ids, source }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || placementDirty) return;
+  if (next.replacement?.parent_layout_sha256 !== applied.layout_sha256) throw Error('Replacement does not match the applied layout');
+  show(next, wanted);
+  $('replace-file').value = ''; $('replace-units').value = '';
+  $('status').textContent += `\nReplaced sources: ${next.replacement.instance_ids.join(', ')}. Placement recipes retained; center/ground recomputed. Save the editable layout and inspection report. Prepare new drawings/GLB and reselect measurement endpoints for this revision.`;
+ });
+});
+$('section-middle').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ const axis = ['x','y','z'].indexOf($('section-axis').value);
+ $('section-position').value = String((result.bounds.min[axis] + result.bounds.max[axis])/2);
+ $('section-status').textContent = 'Midpoint selected. Downloads still show the last calculated section; calculate to update.';
+});
+for (const id of ['section-axis','section-position']) $(id).addEventListener('input', () => {
+ $('section-status').textContent = 'Plane changed. Preview and downloads still show the last calculated section; calculate to update.';
+});
+$('section-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout);
+  const plane = { axis: $('section-axis').value, position_mm: number('section-position') };
+  const response = await fetch('/api/reference-layout/section', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, plane }) });
+  const section = await response.json(); if (!response.ok) throw Error(section.message);
+  if (result !== applied || placementDirty) return;
+  if (section.layout_sha256 !== applied.layout_sha256 || section.geometry_sha256 !== applied.geometry_sha256 || section.plane?.axis !== plane.axis || section.plane?.position_mm !== plane.position_mm) throw Error('Section does not match the applied layout and requested plane');
+  clearSection();
+  for (const [format, type] of [['dxf','application/dxf'],['json','application/json'],['svg','image/svg+xml'],['csv','text/csv']]) {
+   const text = format === 'json' ? JSON.stringify(section, null, 2)+'\n' : section.exports[format];
+   const url = URL.createObjectURL(new Blob([text], { type })); sectionUrls.push(url);
+   const a = document.createElement('a'); a.href = url; a.download = `${snapshot.name}.section-${plane.axis}-${plane.position_mm}mm.${format}`; a.textContent = `Download section ${format.toUpperCase()}`;
+   $('section-downloads').append(a);
+   if (format === 'svg') { $('section-preview').src = url; $('section-preview').hidden = false; }
+  }
+  $('section-status').textContent = `Calculated ${plane.axis.toUpperCase()}=${plane.position_mm} mm: ${section.segment_count} segments, ${section.point_contact_count} point contacts; ${section.diagnostics.coplanar_triangles} coplanar triangles omitted.\nDXF X/Y = ${section.plane.projected_axes.join('/').toUpperCase()}, Z=0, units mm, original projected origin retained. ${section.instance_count} instance layers.\n${section.qualification}\nSection SHA-256: ${section.section_sha256}\nLayout SHA-256: ${section.layout_sha256}`;
+ });
+});
+$('revision-file').addEventListener('change', clearRevision);
+$('revision-frame').addEventListener('change', clearRevision);
+$('revision-compare').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  if (!$('revision-frame').checked) throw Error('Check that both layouts use the same intended world origin and axes');
+  const file = $('revision-file').files[0];
+  if (!file || file.size > 3000000) throw Error('Choose a saved editable layout no larger than 3000000 bytes');
+  const applied = result, after = copy(layout), generation = revisionGeneration;
+  const before = JSON.parse(await file.text());
+  const originalResponse = await fetch('/api/reference-layout/compose', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(before) });
+  const original = await originalResponse.json(); if (!originalResponse.ok) throw Error(original.message);
+  if (result !== applied || placementDirty || revisionGeneration !== generation) return;
+  const response = await fetch('/api/reference-layout/compare-revisions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ before, after, same_world_frame: true }) });
+  const comparison = await response.json(); if (!response.ok) throw Error(comparison.message);
+  if (result !== applied || placementDirty || revisionGeneration !== generation) return;
+  if (comparison.contract_id !== 'moonmold.reference-revision-comparison.v1' || comparison.same_world_frame_declared !== true ||
+      comparison.before?.layout_sha256 !== original.layout_sha256 || comparison.before?.geometry_sha256 !== original.geometry_sha256 ||
+      comparison.after?.layout_sha256 !== applied.layout_sha256 || comparison.after?.geometry_sha256 !== applied.geometry_sha256) throw Error('Comparison does not match the requested layout revisions');
+  const { exports, ...report } = comparison;
+  clearRevision();
+  for (const [contents, type, suffix, label] of [[exports.svg, 'image/svg+xml', 'revision.svg', 'Download revision overlay'], [JSON.stringify(report, null, 2)+'\n', 'application/json', 'revision.json', 'Download exact revision report']]) {
+   const url = URL.createObjectURL(new Blob([contents], { type })); revisionUrls.push(url);
+   const a = document.createElement('a'); a.href = url; a.download = `${after.name}.${suffix}`; a.textContent = label; $('revision-download').append(a, document.createTextNode(' '));
+   if (type === 'image/svg+xml') { $('revision-preview').src = url; $('revision-preview').hidden = false; }
+  }
+  $('revision-status').textContent = `Added ${report.summary.added}; removed ${report.summary.removed}; changed ${report.summary.changed}; unchanged ${report.summary.unchanged}.\n` + report.changes.map(item => `${item.id}: ${item.status}${item.changed_fields.length ? ' ('+item.changed_fields.join(', ')+')' : ''}`).join('\n') + `\nName changed: ${report.name_changed}; list/order changed: ${report.instance_order_changed}.\nComparison SHA-256: ${report.comparison_sha256}\nSave both editable layouts with this observation.`;
+ });
+});
+$('drawing-export').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout);
+  const response = await fetch('/api/reference-layout/drawing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snapshot) });
+  const drawing = await response.json(); if (!response.ok) throw Error(drawing.message);
+  if (result !== applied || placementDirty) return;
+  if (drawing.layout_sha256 !== applied.layout_sha256 || drawing.geometry_sha256 !== applied.geometry_sha256) throw Error('Drawing does not match the applied layout');
+  const { exports, ...report } = drawing;
+  clearDrawing();
+  for (const [contents, type, suffix, label] of [[exports.svg, 'image/svg+xml', 'drawing.svg', 'Download SVG drawing'], [JSON.stringify(report, null, 2)+'\n', 'application/json', 'drawing.json', 'Drawing report']]) {
+   const url = URL.createObjectURL(new Blob([contents], { type })); drawingUrls.push(url);
+   const a = document.createElement('a'); a.href = url; a.download = `${snapshot.name}.${suffix}`; a.textContent = label;
+   $('drawing-download').append(a, document.createTextNode(' '));
+  }
+ });
+});
+$('glb-export').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, snapshot = copy(layout);
+  const response = await fetch('/api/reference-layout/glb', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snapshot) });
+  if (!response.ok) throw Error((await response.json()).message);
+  const bytes = await response.arrayBuffer();
+  if (result !== applied) return;
+  if (glbUrl) URL.revokeObjectURL(glbUrl);
+  glbUrl = URL.createObjectURL(new Blob([bytes], { type: 'model/gltf-binary' }));
+  const a = document.createElement('a'); a.href = glbUrl; a.download = `${snapshot.name}.glb`; a.textContent = 'Download GLB';
+  $('glb-download').replaceChildren(); $('glb-download').append(a);
+ });
+});
+$('glb-import-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => {
+ const file = $('glb-file').files[0];
+ if (!file || file.size > 400000 || !file.name.toLowerCase().endsWith('.glb')) throw Error('Choose a GLB file no larger than 400000 bytes');
+ let binary = ''; for (const byte of new Uint8Array(await file.arrayBuffer())) binary += String.fromCharCode(byte);
+ const name = file.name.replace(/[^a-zA-Z0-9._-]/g,'_').replace(/^[^a-zA-Z0-9]+/,'').slice(0,80) || 'glb-scene';
+ const response = await fetch('/api/reference-layout/import-glb', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, data_base64: btoa(binary) }) });
+ const imported = await response.json(); if (!response.ok) throw Error(imported.message);
+ const candidate = copy(layout), ids = new Set(candidate.instances.map(item => item.id));
+ for (const item of imported.layout.instances) {
+  const base = item.id; let id = base, suffix = 2;
+  while (ids.has(id)) id = base.slice(0,70)+'-'+suffix++;
+  ids.add(id); candidate.instances.push({ ...item, id });
+ }
+ await commit(candidate, candidate.instances.at(-1).id);
+}); });
+$('add-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => { const id = nextId(), source = await sourceFromFile($('mesh-file').files[0]); const candidate = copy(layout); candidate.instances.push({ id, source, transform: {} }); await commit(candidate,id); }); });
+$('load-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => {
+ const file = $('layout-file').files[0]; if (!file || file.size > 3100000) throw Error('Choose layout or recipe JSON no larger than 3100000 bytes');
+ const document = JSON.parse(await file.text());
+ if (document.contract_id === 'moonmold.reference-layout-cut.v1') {
+  const response = await fetch('/api/reference-layout/cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(document) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message); show(next, '', false);
+  $('cut-axis').value = next.cut.plane.axis; $('cut-position').value = String(next.cut.plane.position_mm); $('cut-keep').value = next.cut.plane.keep;
+  $('status').textContent += '\nCut recipe reopened from its embedded originals. Restore originals to revise the plane, or save the derived layout for placement edits. No caps added.';
+ } else if (document.contract_id === 'moonmold.reference-island-split.v1') {
+  const response = await fetch('/api/reference-layout/split-islands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(document) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message); show(next, next.island_split.components[0].instance_id, false);
+  $('status').textContent += '\nIsland recipe reopened from its embedded originals. Save the editable derivative for placement edits, or restore the pre-split layout.';
+ } else await commit(document,'',false);
+ resetHistory();
+}); });
+$('edit-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => {
+ const candidate = copy(layout), item = candidate.instances.find(item => item.id === selected); if (!item) return;
+ candidate.name = $('layout-name').value; item.id = $('instance-id').value;
+ item.transform = { scale: number('scale'), rotation_deg: ['rx','ry','rz'].map(number), translation_mm: ['tx','ty','tz'].map(number), center_and_ground: $('ground').checked };
+ await commit(candidate,item.id);
+}); });
+$('selected').addEventListener('change', () => { if (busy) return; selected = $('selected').value; selectPart(); lock(false); });
+$('measure-form').addEventListener('submit', e => { e.preventDefault(); if (busy || !result || placementDirty) return; return action(async () => {
+ clearMeasurement('Measuring the current applied layout…'); const revision = measurementRevision;
+ const endpoint = side => { const id = 'measure-'+side+'-vertex', value = $(id).value; if (!/^(0|[1-9][0-9]*)$/.test(value)) throw Error('Enter a zero-based integer vertex index for both endpoints'); return { instance_id: $('measure-'+side+'-instance').value, vertex_index: Number(value) }; };
+ try {
+  const request = { layout: copy(layout), endpoint_a: endpoint('a'), endpoint_b: endpoint('b'), expected_layout_sha256: result.layout_sha256, expected_geometry_sha256: result.geometry_sha256 };
+  const response = await fetch('/api/reference-layout/measure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+  const report = await response.json(); if (!response.ok) throw Error(report.message);
+  if (revision !== measurementRevision || placementDirty || report.layout_sha256 !== result.layout_sha256 || report.geometry_sha256 !== result.geometry_sha256) return;
+  measurement = report;
+  const delta = report.delta_b_minus_a_mm;
+  $('measure-status').textContent = `A ${report.endpoint_a.instance_id}[${report.endpoint_a.vertex_index}]: ${report.endpoint_a.coordinates_mm.join(', ')} mm\nB ${report.endpoint_b.instance_id}[${report.endpoint_b.vertex_index}]: ${report.endpoint_b.coordinates_mm.join(', ')} mm\nSigned B − A: X ${delta.x}, Y ${delta.y}, Z ${delta.z} mm\nEuclidean distance: ${report.distance_mm} mm\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
+  measurementUrl = URL.createObjectURL(new Blob([JSON.stringify(report,null,2)+'\n'], { type: 'application/json' }));
+  const a = document.createElement('a'); a.href = measurementUrl; a.download = `${layout.name}.measurement.json`; a.textContent = 'Download vertex measurement report'; $('measure-download').append(a); render();
+ } catch (error) { clearMeasurement(`Measurement unavailable: ${error.message}`); }
+}); });
+$('calibrate-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !calibrationReady()) return;
+ return action(async () => {
+  const applied = result, chosen = measurement, revision = measurementRevision;
+  const endpoint = value => ({ instance_id: value.instance_id, vertex_index: value.vertex_index });
+  const request = { layout: copy(layout), endpoint_a: endpoint(chosen.endpoint_a), endpoint_b: endpoint(chosen.endpoint_b), target_distance_mm: number('calibrate-length'), expected_layout_sha256: applied.layout_sha256, expected_geometry_sha256: applied.geometry_sha256 };
+  const response = await fetch('/api/reference-layout/calibrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || revision !== measurementRevision || placementDirty) throw Error('Endpoint selection changed while calibrating; measure again');
+  const op = next.calibration;
+  if (!op || op.parent_layout_sha256 !== applied.layout_sha256 || op.parent_geometry_sha256 !== applied.geometry_sha256 || op.layout_sha256 !== next.layout_sha256 || op.geometry_sha256 !== next.geometry_sha256 || op.instance_id !== chosen.endpoint_a.instance_id || op.endpoint_a.vertex_index !== chosen.endpoint_a.vertex_index || op.endpoint_b.vertex_index !== chosen.endpoint_b.vertex_index || op.target_distance_mm !== request.target_distance_mm) throw Error('Calibration result does not match the measured selection');
+  show(next, op.instance_id);
+  $('status').textContent += `\nCalibrated ${op.instance_id}: ${op.before_distance_mm} → ${op.after_distance_mm} mm (requested ${op.target_distance_mm} mm; residual ${op.residual_mm} mm). Scale ${op.before_transform.scale} → ${op.after_transform.scale}. A anchor residual: ${op.anchor_residual_mm.join(', ')} mm. Save editable layout and inspection report. Measure again for another edit.`;
+ });
+});
+for (const side of ['a','b']) {
+ $('measure-'+side+'-instance').addEventListener('change', () => {
+  const part = result?.parts.find(part => part.id === $('measure-'+side+'-instance').value);
+  $('measure-'+side+'-vertex').value = ''; if (part) $('measure-'+side+'-vertex').max = String(part.vertex_range.count-1);
+  clearMeasurement('Endpoint changed. Enter its local vertex index and measure again.');
+ });
+ $('measure-'+side+'-vertex').addEventListener('input', () => clearMeasurement('Endpoint changed. Measure again to inspect this pair.'));
+}
+$('align-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => {
+ const candidate = { layout: copy(layout), instance_id: selected, reference_id: $('align-reference').value, axis: $('align-axis').value, moving_anchor: $('moving-anchor').value, reference_anchor: $('reference-anchor').value, offset_mm: number('align-offset') };
+ const response = await fetch('/api/reference-layout/align', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(candidate) });
+ const next = await response.json(); if (!response.ok) throw Error(next.message);
+ show(next, candidate.instance_id);
+ const operation = next.alignment;
+ $('status').textContent += `\nAligned ${operation.instance_id} ${operation.moving_anchor} to ${operation.reference_id} ${operation.reference_anchor} on ${operation.axis.toUpperCase()}. Requested signed offset: ${operation.offset_mm} mm; actual: ${operation.actual_offset_mm} mm; residual: ${operation.residual_mm} mm. Save the editable layout to keep this placement.`;
+}); });
+$('array-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => {
+ const candidate = { layout: copy(layout), instance_id: selected, counts: ['count-x','count-y','count-z'].map(number), pitch_mm: ['array-x','array-y','array-z'].map(number) };
+ const response = await fetch('/api/reference-layout/array', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(candidate) });
+ const next = await response.json(); if (!response.ok) throw Error(next.message);
+ show(next, next.array.cells.at(-1).instance_id);
+ $('status').textContent += `\nAdded ${next.array.added_instance_count} independently editable copies. Save the editable layout to keep them.`;
+}); });
+$('duplicate').addEventListener('click', () => action(async () => { const item = layout.instances.find(item => item.id === selected); if (!item) return; const candidate = copy(layout), duplicate = copy(item); duplicate.id = nextId(); candidate.instances.push(duplicate); await commit(candidate,duplicate.id); }));
+$('reset').addEventListener('click', () => action(async () => { const candidate = copy(layout), item = candidate.instances.find(item => item.id === selected); if (!item) return; item.transform = {}; await commit(candidate,selected); }));
+$('remove').addEventListener('click', () => action(async () => {
+ const candidate = copy(layout); candidate.instances = candidate.instances.filter(item => item.id !== selected);
+ if (candidate.instances.length) await commit(candidate,'');
+ else showEmpty(candidate);
+}));
+function showEmpty(candidate, record = true) {
+ const before = record ? snapshot() : null;
+ clearDimensions('Layout is empty.'); layout = candidate; result = null; selected = ''; cutRecipe = null; islandRecipe = null; placementDirty = false;
+ for (const id of ['surface-area-targets','cut-targets','arrange-targets','replace-targets','selected','align-reference']) $(id).replaceChildren();
+ clearDownloads(); clearMeasurement('Layout is empty.'); resetEndpoints(); $('part-status').textContent = '';
+ $('status').textContent = 'Layout is empty. Add a reference, undo removal, or reopen a saved layout.'; render();
+ if (record) rememberChange(before);
+}
+function restoreHistory(direction) {
+ if (busy || placementDirty) return;
+ const from = direction === 'undo' ? undoStates : redoStates, to = direction === 'undo' ? redoStates : undoStates;
+ if (!from.length) return;
+ return action(async () => {
+  const target = from.at(-1), current = snapshot(), restoredLayout = JSON.parse(target.layout);
+  if (restoredLayout.instances.length) {
+   const response = await fetch(target.island_recipe ? '/api/reference-layout/split-islands' : target.recipe ? '/api/reference-layout/cut' : '/api/reference-layout/compose', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: target.island_recipe || target.recipe || target.layout,
+   });
+   const next = await response.json(); if (!response.ok) throw Error(next.message);
+   if (next.layout_sha256 !== target.layout_sha256 || next.geometry_sha256 !== target.geometry_sha256 || JSON.stringify(next.layout) !== target.layout || JSON.stringify(next.cut ? JSON.parse(next.exports.recipe) : null) !== (target.recipe ?? 'null') || JSON.stringify(next.island_split ? JSON.parse(next.exports.recipe) : null) !== (target.island_recipe ?? 'null')) throw Error('Restored result does not match the saved history state');
+   clearDimensions('Layout history restored. Reopen a matching companion or prepare named dimensions again.');
+   show(next, target.selected, false);
+  } else showEmpty(restoredLayout, false);
+  from.pop(); to.push(current); trimHistory();
+  $('status').textContent += `\n${direction === 'undo' ? 'Undo' : 'Redo'} restored the applied layout. Derived observations were cleared; save editable layout to retain this state.`;
+ });
+}
+$('layout-undo').addEventListener('click', () => restoreHistory('undo'));
+$('layout-redo').addEventListener('click', () => restoreHistory('redo'));
+$('discard-placement').addEventListener('click', () => {
+ if (busy || !placementDirty) return;
+ selectPart(); lock(false); $('status').textContent = 'Unapplied placement fields discarded. Applied layout and history are unchanged.';
+});
+for (const id of ['layout-name','instance-id','scale','rx','ry','rz','tx','ty','tz','ground']) $(id).addEventListener('input', () => { if (!busy) { placementDirty = true; clearIslands(); clearSurfaceArea(); clearRevision(); clearPlacements(); clearSection(); clearDrawing(); clearDimensionDrawing(); clearMeasurement('Placement fields changed. Apply placement before selecting endpoints and measuring again.'); lock(false); $('status').textContent = 'Placement fields changed. Preview and downloads show the last applied layout. Click Apply placement to update.'; } });
+for (const id of ['yaw','pitch']) $(id).addEventListener('input',render);
+for (const [id,yaw,pitch] of [['top',0,90],['iso',35,25]]) $(id).addEventListener('click', () => { $('yaw').value = String(yaw); $('pitch').value = String(pitch); render(); });
+</script></html>

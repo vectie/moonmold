@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { AdapterRejection, canonicalJson } from "./protocol.mjs";
-import { DELIVERY_BACKEND, modelBounds, reconstructBoxes, renderObj, renderSvg } from "./delivery-geometry.mjs";
+import { DELIVERY_BACKEND, modelBounds, primaryDimensions, reconstructModel, renderObj, renderSvg } from "./delivery-geometry.mjs";
+import { readableDeliveryReports } from "./delivery-reader.mjs";
 
 const ROOT = ".moonsuite/products/moonmold";
 const JOURNAL = `${ROOT}/runtime/semantic-journal.json`;
@@ -51,7 +52,7 @@ function assertBrief(brief) {
       !Array.isArray(brief.constraints) || !brief.constraints.every(text) ||
       !Array.isArray(brief.review_criteria) || !brief.review_criteria.length || !brief.review_criteria.every(text) ||
       canonicalJson(brief.deliverables) !== canonicalJson(["editable-source", "presentation"])) {
-    reject("invalid-digital-brief", "Use a digital-only box brief with positive integer primary-mass dimensions in mm, declared units, z-up-right-handed frame, editable-source + presentation, and named review criteria");
+    reject("invalid-digital-brief", "Use a digital-only brief with positive integer primary-mass dimensions in mm (cylinder width/depth = nominal diameter), declared units, z-up-right-handed frame, editable-source + presentation, and named review criteria");
   }
 }
 
@@ -122,6 +123,7 @@ export async function verifiedDelivery(workspace, packageId) {
   const { package_id: ignoredId, ...base } = manifest;
   void ignoredId;
   if (manifest.source_digest !== files.find((file) => file.name === "editable-source.json").sha256 ||
+      manifest.brief_digest !== files.find((file) => file.name === "brief.json").sha256 ||
       packageId !== `delivery-${sha(canonicalJson(base)).slice(7)}`) {
     reject("delivery-integrity", "Delivery identity does not bind the exact source and manifest");
   }
@@ -202,19 +204,25 @@ export async function buildDelivery(workspace, body, loadRun) {
     }
   }
   if (!appliedDesignChange) reject("brief-not-bound", "The frozen brief needs an actually applied design operation; replayed no-ops do not establish a new design revision");
-  const model = reconstructBoxes(operations);
+  const model = reconstructModel(operations);
+  const cylinders = model.objects.filter((object) => object.kind === "cylinder");
+  // Source retains all applied operations, including objects replaced or reset
+  // later. Never label cylinder-bearing replay history as legacy box-only.
+  const hasCylinderHistory = operations.some((operation) => operation.method === "scene.create-cylinder");
   const primary = model.objects.find((object) => object.object_id === "primary-mass");
-  if (!primary || canonicalJson(primary.dimensions_mm) !== canonicalJson(brief.dimensions_mm) ||
+  if (!primary || canonicalJson(primaryDimensions(primary)) !== canonicalJson(brief.dimensions_mm) ||
       model.units !== brief.units || model.coordinate_frame !== brief.coordinate_frame) {
     reject("brief-dimensions-mismatch", "The primary-mass dimensions, units or frame differ from the frozen brief; correct the design or freeze a new brief revision");
   }
   const source = {
-    contract_id: "moonmold.editable-box-source.v1", project_id: brief.project_id, model_id: brief.model_id,
+    contract_id: hasCylinderHistory ? "moonmold.editable-primitive-source.v1" : "moonmold.editable-box-source.v1", project_id: brief.project_id, model_id: brief.model_id,
     brief_ref: body.brief_ref, brief_digest: briefDigest, backend: DELIVERY_BACKEND,
     dimension_units: "mm", translation_units: "mm", model,
     operations: operations.filter((op) => !["representation.export", "scene.validate"].includes(op.method)),
     provenance, physical_authority: false,
-    editing_notes: "Edit semantic operation parameters as a new brief/request revision in the operator. Re-declaring a box replaces dimensions and resets its translation/material. OBJ can also be edited in a mesh editor; it is a derived sibling, not this semantic source.",
+    editing_notes: hasCylinderHistory
+      ? "Edit semantic operation parameters as a new brief/request revision in the operator. Re-declaring a box or cylinder replaces its kind/dimensions/sides and resets translation/material. Cylinder radius/height are mm; sides explicitly controls tessellation (8–256). The primary-mass brief width/depth is nominal diameter, not the faceted mesh bounds. OBJ is a derived sibling, not this semantic source."
+      : "Edit semantic operation parameters as a new brief/request revision in the operator. Re-declaring a box replaces dimensions and resets its translation/material. OBJ can also be edited in a mesh editor; it is a derived sibling, not this semantic source.",
   };
   const sourceText = jsonText(source);
   const sourceDigest = sha(sourceText);
@@ -228,22 +236,37 @@ export async function buildDelivery(workspace, body, loadRun) {
     known_losses: [
       "OBJ does not retain semantic operation history or enforce dimensions/constraints; configure importer units explicitly",
       "Material identifiers are retained in source only; no engineering material properties, textures or measured appearance are exported",
-      "SVG is an illustrative projection with no depth/collision analysis; overlapping boxes may occlude incorrectly",
-      "No Boolean CSG, cylinders, assemblies, topology/manifold qualification or tolerance solving in this box renderer",
+      hasCylinderHistory ? "SVG is an illustrative projection of the same faceted geometry with no depth/collision analysis; overlapping primitives may occlude incorrectly" : "SVG is an illustrative projection with no depth/collision analysis; overlapping boxes may occlude incorrectly",
+      hasCylinderHistory ? "Cylinders are inscribed regular polygons with planar side facets and two ngon caps; no smooth surface or smooth normals. Odd side counts need not span the nominal diameter on each axis" : "No Boolean CSG, cylinders, assemblies, topology/manifold qualification or tolerance solving in this box renderer",
+      ...(hasCylinderHistory ? ["No Boolean CSG, assemblies, topology/manifold qualification or tolerance solving in this box/cylinder renderer"] : []),
       "Human brief constraints and review criteria are recorded, not automatically proven",
       "No Blender qualification, engineering fitness, fabrication readiness, machine authority or client acceptance",
     ],
   };
+  if (hasCylinderHistory) losses.cylinder_tessellation = cylinders.map((object) => ({
+    object_id: object.object_id, radius_mm: object.dimensions_mm.radius, height_mm: object.dimensions_mm.height,
+    sides: object.sides, vertex_count: 2 * object.sides, face_count: object.sides + 2,
+    cap_topology: "two-ngons", side_topology: "quads", axis: "+Z", phase: "+X, counterclockwise viewed from +Z",
+    max_radial_deviation_mm: object.dimensions_mm.radius * (1 - Math.cos(Math.PI / object.sides)),
+    physical_tolerance_qualified: false,
+  }));
   const validation = {
     contract_id: "moonmold.digital-delivery-validation.v1", source_digest: sourceDigest,
-    checked: ["Exact native attempt/input/receipt lineage", "Primary-mass dimensions match frozen brief", "Declared units and coordinate frame match brief", "All model operations supported by box renderer"],
-    bounds_mm: modelBounds(model), box_count: model.objects.length,
+    checked: ["Exact native attempt/input/receipt lineage", hasCylinderHistory ? "Primary-mass nominal dimensions match frozen brief; cylinder width/depth = twice radius" : "Primary-mass dimensions match frozen brief", "Declared units and coordinate frame match brief", hasCylinderHistory ? "All model operations supported by box/cylinder renderer" : "All model operations supported by box renderer"],
+    bounds_mm: modelBounds(model), box_count: model.objects.length - cylinders.length,
     constraints_pending_human_review: brief.constraints,
     review_criteria_pending_human_review: brief.review_criteria,
     adapter_receipt: selected.receipt, adapter_result: selected.result,
     backend: DELIVERY_BACKEND, physical_authority: false,
   };
-  const readme = `MoonMold digital box package\n\nDETERMINISTIC MOCK / FIXTURE-REFERENCE-ONLY. NOT BLENDER EVIDENCE. NO PHYSICAL AUTHORITY.\n\nOpen editable-source.json in a text editor to inspect dimensions, translations and exact semantic operation history. To revise in MoonMold, increment the brief revision, freeze it, execute changed box/transform parameters with that brief reference, then export Presentation and prepare a new package. Re-declaring a box replaces it and resets translation/material. Old packages remain readable.\n\nOpen presentation.obj in a mesh editor with units set to ${model.units} and z-up-right-handed. Each box has eight vertices and six outward-oriented quad faces. Geometry operations retain millimeter dimensions; OBJ coordinates are converted to declared units. The file is editable derived geometry, not a parametric CAD certification.\n\nOpen preview.svg in a browser for an illustrative preview. Read loss-report.json, change-report.json, validation.json and brief.json before reviewing. Review is recorded separately against the exact manifest digest. Package generation is not named review, client acceptance, payment or physical certification.\n`;
+  if (hasCylinderHistory) {
+    validation.cylinder_count = cylinders.length;
+    validation.object_count = model.objects.length;
+    validation.bounds_scope = "Actual tessellated mesh vertices in mm; primary-mass brief dimensions remain nominal";
+  }
+  const readme = hasCylinderHistory
+    ? `MoonMold digital box/cylinder package\n\nDETERMINISTIC MOCK / FIXTURE-REFERENCE-ONLY. NOT BLENDER EVIDENCE. NO PHYSICAL AUTHORITY.\n\nOpen editable-source.json to inspect exact semantic operations, radius/height/sides, translations and material tags. Increment the brief revision and freeze before changed operations, then execute Presentation export and build a new package. Re-declaring a primitive replaces its kind/dimensions/sides and resets translation/material. Old package files and exact reviews remain readable.\n\nOpen presentation.obj in a mesh editor with units set to ${model.units} and z-up-right-handed. Each box has 8 vertices and 6 outward quad faces. An N-sided cylinder has 2N vertices, N outward side quads and 2 outward ngon caps, centered on translation with axis +Z and its first vertex at +X. Sides must be an explicit integer 8–256. Cylinders are faceted inscribed polygons with no smooth normals. See per-cylinder approximation losses. Nominal primary-mass width/depth is twice radius; actual mesh bounds can be smaller, especially for odd side counts. All input dimensions/translations remain mm; OBJ values convert to declared units.\n\nSVG is an illustrative projection, not a dimensioned drawing or reliable occlusion analysis. Read brief.json, loss-report.json, change-report.json and validation.json. Human constraints are not automatically proven; generated topology is not engineering/manifold qualification. Review binds the exact manifest digest separately. Package generation is not human approval, client acceptance, payment, Blender evidence or physical certification.\n`
+    : `MoonMold digital box package\n\nDETERMINISTIC MOCK / FIXTURE-REFERENCE-ONLY. NOT BLENDER EVIDENCE. NO PHYSICAL AUTHORITY.\n\nOpen editable-source.json in a text editor to inspect dimensions, translations and exact semantic operation history. To revise in MoonMold, increment the brief revision, freeze it, execute changed box/transform parameters with that brief reference, then export Presentation and prepare a new package. Re-declaring a box replaces it and resets translation/material. Old packages remain readable.\n\nOpen presentation.obj in a mesh editor with units set to ${model.units} and z-up-right-handed. Each box has eight vertices and six outward-oriented quad faces. Geometry operations retain millimeter dimensions; OBJ coordinates are converted to declared units. The file is editable derived geometry, not a parametric CAD certification.\n\nOpen preview.svg in a browser for an illustrative preview. Read loss-report.json, change-report.json, validation.json and brief.json before reviewing. Review is recorded separately against the exact manifest digest. Package generation is not named review, client acceptance, payment or physical certification.\n`;
   const contents = [
     ["brief.json", jsonText(record)], ["editable-source.json", sourceText],
     ["presentation.obj", renderObj(model, sourceDigest)], ["preview.svg", renderSvg(model, sourceDigest)],
@@ -286,6 +309,7 @@ export async function deliveryProjection(workspace, packageId, reviews = []) {
   const decisions = new Set(bound.filter((review) => review.reviewed_at === latestTime).map((review) => review.decision));
   return {
     contract_id: "moonmold.operator-delivery.v1", manifest, manifest_digest,
+    reports: readableDeliveryReports(delivery),
     download_url: latest && decisions.size === 1
       ? `/api/delivery/${packageId}/reviewed/${sha(canonicalJson(latest)).slice(7)}`
       : `/api/delivery/${packageId}/bundle`,

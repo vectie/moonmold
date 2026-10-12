@@ -1,0 +1,52 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "binary-ply-pair",
+  "instances": [
+    {
+      "id": "le-tetrahedron",
+      "source": {
+        "input_format": "ply",
+        "name": "reference-tetrahedron-le.ply",
+        "units": "cm",
+        "data_base64": "cGx5CmZvcm1hdCBiaW5hcnlfbGl0dGxlX2VuZGlhbiAxLjAKY29tbWVudCBTeW50aGV0aWMgdGV0cmFoZWRyb247IGNob29zZSBjbSBleHBsaWNpdGx5CmVsZW1lbnQgdmVydGV4IDQKcHJvcGVydHkgZmxvYXQgeApwcm9wZXJ0eSBmbG9hdCB5CnByb3BlcnR5IGZsb2F0IHoKcHJvcGVydHkgZmxvYXQgbngKcHJvcGVydHkgZmxvYXQgbnkKcHJvcGVydHkgZmxvYXQgbnoKcHJvcGVydHkgdWNoYXIgcmVkCnByb3BlcnR5IHVjaGFyIGdyZWVuCnByb3BlcnR5IHVjaGFyIGJsdWUKZWxlbWVudCBmYWNlIDQKcHJvcGVydHkgbGlzdCB1Y2hhciBpbnQgdmVydGV4X2luZGljZXMKZW5kX2hlYWRlcgoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgD//AAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAgD8A/wAAAAAAAABAQAAAAAAAAAAAAAAAAAAAgD8AAP8AAAAAAAAAAAAAgEAAAAAAAAAAAAAAgD////8DAAAAAAIAAAABAAAAAwAAAAABAAAAAwAAAAMAAAAAAwAAAAIAAAADAQAAAAIAAAADAAAA"
+      },
+      "transform": {
+        "scale": 1,
+        "rotation_deg": [
+          0,
+          0,
+          0
+        ],
+        "center_and_ground": false,
+        "translation_mm": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "be-tetrahedron",
+      "source": {
+        "input_format": "ply",
+        "name": "reference-tetrahedron-be.ply",
+        "units": "cm",
+        "data_base64": "cGx5CmZvcm1hdCBiaW5hcnlfYmlnX2VuZGlhbiAxLjAKY29tbWVudCBTeW50aGV0aWMgdGV0cmFoZWRyb247IGNob29zZSBjbSBleHBsaWNpdGx5CmVsZW1lbnQgdmVydGV4IDQKcHJvcGVydHkgZmxvYXQgeApwcm9wZXJ0eSBmbG9hdCB5CnByb3BlcnR5IGZsb2F0IHoKcHJvcGVydHkgZmxvYXQgbngKcHJvcGVydHkgZmxvYXQgbnkKcHJvcGVydHkgZmxvYXQgbnoKcHJvcGVydHkgdWNoYXIgcmVkCnByb3BlcnR5IHVjaGFyIGdyZWVuCnByb3BlcnR5IHVjaGFyIGJsdWUKZWxlbWVudCBmYWNlIDQKcHJvcGVydHkgbGlzdCB1Y2hhciBpbnQgdmVydGV4X2luZGljZXMKZW5kX2hlYWRlcgoAAAAAAAAAAAAAAAAAAAAAAAAAAD+AAAD/AABAAAAAAAAAAAAAAAAAAAAAAAAAAD+AAAAA/wAAAAAAQEAAAAAAAAAAAAAAAAAAAD+AAAAAAP8AAAAAAAAAAECAAAAAAAAAAAAAAD+AAAD///8DAAAAAAAAAAIAAAABAwAAAAAAAAABAAAAAwMAAAAAAAAAAwAAAAIDAAAAAQAAAAIAAAAD"
+      },
+      "transform": {
+        "scale": 1,
+        "rotation_deg": [
+          0,
+          0,
+          0
+        ],
+        "center_and_ground": false,
+        "translation_mm": [
+          60,
+          0,
+          0
+        ]
+      }
+    }
+  ]
+}

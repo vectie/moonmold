@@ -11,11 +11,17 @@ import {
 // Errors
 
 // Types and methods
+type BriefEditor derive(Eq, @debug.Debug)
+
 type DeliveryExport derive(Eq, @debug.Debug)
 
 type DeliveryFile derive(@debug.Debug, @json.FromJson)
 
 type DeliveryPayload derive(@debug.Debug, @json.FromJson)
+
+type DeliveryReport derive(@debug.Debug, @json.FromJson)
+
+type DeliveryReportRow derive(@debug.Debug, @json.FromJson)
 
 type FrozenBrief derive(@debug.Debug, @json.FromJson)
 
@@ -23,9 +29,13 @@ type Model
 
 type Msg
 
+type PrimitiveEditor derive(Eq, @debug.Debug)
+
 type RecoveryPayload derive(@debug.Debug)
 
 type RequestPayload derive(@debug.Debug, @json.FromJson)
+
+type RetainedScene derive(@debug.Debug)
 
 type ReviewPayload derive(@debug.Debug, @json.FromJson)
 

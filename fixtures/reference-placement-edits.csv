@@ -1,0 +1,4 @@
+contract_id,base_layout_sha256,instance_id,source_sha256,source_format,source_units,scale,rotation_x_deg,rotation_y_deg,rotation_z_deg,center_and_ground,translation_x_mm,translation_y_mm,translation_z_mm
+moonmold.reference-placements.v1,400bcb71046a4322674df302907e9889ca03a77ebd84171b0ccde1723298f68a,scaled-copy,32dfb0a798728f3cb486b0ca5743a437e28c7594f8a63c630fa23b47407d7278,obj,mm,1,0,0,0,FALSE,-30,4,8
+moonmold.reference-placements.v1,400bcb71046a4322674df302907e9889ca03a77ebd84171b0ccde1723298f68a,inch-reference,0cb2709a4b8b7e48eabb694fd0eff87cb41196efe978e75128b6164bb29e8ac0,stl,in,1,0,0,0,false,10,20,5
+moonmold.reference-placements.v1,400bcb71046a4322674df302907e9889ca03a77ebd84171b0ccde1723298f68a,base-triangle,32dfb0a798728f3cb486b0ca5743a437e28c7594f8a63c630fa23b47407d7278,obj,mm,2,0,0,90,false,50,60,7

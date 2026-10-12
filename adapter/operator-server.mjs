@@ -1,3 +1,10 @@
+import { inspectReferenceIslands, splitReferenceIslands, ISLAND_MAX_FILE_BYTES } from './reference-islands.mjs';
+import { measureReferenceSurfaceArea, SURFACE_AREA_MAX_REQUEST_BYTES } from './reference-surface-area.mjs';
+import { compareReferenceRevisions, REVISION_MAX_REQUEST_BYTES } from './reference-revision.mjs';
+import { exportReferencePlacements, applyReferencePlacements } from "./reference-placements.mjs";
+import { drawReferenceDimensions, DIMENSIONS_MAX_REQUEST_BYTES } from './reference-dimensions.mjs';
+import { calibrateReferenceLayout } from './reference-calibration.mjs';
+import { sectionReferenceLayout } from "./reference-layout-section.mjs";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createReadStream } from "node:fs";
@@ -13,6 +20,21 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverBlender } from "./blender.mjs";
+import { retainedScene } from "./retained-scene.mjs";
+import { importReferenceMesh } from "./reference-mesh.mjs";
+import { transformReferenceMesh } from "./reference-workbench.mjs";
+import { sectionReferenceMesh } from "./reference-section.mjs";
+import { importReferenceGlbLayout } from "./reference-glb-layout.mjs";
+import { composeReferenceLayout, LAYOUT_MAX_FILE_BYTES } from "./reference-layout.mjs";
+import { arrayReferenceLayout } from "./reference-array.mjs";
+import { alignReferenceLayout } from "./reference-alignment.mjs";
+import { exportReferenceLayoutGlb } from "./reference-glb.mjs";
+import { mergeReferenceLayouts } from "./reference-layout-merge.mjs";
+import { cutReferenceLayout, CUT_MAX_FILE_BYTES } from "./reference-cut.mjs";
+import { moveReferenceArrangement } from "./reference-arrangement.mjs";
+import { replaceReferenceSources } from "./reference-replacement.mjs";
+import { drawReferenceLayout } from "./reference-drawing.mjs";
+import { measureReferenceLayout } from "./reference-measurement.mjs";
 import {
   buildDelivery, deliveryProjection, freezeDeliveryBrief,
   latestDeliveryId, verifiedDelivery,
@@ -429,7 +451,7 @@ async function nextOperatorIdentity(workspaceRoot) {
   };
 }
 
-async function recoverAttempt(workspaceRoot, entry) {
+async function recoverAttempt(workspaceRoot, entry, allowNoOp = true) {
   recoveryIntegrity(
     entry.isDirectory() &&
       /^attempt-[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/.test(entry.name),
@@ -512,6 +534,26 @@ async function recoverAttempt(workspaceRoot, entry) {
   const receiptSubjectDigest = validatesInput
     ? `sha256:${createHash("sha256").update(operatorInputBytes).digest("hex")}`
     : spatial.expected_parent_digest;
+  // Native idempotent replay carries the ORIGINAL applied after-digest, not
+  // the current request's parent. Bind that exception to a separately verified
+  // earlier applied entry, never accept a self-asserted no-op digest.
+  const noOp = !validatesInput && receipt?.outcome === "idempotent-no-op";
+  if (noOp) {
+    recoveryIntegrity(allowNoOp, `replay origin is not an applied operation for ${attemptId}`);
+    const journal = await readJsonIfPresent(resolveRef(workspaceRoot, ".moonsuite/products/moonmold/runtime/semantic-journal.json"));
+    recoveryIntegrity(Array.isArray(journal), "replay needs its retained semantic journal");
+    const index = journal.findIndex((item) => item.flow_request?.attempt_id === attemptId);
+    const origin = journal.slice(0, Math.max(0, index)).find((item) => item.spatial_request?.idempotency_key === spatial.idempotency_key);
+    recoveryIntegrity(origin && canonicalJson(origin.spatial_request.operation) === canonicalJson(spatial.operation), `replay operation has no matching applied origin for ${attemptId}`);
+    safeIdentity(origin.flow_request.attempt_id, "attempt_id");
+    const originInfo = await stat(resolveRef(workspaceRoot, `.moonsuite/products/moonmold/adapter-attempts/${origin.flow_request.attempt_id}`));
+    const original = await recoverAttempt(workspaceRoot, { name: origin.flow_request.attempt_id, isDirectory: () => originInfo.isDirectory() }, false);
+    recoveryIntegrity(original && original.run.receipt.outcome === "applied" &&
+      canonicalJson(original.run.request) === canonicalJson(origin.spatial_request) &&
+      canonicalJson(original.run.flow_request) === canonicalJson(origin.flow_request) &&
+      original.run.receipt.after_digest === receipt.before_digest && receipt.before_digest === receipt.after_digest,
+    `replay digest is not bound to its verified applied origin for ${attemptId}`);
+  }
   recoveryIntegrity(
     receipt &&
       receipt.contract_id === "moonmold.spatial-operation-receipt.v1" &&
@@ -520,7 +562,7 @@ async function recoverAttempt(workspaceRoot, entry) {
       receipt.request_id === flow.request_id &&
       receipt.source_request_id === spatial.request_id &&
       receipt.idempotency_key === flow.idempotency_key &&
-      receipt.before_digest === receiptSubjectDigest &&
+      (noOp || receipt.before_digest === receiptSubjectDigest) &&
       (!validatesInput || (
         receipt.after_digest === receiptSubjectDigest &&
         receipt.validation_evidence?.subject_digest === receiptSubjectDigest
@@ -626,6 +668,17 @@ async function runSpatial(workspaceRoot, body) {
   }
   if (body.mode === "validate") {
     // Validation observes a proposed request and does not lower its requested authority.
+  }
+  if (spatial.operation.method === "scene.assign-material") {
+    // The native reference adapter owns workspace-global lineage, but does not
+    // model object existence. Do not let a typed assignment poison the retained
+    // model with a nonexistent or foreign object's semantic operation. A later
+    // workspace change is still refused by the native expected-parent check.
+    const scene = await retainedScene(workspaceRoot, spatial.project_id, spatial.model_id,
+      (attemptId) => loadVerifiedRun(workspaceRoot, attemptId));
+    if (scene.status !== "ready" || !scene.objects.some((object) => object.object_id === spatial.operation.params.objectId)) {
+      throw new AdapterRejection("unknown-material-object", "Refresh this project/model and select an existing supported retained object before assigning a material ID");
+    }
   }
   const inputRef = `.moonsuite/products/moonmold/operator-inputs/${safeIdentity(spatial.request_id, "request_id")}.json`;
   const inputBytes = serializedJson(spatial);
@@ -739,12 +792,12 @@ async function recordReview(workspaceRoot, body) {
   return { reference, review };
 }
 
-async function bodyJson(request) {
+async function bodyJson(request, limit = MAX_BODY) {
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY) throw new AdapterRejection("request-too-large", "request body is too large");
+    if (size > limit) throw new AdapterRejection("request-too-large", "request body is too large");
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
@@ -814,6 +867,65 @@ export function createOperatorServer({
         url.pathname === "/api/recovery/latest"
       ) {
         sendJson(response, 200, await recoverLatest(workspace));
+      } else if (request.method === "GET" && url.pathname === "/api/scene/retained") {
+        const project = safeIdentity(url.searchParams.get("project_id"), "project_id");
+        const model = safeIdentity(url.searchParams.get("model_id"), "model_id");
+        sendJson(response, 200, await retainedScene(workspace, project, model, (id) => loadVerifiedRun(workspace, id)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-mesh/import") {
+        sendJson(response, 200, importReferenceMesh(await bodyJson(request, 600_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-mesh/transform") {
+        sendJson(response, 200, transformReferenceMesh(await bodyJson(request, 600_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-mesh/section") {
+        sendJson(response, 200, sectionReferenceMesh(await bodyJson(request, 600_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/import-glb") {
+        sendJson(response, 200, importReferenceGlbLayout(await bodyJson(request, 600_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/glb") {
+        const bytes = exportReferenceLayoutGlb(await bodyJson(request, LAYOUT_MAX_FILE_BYTES));
+        response.writeHead(200, { "Content-Type": "model/gltf-binary", "Content-Length": bytes.length,
+          "Content-Disposition": 'attachment; filename="reference-layout.glb"', "Cache-Control": "no-store" });
+        response.end(bytes);
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/section") {
+        const input = await bodyJson(request, 3_100_000);
+        if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(key => !["layout", "plane"].includes(key))) throw new AdapterRejection("invalid-reference-section", "Expected layout and plane only");
+        sendJson(response, 200, sectionReferenceLayout(input.layout, input.plane));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/dimension-drawing") {
+        sendJson(response, 200, drawReferenceDimensions(await bodyJson(request, DIMENSIONS_MAX_REQUEST_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/compare-revisions") {
+        sendJson(response, 200, compareReferenceRevisions(await bodyJson(request, REVISION_MAX_REQUEST_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/drawing") {
+        sendJson(response, 200, drawReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/calibrate") {
+        sendJson(response, 200, calibrateReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/surface-area") {
+        sendJson(response, 200, measureReferenceSurfaceArea(await bodyJson(request, SURFACE_AREA_MAX_REQUEST_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/measure") {
+        sendJson(response, 200, measureReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/align") {
+        sendJson(response, 200, alignReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/array") {
+        sendJson(response, 200, arrayReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/islands") {
+        sendJson(response, 200, inspectReferenceIslands(await bodyJson(request, ISLAND_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/split-islands") {
+        sendJson(response, 200, splitReferenceIslands(await bodyJson(request, ISLAND_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/cut") {
+        sendJson(response, 200, cutReferenceLayout(await bodyJson(request, CUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/arrange") {
+        sendJson(response, 200, moveReferenceArrangement(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/merge") {
+        sendJson(response, 200, mergeReferenceLayouts(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/replace-source") {
+        sendJson(response, 200, replaceReferenceSources(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/placements/export") {
+        sendJson(response, 200, exportReferencePlacements(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/placements/apply") {
+        sendJson(response, 200, applyReferencePlacements(await bodyJson(request, LAYOUT_MAX_FILE_BYTES + 32000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/compose") {
+        sendJson(response, 200, composeReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "GET" && url.pathname === "/reference-layout") {
+        await serveStatic(response, path.join(REPO, "ui/reference-layout"), "/");
+      } else if (request.method === "GET" && url.pathname === "/reference-mesh") {
+        await serveStatic(response, path.join(REPO, "ui/reference-mesh"), "/");
       } else if (request.method === "POST" && url.pathname === "/api/request/save") {
         sendJson(response, 200, await saveSpatial(workspace, await bodyJson(request)));
       } else if (request.method === "POST" && url.pathname === "/api/request/load") {

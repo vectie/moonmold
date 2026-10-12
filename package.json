@@ -5,6 +5,13 @@
   "type": "module",
   "description": "Bounded semantic Blender/MCP adapter and MoonMold experiment CLI",
   "scripts": {
+    "reference-glb-import": "node bin/moonmold-reference-glb-import.mjs",
+    "reference-measure": "node bin/moonmold-reference-measure.mjs",
+    "reference-align": "node bin/moonmold-reference-align.mjs",
+    "reference-array": "node bin/moonmold-reference-array.mjs",
+    "reference-circular-array": "node bin/moonmold-reference-circular-array.mjs",
+    "reference-layout": "node bin/moonmold-reference-layout.mjs",
+    "reference-mesh": "node bin/moonmold-reference-mesh.mjs",
     "test": "node --test adapter/*.test.mjs",
     "test:blender": "MOONMOLD_LIVE_BLENDER=1 node --test adapter/live-blender.test.mjs",
     "demo": "node bin/moonmold.mjs build --workspace-root \"$PWD\" --input fixtures/habitat-a.json --output evidence/generated/habitat-a",
@@ -12,7 +19,18 @@
     "mcp": "node adapter/mcp-server.mjs",
     "operator": "node bin/moonmold-operator.mjs",
     "ui:dev": "npm --prefix ui/rabbita-moonmold run dev",
-    "ui:build": "npm --prefix ui/rabbita-moonmold run build"
+    "ui:build": "npm --prefix ui/rabbita-moonmold run build",
+    "reference-drawing": "node bin/moonmold-reference-drawing.mjs",
+    "reference-replace": "node bin/moonmold-reference-replace.mjs",
+    "reference-merge": "node bin/moonmold-reference-merge.mjs",
+    "reference-arrange": "node bin/moonmold-reference-arrange.mjs",
+    "reference-cut": "node bin/moonmold-reference-cut.mjs",
+    "reference-mirror": "node bin/moonmold-reference-mirror.mjs",
+    "reference-dimensions": "node bin/moonmold-reference-dimensions.mjs",
+    "reference-compare": "node bin/moonmold-reference-compare.mjs",
+    "reference-distribute": "node bin/moonmold-reference-distribute.mjs",
+    "reference-area": "node bin/moonmold-reference-area.mjs",
+    "reference-islands": "node bin/moonmold-reference-islands.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -1,0 +1,45 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "separate-brackets",
+  "instances": [
+    {
+      "id": "brackets",
+      "source": {
+        "input_format": "stl",
+        "units": "cm",
+        "name": "brackets.stl",
+        "text": "solid brackets\r\nfacet normal 0 0 1\r\nouter loop\r\nvertex 0 0 0\r\nvertex 2 0 0\r\nvertex 2 1 0\r\nendloop\r\nendfacet\r\nfacet normal 0 0 1\r\nouter loop\r\nvertex 5 0 1\r\nvertex 6 0 1\r\nvertex 6 2 1\r\nendloop\r\nendfacet\r\nfacet normal 0 0 1\r\nouter loop\r\nvertex 0 0 0\r\nvertex 2 1 0\r\nvertex 0 1 0\r\nendloop\r\nendfacet\r\nfacet normal 0 0 1\r\nouter loop\r\nvertex 5 0 1\r\nvertex 6 2 1\r\nvertex 5 2 1\r\nendloop\r\nendfacet\r\nendsolid brackets\r\n"
+      },
+      "transform": {
+        "scale": 2,
+        "rotation_deg": [
+          0,
+          0,
+          90
+        ],
+        "center_and_ground": false,
+        "translation_mm": [
+          100,
+          10,
+          5
+        ]
+      }
+    },
+    {
+      "id": "marker",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "marker",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 2 0\nf 1 2 3\n"
+      },
+      "transform": {
+        "translation_mm": [
+          0,
+          0,
+          2
+        ]
+      }
+    }
+  ]
+}

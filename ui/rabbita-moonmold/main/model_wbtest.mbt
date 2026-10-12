@@ -122,26 +122,24 @@ test "fresh workspace accepts null recovery identities as no prior attempt" {
   }
   assert_true(payload.attempt_id is None)
   assert_true(payload.run is None)
-  let (_, model) = update(_ => @rabbita.none, RecoveryLoaded(Ok(payload)), initial_model())
+  let (_, model) = update(
+    _ => @rabbita.none,
+    RecoveryLoaded(Ok(payload)),
+    initial_model(),
+  )
   assert_eq(model.error, "")
   assert_true(model.notice.contains("No terminal MoonMold attempt"))
 }
 
 ///|
 test "validation receipt does not become the model parent digest" {
-  let receipt : Json? = Some({ "after_digest": "sha256:validation-snapshot" })
-  assert_true(
-    executed_after_digest(
-      { "operation": "spatial.operation.validate" },
-      receipt,
-    ) is None,
-  )
+  let model = initial_model()
+  let validated = workflow_test_run(model, "validate")
+  assert_eq(next_scene_parent(validated, "mm1-existing"), "mm1-existing")
+  let executed = workflow_test_run(model, "execute")
   assert_eq(
-    executed_after_digest(
-      { "operation": "spatial.operation.execute" },
-      receipt,
-    ),
-    Some("sha256:validation-snapshot"),
+    next_scene_parent(executed, "mm1-existing"),
+    receipt_after_digest(executed.receipt).unwrap_or("missing"),
   )
 }
 

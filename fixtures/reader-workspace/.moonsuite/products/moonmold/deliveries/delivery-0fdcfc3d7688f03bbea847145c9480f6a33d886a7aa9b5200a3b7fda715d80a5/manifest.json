@@ -1,0 +1,72 @@
+{
+  "contract_id": "moonmold.digital-delivery.v1",
+  "project_id": "material-project",
+  "model_id": "model-a",
+  "commitment_ref": "material-fixture",
+  "brief_revision": 1,
+  "brief_ref": ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json",
+  "brief_digest": "sha256:081e94e6395b63563ec3eae0342bd30d3e8228045264d528549b124c62f65e4e",
+  "attempt_id": "attempt-material-23-exec",
+  "receipt_digest": "sha256:63e4d075a7fcb901e3c3f38b7f88b1f99fbc5d879fe5ab8fd3a85c5b6ce2242b",
+  "source_digest": "sha256:1b801c15c888081b55e6d9ddc89701835359450ab7a9fd046eedd322d6cfab82",
+  "journal_index": 10,
+  "scene_digest": "mm1-5182072",
+  "backend": {
+    "mode": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "blender_evidence": false,
+    "production_qualified": false
+  },
+  "files": [
+    {
+      "name": "brief.json",
+      "sha256": "sha256:081e94e6395b63563ec3eae0342bd30d3e8228045264d528549b124c62f65e4e",
+      "bytes": 957,
+      "media_type": "application/json"
+    },
+    {
+      "name": "editable-source.json",
+      "sha256": "sha256:1b801c15c888081b55e6d9ddc89701835359450ab7a9fd046eedd322d6cfab82",
+      "bytes": 5415,
+      "media_type": "application/json"
+    },
+    {
+      "name": "presentation.obj",
+      "sha256": "sha256:d19c5fc22018546f60abab8f212923ea1d4e7723c6703fd23d457c95eff2664f",
+      "bytes": 1510,
+      "media_type": "text/plain"
+    },
+    {
+      "name": "preview.svg",
+      "sha256": "sha256:816711cf61f63dc659de87f6f18809b7b42717fedcffb0681c069085ee6918cf",
+      "bytes": 2071,
+      "media_type": "image/svg+xml"
+    },
+    {
+      "name": "loss-report.json",
+      "sha256": "sha256:316400a8c938fe6ca9ca68d151f253024e8e103123f258db6b51df8e0ab1340c",
+      "bytes": 2020,
+      "media_type": "application/json"
+    },
+    {
+      "name": "change-report.json",
+      "sha256": "sha256:cefbd44b675ccb78e60adfa429f1cc4f18524fea207b0e4bea261832af43c6bb",
+      "bytes": 332,
+      "media_type": "application/json"
+    },
+    {
+      "name": "validation.json",
+      "sha256": "sha256:e0395d89b3b01b00d3b0594569c7ed820598dbbd9cda892811caecdf5e658f7d",
+      "bytes": 3300,
+      "media_type": "application/json"
+    },
+    {
+      "name": "README.txt",
+      "sha256": "sha256:60562171c3d94d0b3090807e912b847a60d40928ed5861d8ef8b310393c37eee",
+      "bytes": 1591,
+      "media_type": "text/plain"
+    }
+  ],
+  "physical_authority": false,
+  "package_id": "delivery-0fdcfc3d7688f03bbea847145c9480f6a33d886a7aa9b5200a3b7fda715d80a5"
+}

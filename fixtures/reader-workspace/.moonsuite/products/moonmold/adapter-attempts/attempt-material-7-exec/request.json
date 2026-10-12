@@ -1,0 +1,29 @@
+{
+  "request_id": "flow-material-7-exec",
+  "run_id": "operator-material-project",
+  "book_id": "moonmold-material-project",
+  "work_item_id": "model-a-exec",
+  "declaration_id": "moonmold-pack-local-v1/spatial.operation.execute",
+  "attempt_id": "attempt-material-7-exec",
+  "idempotency_key": "material-7/exec",
+  "product_id": "moonmold",
+  "operation": "spatial.operation.execute",
+  "requested_authority": "workspace-mutation",
+  "acceptance_criteria": [
+    "physical_authority=false",
+    "representation lineage and declared losses remain inspectable"
+  ],
+  "input_contracts": [
+    "moonmold/spatial-operation-request@1.0.0"
+  ],
+  "output_contracts": [
+    "moonmold/spatial-operation-receipt@1.0.0"
+  ],
+  "required_claim": "digital-artifact",
+  "input_digest": "sha256:156bab83815427d5e6a2fe50c1560fc09ad4d37b22badb7ec8aa6abbc4980f90",
+  "input_artifacts": [
+    ".moonsuite/products/moonmold/operator-inputs/material-7.json"
+  ],
+  "timeout_ms": 120000,
+  "created_at": "2026-10-07T08:48:15.637Z"
+}

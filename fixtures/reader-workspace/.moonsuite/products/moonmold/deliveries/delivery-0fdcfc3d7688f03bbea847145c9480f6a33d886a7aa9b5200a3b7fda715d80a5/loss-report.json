@@ -1,0 +1,41 @@
+{
+  "contract_id": "moonmold.representation-loss-report.v1",
+  "source_digest": "sha256:1b801c15c888081b55e6d9ddc89701835359450ab7a9fd046eedd322d6cfab82",
+  "backend": {
+    "mode": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "blender_evidence": false,
+    "production_qualified": false
+  },
+  "physical_authority": false,
+  "representation": "presentation",
+  "lineage_relation": "styled-from",
+  "units": "mm",
+  "coordinate_frame": "z-up-right-handed",
+  "conversion": "Semantic dimensions/translations remain in mm. OBJ coordinates divide mm by 1 to use declared mm; no frame conversion.",
+  "known_losses": [
+    "OBJ does not retain semantic operation history or enforce dimensions/constraints; configure importer units explicitly",
+    "Material identifiers are retained in source only; no engineering material properties, textures or measured appearance are exported",
+    "SVG is an illustrative projection of the same faceted geometry with no depth/collision analysis; overlapping primitives may occlude incorrectly",
+    "Cylinders are inscribed regular polygons with planar side facets and two ngon caps; no smooth surface or smooth normals. Odd side counts need not span the nominal diameter on each axis",
+    "No Boolean CSG, assemblies, topology/manifold qualification or tolerance solving in this box/cylinder renderer",
+    "Human brief constraints and review criteria are recorded, not automatically proven",
+    "No Blender qualification, engineering fitness, fabrication readiness, machine authority or client acceptance"
+  ],
+  "cylinder_tessellation": [
+    {
+      "object_id": "cylinder-b",
+      "radius_mm": 5,
+      "height_mm": 25,
+      "sides": 9,
+      "vertex_count": 18,
+      "face_count": 11,
+      "cap_topology": "two-ngons",
+      "side_topology": "quads",
+      "axis": "+Z",
+      "phase": "+X, counterclockwise viewed from +Z",
+      "max_radial_deviation_mm": 0.30153689607045786,
+      "physical_tolerance_qualified": false
+    }
+  ]
+}

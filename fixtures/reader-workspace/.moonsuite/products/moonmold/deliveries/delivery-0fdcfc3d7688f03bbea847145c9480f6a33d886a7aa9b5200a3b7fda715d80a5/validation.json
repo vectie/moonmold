@@ -1,0 +1,97 @@
+{
+  "contract_id": "moonmold.digital-delivery-validation.v1",
+  "source_digest": "sha256:1b801c15c888081b55e6d9ddc89701835359450ab7a9fd046eedd322d6cfab82",
+  "checked": [
+    "Exact native attempt/input/receipt lineage",
+    "Primary-mass nominal dimensions match frozen brief; cylinder width/depth = twice radius",
+    "Declared units and coordinate frame match brief",
+    "All model operations supported by box/cylinder renderer"
+  ],
+  "bounds_mm": {
+    "min": [
+      -17,
+      -9.924038765061042,
+      -3.5
+    ],
+    "max": [
+      47,
+      32,
+      48
+    ],
+    "units": "mm",
+    "coordinate_frame": "z-up-right-handed"
+  },
+  "box_count": 1,
+  "constraints_pending_human_review": [
+    "Semantic labels only; no physical properties"
+  ],
+  "review_criteria_pending_human_review": [
+    "Exact material identity and unchanged primitive geometry"
+  ],
+  "adapter_receipt": {
+    "contract_id": "moonmold.spatial-operation-receipt.v1",
+    "operation_ref": "moonmold/spatial.operation.execute@0.2.0",
+    "request_id": "flow-material-23-exec",
+    "source_request_id": "material-23",
+    "attempt_id": "attempt-material-23-exec",
+    "idempotency_key": "material-23/exec",
+    "outcome": "applied",
+    "before_digest": "mm1-4160924",
+    "after_digest": "mm1-5182072",
+    "claim_ceiling": "digital-artifact",
+    "physical_authority": false,
+    "artifacts": [
+      ".moonsuite/products/moonmold/projects/material-project/model-a/representations/material.json"
+    ],
+    "changed_objects": [],
+    "warnings": [
+      "deterministic mock output is reference evidence, not Blender evidence"
+    ],
+    "validation_evidence": {
+      "validator": "moonmold-mock-validator",
+      "validator_version": "1",
+      "subject_digest": "mm1-5182072",
+      "accepted": true,
+      "findings": []
+    },
+    "backend_qualification": {
+      "selected_backend": "deterministic-mock-reference",
+      "evidence_class": "fixture-reference-only",
+      "production_qualified": false,
+      "blender_evidence": false,
+      "physical_authority": false
+    },
+    "review_required": true,
+    "reconciliation": {
+      "supported": true,
+      "state": "terminal"
+    }
+  },
+  "adapter_result": {
+    "result_id": "result-attempt-material-23-exec-succeeded",
+    "request_id": "flow-material-23-exec",
+    "attempt_id": "attempt-material-23-exec",
+    "idempotency_key": "material-23/exec",
+    "product_id": "moonmold",
+    "external_job_id": "moonmold-attempt-material-23-exec",
+    "status": "succeeded",
+    "output_digest": "sha256:63e4d075a7fcb901e3c3f38b7f88b1f99fbc5d879fe5ab8fd3a85c5b6ce2242b",
+    "output_artifacts": [
+      ".moonsuite/products/moonmold/adapter-attempts/attempt-material-23-exec/operation-receipt.json",
+      ".moonsuite/products/moonmold/projects/material-project/model-a/representations/material.json"
+    ],
+    "error_kind": "",
+    "compensable": true,
+    "recorded_at": "2026-10-07T08:48:16.177Z"
+  },
+  "backend": {
+    "mode": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "blender_evidence": false,
+    "production_qualified": false
+  },
+  "physical_authority": false,
+  "cylinder_count": 1,
+  "object_count": 2,
+  "bounds_scope": "Actual tessellated mesh vertices in mm; primary-mass brief dimensions remain nominal"
+}

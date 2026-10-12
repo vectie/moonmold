@@ -101,7 +101,7 @@ fn workflow_review_decision(model : Model) -> String {
 
 ///|
 fn workflow_stage(model : Model) -> Int {
-  if model.draft_changed {
+  if model.draft_changed || model.brief_draft_dirty {
     1
   } else if successful_receipt(model, "spatial.operation.validate") {
     2

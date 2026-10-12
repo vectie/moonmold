@@ -1,0 +1,37 @@
+{
+  "contract_id": "moonmold.spatial-operation-receipt.v1",
+  "operation_ref": "moonmold/spatial.operation.execute@0.2.0",
+  "request_id": "flow-material-1-exec",
+  "source_request_id": "material-1",
+  "attempt_id": "attempt-material-1-exec",
+  "idempotency_key": "material-1/exec",
+  "outcome": "applied",
+  "before_digest": "mm1-empty-scene",
+  "after_digest": "mm1-7618608",
+  "claim_ceiling": "digital-artifact",
+  "physical_authority": false,
+  "artifacts": [],
+  "changed_objects": [],
+  "warnings": [
+    "deterministic mock output is reference evidence, not Blender evidence"
+  ],
+  "validation_evidence": {
+    "validator": "moonmold-mock-validator",
+    "validator_version": "1",
+    "subject_digest": "mm1-7618608",
+    "accepted": true,
+    "findings": []
+  },
+  "backend_qualification": {
+    "selected_backend": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "production_qualified": false,
+    "blender_evidence": false,
+    "physical_authority": false
+  },
+  "review_required": true,
+  "reconciliation": {
+    "supported": true,
+    "state": "terminal"
+  }
+}

@@ -1,0 +1,23 @@
+# Synthetic open shelf: centimetres; surfaces only, no thickness or solid claim.
+# Adjacent panels share source vertices. Repeated bracket/group names are intentional.
+v 0 0 0
+v 6 0 0
+v 6 4 0
+v 0 4 0
+v 0 4 3
+v 6 4 3
+v 0 0 3
+v 6 0 3
+v 99 99 99
+o shelf
+g deck painted
+f 1 2 3 4
+o back
+g brace painted
+f 4 3 6 5
+o bracket
+g brace
+f 1 4 5 7
+o bracket
+g brace
+f 2 8 6 3

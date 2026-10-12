@@ -192,14 +192,25 @@ struct Model {
   backend_preference : String
   method_name : String
   params_json : String
+  primitive_editor : PrimitiveEditor?
+  retained_scene : RetainedScene?
+  selected_object : String
+  scene_generation : Int
+  scene_loading : Bool
+  scene_error : String
   load_ref : String
   reviewer : String
   decision : String
   review_notes : String
   brief_json : String
+  brief_editor : BriefEditor?
+  brief_draft_dirty : Bool
+  brief_draft_generation : Int
   frozen_brief : FrozenBrief?
   delivery_export : DeliveryExport?
   delivery : DeliveryPayload?
+  delivery_selection : String
+  delivery_generation : Int
   status : Json?
   last_flow_request : Json?
   last_spatial_request : Json?
@@ -228,6 +239,12 @@ enum Msg {
   SetBackend(String)
   SetMethod(String)
   SetParams(String)
+  SetPrimitiveField(String, String)
+  CopyLastPrimitive
+  RefreshScene
+  SceneLoaded(Int, String, String, Result[RetainedScene, String])
+  SelectObject(String)
+  PrepareObject(String)
   SetLoadRef(String)
   SetReviewer(String)
   SetDecision(String)
@@ -245,11 +262,18 @@ enum Msg {
   SubmitReview
   ReviewSubmitted(Result[ReviewPayload, String])
   SetBrief(String)
+  SetBriefField(String, String)
   PrepareBrief
+  ReviseBrief
+  LoadPackageBrief
+  PackageBriefLoaded(Int, String, String, Result[Json, String])
   FreezeBrief
   BriefFrozen(Result[FrozenBrief, String])
   BuildDelivery
   DeliveryLoaded(Result[DeliveryPayload, String])
+  DeliveryReadCompleted(Int, String, String, Result[DeliveryPayload, String])
+  SetDeliverySelection(String)
+  OpenDelivery
   RefreshDelivery
   SubmitDeliveryReview
   DeliveryReviewSubmitted(String, String, Result[ReviewPayload, String])
@@ -276,6 +300,14 @@ fn initial_model() -> Model {
       #|  "coordinateFrame": "z-up-right-handed"
       #|}
     ),
+    primitive_editor: Some(
+      primitive_defaults("scene.create-model", "example-model"),
+    ),
+    retained_scene: None,
+    selected_object: "",
+    scene_generation: 0,
+    scene_loading: false,
+    scene_error: "",
     load_ref: ".moonsuite/products/moonmold/requests/spatial-request-1.json",
     reviewer: "",
     decision: "approve",
@@ -283,9 +315,16 @@ fn initial_model() -> Model {
     brief_json: default_delivery_brief("example-project", "example-model").stringify(
       indent=2,
     ),
+    brief_editor: brief_from_json(
+      default_delivery_brief("example-project", "example-model"),
+    ),
+    brief_draft_dirty: false,
+    brief_draft_generation: 0,
     frozen_brief: None,
     delivery_export: None,
     delivery: None,
+    delivery_selection: "",
+    delivery_generation: 0,
     status: None,
     last_flow_request: None,
     last_spatial_request: None,
@@ -311,6 +350,14 @@ fn lines(value : String) -> Array[String] {
 
 ///|
 fn spatial_request(model : Model) -> Result[Json, String] {
+  match model.primitive_editor {
+    Some(editor) =>
+      match primitive_params(editor) {
+        Err(error) => return Err(error)
+        Ok(_) => ()
+      }
+    None => ()
+  }
   let params = @json.parse(model.params_json) catch {
     error => return Err("Operation parameters are invalid JSON: \{error}")
   }

@@ -1,0 +1,179 @@
+{
+  "contract_id": "moonmold.editable-primitive-source.v1",
+  "project_id": "material-project",
+  "model_id": "model-a",
+  "brief_ref": ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json",
+  "brief_digest": "sha256:081e94e6395b63563ec3eae0342bd30d3e8228045264d528549b124c62f65e4e",
+  "backend": {
+    "mode": "deterministic-mock-reference",
+    "evidence_class": "fixture-reference-only",
+    "blender_evidence": false,
+    "production_qualified": false
+  },
+  "dimension_units": "mm",
+  "translation_units": "mm",
+  "model": {
+    "name": "material-fixture",
+    "units": "mm",
+    "coordinate_frame": "z-up-right-handed",
+    "objects": [
+      {
+        "object_id": "cylinder-b",
+        "kind": "cylinder",
+        "dimensions_mm": {
+          "radius": 5,
+          "height": 25
+        },
+        "sides": 9,
+        "translation_mm": {
+          "x": 42,
+          "y": -5,
+          "z": 9
+        },
+        "material_id": "reference-cylinder"
+      },
+      {
+        "object_id": "primary-mass",
+        "kind": "box",
+        "dimensions_mm": {
+          "width": 10,
+          "depth": 20,
+          "height": 30
+        },
+        "translation_mm": {
+          "x": -12,
+          "y": 22,
+          "z": 33
+        },
+        "material_id": "label-A_2:west.v1"
+      }
+    ]
+  },
+  "operations": [
+    {
+      "method": "scene.create-model",
+      "params": {
+        "name": "material-fixture",
+        "units": "mm",
+        "coordinateFrame": "z-up-right-handed"
+      }
+    },
+    {
+      "method": "scene.create-box",
+      "params": {
+        "objectId": "primary-mass",
+        "widthMm": 10,
+        "depthMm": 20,
+        "heightMm": 30
+      }
+    },
+    {
+      "method": "scene.create-cylinder",
+      "params": {
+        "objectId": "cylinder-b",
+        "radiusMm": 5,
+        "heightMm": 25,
+        "sides": 9
+      }
+    },
+    {
+      "method": "scene.set-transform",
+      "params": {
+        "objectId": "primary-mass",
+        "xMm": -12,
+        "yMm": 22,
+        "zMm": 33
+      }
+    },
+    {
+      "method": "scene.set-transform",
+      "params": {
+        "objectId": "cylinder-b",
+        "xMm": 42,
+        "yMm": -5,
+        "zMm": 9
+      }
+    },
+    {
+      "method": "scene.assign-material",
+      "params": {
+        "objectId": "primary-mass",
+        "materialId": "label-A_2:west.v1"
+      }
+    },
+    {
+      "method": "scene.assign-material",
+      "params": {
+        "objectId": "cylinder-b",
+        "materialId": "reference-cylinder"
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "attempt_id": "attempt-material-1-exec",
+      "receipt_digest": "sha256:95b6159f3b4d02669e4d60dfaf6e0ba28869b81a4cf667d2552b0106aab960e5",
+      "outcome": "applied",
+      "before_digest": "mm1-empty-scene",
+      "after_digest": "mm1-7618608"
+    },
+    {
+      "attempt_id": "attempt-material-2-exec",
+      "receipt_digest": "sha256:1ad33bd11a3f5b1542cc0419a032d8dee9396a47c9f3925b001c265dfcea036a",
+      "outcome": "applied",
+      "before_digest": "mm1-7618608",
+      "after_digest": "mm1-8076022"
+    },
+    {
+      "attempt_id": "attempt-material-3-exec",
+      "receipt_digest": "sha256:73bc59d34d13c3224b278644ccdf05dfc02ce4471e0c43990a2cc487587048f2",
+      "outcome": "applied",
+      "before_digest": "mm1-8076022",
+      "after_digest": "mm1-4445878"
+    },
+    {
+      "attempt_id": "attempt-material-4-exec",
+      "receipt_digest": "sha256:0f6f7d1240d86474e1a236e0fede5089d46d4832e255c928c67e6c45cab3c135",
+      "outcome": "applied",
+      "before_digest": "mm1-4445878",
+      "after_digest": "mm1-5574359"
+    },
+    {
+      "attempt_id": "attempt-material-5-exec",
+      "receipt_digest": "sha256:70726a770717f71568d07a77ab708b433a3f4236a27bef2473d5cc84dd853ad7",
+      "outcome": "applied",
+      "before_digest": "mm1-5574359",
+      "after_digest": "mm1-14021164"
+    },
+    {
+      "attempt_id": "attempt-material-6-exec",
+      "receipt_digest": "sha256:70bcd92f527b67c5fe53ddebbe320c6bf58bd2b3fcbeb330a0d21c39444ae36f",
+      "outcome": "applied",
+      "before_digest": "mm1-14021164",
+      "after_digest": "mm1-6971228"
+    },
+    {
+      "attempt_id": "attempt-material-7-exec",
+      "receipt_digest": "sha256:469d3aa39b08037241e6e742c16010c93575dfbd6971c119aa9ef64299ce6ca5",
+      "outcome": "applied",
+      "before_digest": "mm1-6971228",
+      "after_digest": "mm1-5041908"
+    },
+    {
+      "attempt_id": "attempt-material-8-exec",
+      "receipt_digest": "sha256:e345cd6aaf7398a2d377eb5f9e461ef0c87c76d14c025b93ce973bf73bb49c7f",
+      "outcome": "idempotent-no-op",
+      "before_digest": "mm1-6971228",
+      "after_digest": "mm1-6971228"
+    },
+    {
+      "attempt_id": "attempt-material-23-exec",
+      "receipt_digest": "sha256:63e4d075a7fcb901e3c3f38b7f88b1f99fbc5d879fe5ab8fd3a85c5b6ce2242b",
+      "outcome": "applied",
+      "before_digest": "mm1-4160924",
+      "after_digest": "mm1-5182072"
+    }
+  ],
+  "physical_authority": false,
+  "editing_notes": "Edit semantic operation parameters as a new brief/request revision in the operator. Re-declaring a box or cylinder replaces its kind/dimensions/sides and resets translation/material. Cylinder radius/height are mm; sides explicitly controls tessellation (8–256). The primary-mass brief width/depth is nominal diameter, not the faceted mesh bounds. OBJ is a derived sibling, not this semantic source."
+}

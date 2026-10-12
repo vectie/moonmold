@@ -1,0 +1,26 @@
+{
+  "contract_id": "moonmold.spatial-operation-request.v1",
+  "request_id": "material-4",
+  "idempotency_key": "material-4",
+  "project_id": "material-project",
+  "model_id": "model-a",
+  "expected_parent_digest": "mm1-4445878",
+  "authority": "WorkspaceMutation",
+  "intent": "Semantic identity regression fixture",
+  "reference_artifacts": [
+    ".moonsuite/products/moonmold/briefs/265c5e1e01b7fd56d13462fdea5012349ec6fdfe2c29c3f4f41af5204ad2ce7a-r1.json"
+  ],
+  "constraints": [
+    "No physical authority"
+  ],
+  "backend_preference": "mock-reference",
+  "operation": {
+    "method": "scene.set-transform",
+    "params": {
+      "objectId": "primary-mass",
+      "xMm": -12,
+      "yMm": 22,
+      "zMm": 33
+    }
+  }
+}

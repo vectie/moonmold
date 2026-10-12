@@ -1,0 +1,14 @@
+{
+  "contract_id": "moonmold.digital-change-report.v1",
+  "previous_package_id": null,
+  "previous_source_digest": null,
+  "added": [
+    "cylinder-b",
+    "primary-mass"
+  ],
+  "removed": [],
+  "changed": [],
+  "review_required_for_this_revision": true,
+  "prior_files_and_reviews_preserved": true,
+  "physical_authority": false
+}

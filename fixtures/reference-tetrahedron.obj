@@ -1,0 +1,10 @@
+# A synthetic tetrahedron. Interpret this sample in centimetres.
+o sample-tetrahedron
+v 0 0 0
+v 2 0 0
+v 0 3 0
+v 0 0 4
+f 1 3 2
+f 1 2 4
+f 2 3 4
+f 3 1 4

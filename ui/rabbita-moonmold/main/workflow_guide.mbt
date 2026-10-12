@@ -37,7 +37,13 @@ fn workflow_next_action(
   model : Model,
   stage : Int,
 ) -> @rabbita.Html {
-  if !model.error.is_empty() {
+  if !primitive_draft_error(model).is_empty() {
+    @html.a(
+      class="action primary",
+      href="#object-controls",
+      "Complete object fields",
+    )
+  } else if !model.error.is_empty() {
     action(
       if model.last_flow_request is Some(_) {
         "Reconcile"
@@ -130,7 +136,9 @@ fn workflow_next_action(
 
 ///|
 fn workflow_next_copy(model : Model, stage : Int) -> String {
-  if !model.error.is_empty() {
+  if !primitive_draft_error(model).is_empty() {
+    "Complete the object fields before saving, validating or executing. No request was sent; retained receipts and reviews still describe the previous result."
+  } else if !model.error.is_empty() {
     "The operation stopped without widening authority. Reconcile the known attempt, or correct the request and validate again."
   } else {
     match stage {

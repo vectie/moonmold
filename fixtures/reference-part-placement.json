@@ -1,0 +1,6 @@
+{
+  "scale": 1,
+  "rotation_deg": [0, 0, 90],
+  "center_and_ground": true,
+  "translation_mm": [100, 50, 0]
+}

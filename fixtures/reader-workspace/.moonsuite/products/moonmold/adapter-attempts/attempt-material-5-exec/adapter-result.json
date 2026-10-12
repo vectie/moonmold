@@ -1,0 +1,16 @@
+{
+  "result_id": "result-attempt-material-5-exec-succeeded",
+  "request_id": "flow-material-5-exec",
+  "attempt_id": "attempt-material-5-exec",
+  "idempotency_key": "material-5/exec",
+  "product_id": "moonmold",
+  "external_job_id": "moonmold-attempt-material-5-exec",
+  "status": "succeeded",
+  "output_digest": "sha256:70726a770717f71568d07a77ab708b433a3f4236a27bef2473d5cc84dd853ad7",
+  "output_artifacts": [
+    ".moonsuite/products/moonmold/adapter-attempts/attempt-material-5-exec/operation-receipt.json"
+  ],
+  "error_kind": "",
+  "compensable": true,
+  "recorded_at": "2026-10-07T08:48:15.238Z"
+}

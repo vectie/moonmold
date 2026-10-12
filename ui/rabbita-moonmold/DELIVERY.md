@@ -3,10 +3,13 @@
 This UI preserves the existing governed semantic-operation and named-review
 workflow. Digital delivery is an explicit additional workflow:
 
-1. Set Project and Model. Prepare and inspect the digital brief JSON. Its
-   dimensions describe the single `primary-mass` box. Freeze the brief before
-   Create model and Add box. For revisions, freeze a revised brief before the
-   changed box operation.
+1. Set Project and Model, then choose **Use current project/model**. Edit the
+   structured brief fields: commitment reference, revision, intended use,
+   dimensions in mm, scene units, constraints and review criteria. Dimensions
+   describe `primary-mass`: box width/depth/height or cylinder nominal
+   diameter/diameter/height. Freeze before Create model and Add box/cylinder.
+   For revisions, use **Start next revision from draft**, edit, and freeze
+   before changed operations. Advanced JSON remains available losslessly.
 2. Choose, validate, and execute model operations explicitly. The frozen brief
    reference is included in future `reference_artifacts` without removing the
    operator's other references.
@@ -34,11 +37,20 @@ building another package.
 Recovery accepts older responses without a delivery field and empty responses
 with null optional fields. A recovered delivery restores its exact frozen
 brief reference/digest; its brief bytes remain available in `brief.json`, while
-the editable brief textarea remains a separate draft.
+the editable brief remains a separate draft. **Load selected package brief**
+explicitly replaces that draft with host-verified package brief content, ready
+for a next revision. Pending brief edits survive operation loads/completions;
+stale, failed and interrupted brief responses preserve them. Unsaved brief
+fields remain page-local and are not included in Save request.
+
+See `../../docs/BRIEF_CONTROLS.md` for supported values and recovery limits.
 
 ## Focused validation
 
 The package is JS-only. Run `moon check --target all`,
 `moon test --target js --strip -j1`, `moon fmt`, and `moon info` using the
 configured MoonBit toolchain. Delivery regressions live in
-`main/delivery_wbtest.mbt` and include model/update/SSR coverage.
+`main/delivery_wbtest.mbt`, `main/brief_wbtest.mbt` and
+`main/brief_host_wbtest.mbt` and include model/update/SSR coverage. The optional
+host-bridge test requires actual native response bytes in
+`MOONMOLD_BRIEF_HOST_FIXTURE`; without them it explicitly reports not run.

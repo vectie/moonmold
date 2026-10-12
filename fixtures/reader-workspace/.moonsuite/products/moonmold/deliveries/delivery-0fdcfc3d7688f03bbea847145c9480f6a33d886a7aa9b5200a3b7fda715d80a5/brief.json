@@ -1,0 +1,33 @@
+{
+  "contract_id": "moonmold.frozen-digital-brief.v1",
+  "brief": {
+    "contract_id": "moonmold.digital-brief.v1",
+    "commitment_ref": "material-fixture",
+    "revision": 1,
+    "project_id": "material-project",
+    "model_id": "model-a",
+    "intended_use": "Semantic material identity delivery fixture",
+    "units": "mm",
+    "coordinate_frame": "z-up-right-handed",
+    "dimensions_mm": {
+      "width": 10,
+      "depth": 20,
+      "height": 30
+    },
+    "constraints": [
+      "Semantic labels only; no physical properties"
+    ],
+    "deliverables": [
+      "editable-source",
+      "presentation"
+    ],
+    "review_criteria": [
+      "Exact material identity and unchanged primitive geometry"
+    ],
+    "physical_authority": false
+  },
+  "frozen_at": "2026-10-07T08:48:15.056Z",
+  "journal_prefix_length": 0,
+  "journal_prefix_digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "physical_authority": false
+}

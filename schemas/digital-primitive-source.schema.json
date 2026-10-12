@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moonmold.editable-primitive-source.v1",
+  "title": "Deterministic reference box/cylinder editable source",
+  "description": "Digital-only semantic source. All dimension and translation values are mm regardless of scene units. Cylinder primary-mass brief width/depth means nominal diameter; actual faceted mesh bounds are reported separately.",
+  "type": "object",
+  "required": ["contract_id", "project_id", "model_id", "brief_ref", "brief_digest", "backend", "dimension_units", "translation_units", "model", "operations", "provenance", "physical_authority", "editing_notes"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": { "const": "moonmold.editable-primitive-source.v1" },
+    "project_id": { "type": "string" },
+    "model_id": { "type": "string" },
+    "brief_ref": { "type": "string" },
+    "brief_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "backend": {
+      "type": "object",
+      "required": ["mode", "evidence_class", "blender_evidence", "production_qualified"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "const": "deterministic-mock-reference" },
+        "evidence_class": { "const": "fixture-reference-only" },
+        "blender_evidence": { "const": false },
+        "production_qualified": { "const": false }
+      }
+    },
+    "dimension_units": { "const": "mm" },
+    "translation_units": { "const": "mm" },
+    "physical_authority": { "const": false },
+    "editing_notes": { "type": "string" },
+    "operations": { "type": "array", "items": { "type": "object" } },
+    "provenance": { "type": "array", "items": { "type": "object" } },
+    "model": {
+      "type": "object",
+      "required": ["name", "units", "coordinate_frame", "objects"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "units": { "enum": ["mm", "cm", "m"] },
+        "coordinate_frame": { "const": "z-up-right-handed" },
+        "objects": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/primitive" } }
+      }
+    }
+  },
+  "$defs": {
+    "dimension": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "translation": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 },
+    "primitive": {
+      "type": "object",
+      "required": ["object_id", "kind", "dimensions_mm", "translation_mm", "material_id"],
+      "additionalProperties": false,
+      "properties": {
+        "object_id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$" },
+        "kind": { "enum": ["box", "cylinder"] },
+        "dimensions_mm": { "type": "object" },
+        "sides": { "type": "integer", "minimum": 8, "maximum": 256 },
+        "translation_mm": {
+          "type": "object", "required": ["x", "y", "z"], "additionalProperties": false,
+          "properties": { "x": { "$ref": "#/$defs/translation" }, "y": { "$ref": "#/$defs/translation" }, "z": { "$ref": "#/$defs/translation" } }
+        },
+        "material_id": { "type": ["string", "null"] }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "kind": { "const": "box" }, "sides": false,
+            "dimensions_mm": {
+              "type": "object", "required": ["width", "depth", "height"], "additionalProperties": false,
+              "properties": { "width": { "$ref": "#/$defs/dimension" }, "depth": { "$ref": "#/$defs/dimension" }, "height": { "$ref": "#/$defs/dimension" } }
+            }
+          }
+        },
+        {
+          "required": ["sides"],
+          "properties": {
+            "kind": { "const": "cylinder" },
+            "dimensions_mm": {
+              "type": "object", "required": ["radius", "height"], "additionalProperties": false,
+              "properties": { "radius": { "$ref": "#/$defs/dimension" }, "height": { "$ref": "#/$defs/dimension" } }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
