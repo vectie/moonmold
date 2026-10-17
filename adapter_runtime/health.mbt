@@ -1,9 +1,12 @@
 ///|
 fn safe_health_suffix(value : String) -> String {
-  value
-  .replace(old=":", new="-")
-  .replace(old="/", new="-")
-  .replace(old=" ", new="-")
+  let mut suffix = value
+  for separator in [":", "/", " "] {
+    while suffix.contains(separator) {
+      suffix = suffix.replace(old=separator, new="-")
+    }
+  }
+  suffix
 }
 
 ///|

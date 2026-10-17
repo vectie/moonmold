@@ -83,6 +83,7 @@ pub fn adapter_declaration_json() -> Json {
         "claim_ceiling": contract.claim_ceiling,
         "supports_cancel": false,
         "supports_reconcile": true,
+        "input_capture": input_capture_policy_json(contract),
       }
       item
     }),

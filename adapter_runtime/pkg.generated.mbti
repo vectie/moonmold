@@ -16,6 +16,8 @@ pub fn invoke(String, @suite_adapter.MoonflowAdapterRequest) -> Result[@suite_ad
 
 pub fn reconcile(String, @suite_adapter.MoonflowAdapterRequest) -> Result[@suite_adapter.ReconciliationReport, AdapterRuntimeIssue]
 
+pub fn verify_single_step(String, String) -> Result[Json, AdapterRuntimeIssue]
+
 // Errors
 
 // Types and methods

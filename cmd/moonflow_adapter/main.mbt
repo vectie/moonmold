@@ -10,6 +10,8 @@ fn usage() -> String {
     #|  invoke <workspace-root> <request.json>
     #|  reconcile <workspace-root> <request.json>
     #|  reconcile-report <workspace-root> <request.json>
+    #|  verify-single-step <workspace-root> <verification-request.json>
+    #|  migrate-single-step-config <legacy-config.json>
     #|
   )
 }
@@ -30,6 +32,8 @@ fn command_index(args : Array[String]) -> Int {
       | "invoke"
       | "reconcile"
       | "reconcile-report"
+      | "verify-single-step"
+      | "migrate-single-step-config"
       | "help"
     ) => 0
     _ => 1
@@ -95,6 +99,43 @@ fn main {
   let index = command_index(args)
   let command = arg(args, index).unwrap_or("capability")
   match command {
+    "migrate-single-step-config" =>
+      match arg(args, index + 1) {
+        Some(path) => {
+          let translated = @suite_adapter.migrate_single_step_config_v2(
+            @json.parse(@fsx.read_file_to_string(path)),
+          ) catch {
+            error => {
+              fail_issue(
+                {
+                  code: "migrate-single-step-config",
+                  path,
+                  message: error.to_string(),
+                },
+                2,
+              )
+              Json::null()
+            }
+          }
+          println(translated.stringify(indent=2))
+        }
+        None => {
+          println(usage())
+          @sys.exit(2)
+        }
+      }
+    "verify-single-step" =>
+      match (arg(args, index + 1), arg(args, index + 2)) {
+        (Some(root), Some(path)) =>
+          match @adapter_runtime.verify_single_step(root, path) {
+            Ok(proof) => println(proof.stringify(indent=2))
+            Err(error) => fail_issue(error, 3)
+          }
+        _ => {
+          println(usage())
+          @sys.exit(2)
+        }
+      }
     "capability" =>
       println(
         @suite_adapter.moonflow_adapter_capability_json().stringify(indent=2),

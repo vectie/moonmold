@@ -1,3 +1,7 @@
 import {
   "moonbitlang/core/json",
 }
+
+import {
+  "vectie/moonmold/suite_adapter",
+} for "test"

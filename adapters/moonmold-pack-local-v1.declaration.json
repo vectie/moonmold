@@ -10,19 +10,37 @@
       "operation_id": "spatial.operation.validate",
       "claim_ceiling": "observation",
       "supports_cancel": false,
-      "supports_reconcile": true
+      "supports_reconcile": true,
+      "input_capture": {
+        "contract_id": "moonflow.input-capture-policy.v1",
+        "mode": "reference-array-rebind",
+        "payload_contract_id": "moonmold.spatial-operation-request.v1",
+        "reference_array_field": "reference_artifacts"
+      }
     },
     {
       "operation_id": "spatial.operation.execute",
       "claim_ceiling": "digital-artifact",
       "supports_cancel": false,
-      "supports_reconcile": true
+      "supports_reconcile": true,
+      "input_capture": {
+        "contract_id": "moonflow.input-capture-policy.v1",
+        "mode": "reference-array-rebind",
+        "payload_contract_id": "moonmold.spatial-operation-request.v1",
+        "reference_array_field": "reference_artifacts"
+      }
     },
     {
       "operation_id": "representation.validate",
       "claim_ceiling": "observation",
       "supports_cancel": false,
-      "supports_reconcile": true
+      "supports_reconcile": true,
+      "input_capture": {
+        "contract_id": "moonflow.input-capture-policy.v1",
+        "mode": "opaque-revalidated",
+        "payload_contract_id": "",
+        "reference_array_field": ""
+      }
     }
   ]
 }

@@ -19,6 +19,10 @@ pub fn decode_spatial_operation_request(Json) -> SpatialOperationRequest raise
 
 pub fn find_operation_contract(String) -> AdapterOperationContract?
 
+pub fn input_capture_policy_json(AdapterOperationContract) -> Json
+
+pub fn migrate_single_step_config_v2(Json) -> Json raise
+
 pub fn moonflow_adapter_capability_json() -> Json
 
 pub fn moonflow_adapter_capability_json_with_health(Bool) -> Json
@@ -28,6 +32,18 @@ pub fn operation_contracts() -> Array[AdapterOperationContract]
 pub fn operation_refs() -> Array[String]
 
 pub fn pack_version() -> String
+
+pub fn single_step_expected_artifacts(Json) -> Array[String] raise
+
+pub fn single_step_receipt_ref(MoonflowAdapterRequest) -> String raise
+
+pub fn single_step_request_supported(MoonflowAdapterRequest) -> Bool
+
+pub fn single_step_validate_health(Json, String, String) -> Unit raise
+
+pub fn single_step_validate_receipt(MoonflowAdapterRequest, AdapterResult, Json, String, Array[String]) -> Unit raise
+
+pub fn single_step_verify_exchange(Json, String) -> Json raise
 
 // Errors
 
