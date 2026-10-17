@@ -10,6 +10,11 @@ world XYZ offset: [Vertex placement](REFERENCE_SNAP.md).
 
 # Compose a reference layout
 
+Find the closest triangle points between two placements, including face interiors,
+with [nearest-surface gap inspection](REFERENCE_SEPARATION.md). A source-bound
+report and witness overlay help inspect digital arrangements; surface separation
+does not certify solid nonoverlap or physical clearance.
+
 Turn unnamed disconnected triangle regions into independent editable placements
 with [mesh island inspection and separation](REFERENCE_ISLANDS.md), retaining an
 original-source recipe and one-step Undo/Redo.

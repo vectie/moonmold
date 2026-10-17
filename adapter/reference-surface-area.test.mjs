@@ -153,7 +153,8 @@ test('operator HTTP serves exact JSON/CSV observation and selectable page withou
   assert.deepEqual(await response.json(), measure(layout, ['upright']));
   assert.equal((await request({ layout, instance_ids: ['removed'] })).status, 400);
   const html = await (await fetch(`${base}/reference-layout`)).text();
-  assert.match(html, /Calculate surface-area schedule/); assert.match(html, /id="surface-area-targets" multiple/);
+  assert.match(html, /Calculate measurement schedule/); assert.match(html, /id="surface-area-targets" multiple/);
+  assert.match(html, /id="measurement-mode"/); assert.match(html, /Algebraic closed-shell volume and centroid/);
   const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: html.match(/<script type="module">([\s\S]*?)<\/script>/)[1], encoding: 'utf8' });
   assert.equal(syntax.status, 0, syntax.stderr); assert.deepEqual(await readdir(workspace), []);
 });

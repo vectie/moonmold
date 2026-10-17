@@ -1,5 +1,17 @@
+import { arrayReferencePath } from './reference-path-array.mjs';
+import { locateReferenceDefects, DEFECT_MAX_REQUEST_BYTES } from './reference-defects.mjs';
+import { registerReferenceVertices } from './reference-registration.mjs';
+import { extrudeReferenceProfile, EXTRUSION_MAX_FILE_BYTES } from './reference-extrusion.mjs';
+import { revolveReferenceProfile, REVOLUTION_MAX_BYTES } from './reference-revolution.mjs';
+import { transformReferenceProfile, PROFILE_TRANSFORM_MAX_BYTES } from './reference-profile-transform.mjs';
+import { inspectReferenceDxf, importReferenceDxfProfile } from './reference-dxf-profile.mjs';
+import { inspectReferenceSvg, importReferenceSvgProfile } from './reference-svg-profile.mjs';
+import { placeReferenceFace } from './reference-face-placement.mjs';
+import { fitReferenceEnvelope } from './reference-envelope-fit.mjs';
 import { inspectReferenceIslands, splitReferenceIslands, ISLAND_MAX_FILE_BYTES } from './reference-islands.mjs';
 import { measureReferenceSurfaceArea, SURFACE_AREA_MAX_REQUEST_BYTES } from './reference-surface-area.mjs';
+import { measureReferenceVolume, VOLUME_MAX_REQUEST_BYTES } from './reference-volume.mjs';
+import { measureReferenceSeparation } from './reference-separation.mjs';
 import { compareReferenceRevisions, REVISION_MAX_REQUEST_BYTES } from './reference-revision.mjs';
 import { exportReferencePlacements, applyReferencePlacements } from "./reference-placements.mjs";
 import { drawReferenceDimensions, DIMENSIONS_MAX_REQUEST_BYTES } from './reference-dimensions.mjs';
@@ -34,6 +46,8 @@ import { cutReferenceLayout, CUT_MAX_FILE_BYTES } from "./reference-cut.mjs";
 import { moveReferenceArrangement } from "./reference-arrangement.mjs";
 import { replaceReferenceSources } from "./reference-replacement.mjs";
 import { drawReferenceLayout } from "./reference-drawing.mjs";
+import { measureReferencePath } from './reference-path.mjs';
+import { measureReferenceAngle } from "./reference-angle.mjs";
 import { measureReferenceLayout } from "./reference-measurement.mjs";
 import {
   buildDelivery, deliveryProjection, freezeDeliveryBrief,
@@ -871,6 +885,24 @@ export function createOperatorServer({
         const project = safeIdentity(url.searchParams.get("project_id"), "project_id");
         const model = safeIdentity(url.searchParams.get("model_id"), "model_id");
         sendJson(response, 200, await retainedScene(workspace, project, model, (id) => loadVerifiedRun(workspace, id)));
+      } else if (request.method === "GET" && url.pathname === "/reference-revolution") {
+        await serveStatic(response, path.join(REPO, "ui/reference-revolution"), "/");
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/revolve") {
+        sendJson(response, 200, revolveReferenceProfile(await bodyJson(request, REVOLUTION_MAX_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/extrude") {
+        sendJson(response, 200, extrudeReferenceProfile(await bodyJson(request, EXTRUSION_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/transform") {
+        sendJson(response, 200, transformReferenceProfile(await bodyJson(request, PROFILE_TRANSFORM_MAX_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/dxf-inspect") {
+        sendJson(response, 200, inspectReferenceDxf(await bodyJson(request, 850_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/dxf-import") {
+        sendJson(response, 200, importReferenceDxfProfile(await bodyJson(request, 850_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/svg-inspect") {
+        sendJson(response, 200, inspectReferenceSvg(await bodyJson(request, 850_000)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-profile/svg-import") {
+        sendJson(response, 200, importReferenceSvgProfile(await bodyJson(request, 850_000)));
+      } else if (request.method === "GET" && url.pathname === "/reference-profile") {
+        await serveStatic(response, path.join(REPO, "ui/reference-profile"), "/");
       } else if (request.method === "POST" && url.pathname === "/api/reference-mesh/import") {
         sendJson(response, 200, importReferenceMesh(await bodyJson(request, 600_000)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-mesh/transform") {
@@ -894,14 +926,32 @@ export function createOperatorServer({
         sendJson(response, 200, compareReferenceRevisions(await bodyJson(request, REVISION_MAX_REQUEST_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/drawing") {
         sendJson(response, 200, drawReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/register-vertices") {
+        sendJson(response, 200, registerReferenceVertices(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/place-face") {
+        sendJson(response, 200, placeReferenceFace(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/fit-envelope") {
+        sendJson(response, 200, fitReferenceEnvelope(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/calibrate") {
         sendJson(response, 200, calibrateReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/separation") {
+        sendJson(response, 200, measureReferenceSeparation(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/defects") {
+        sendJson(response, 200, locateReferenceDefects(await bodyJson(request, DEFECT_MAX_REQUEST_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/volume") {
+        sendJson(response, 200, measureReferenceVolume(await bodyJson(request, VOLUME_MAX_REQUEST_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/surface-area") {
         sendJson(response, 200, measureReferenceSurfaceArea(await bodyJson(request, SURFACE_AREA_MAX_REQUEST_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/path") {
+        sendJson(response, 200, measureReferencePath(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/angle") {
+        sendJson(response, 200, measureReferenceAngle(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/measure") {
         sendJson(response, 200, measureReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/align") {
         sendJson(response, 200, alignReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
+      } else if (request.method === "POST" && url.pathname === "/api/reference-layout/path-array") {
+        sendJson(response, 200, arrayReferencePath(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/array") {
         sendJson(response, 200, arrayReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/islands") {

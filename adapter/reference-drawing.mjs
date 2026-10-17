@@ -79,7 +79,8 @@ export function drawComposedReferenceLayout(composed, dimensionReport = null) {
 
 function renderDrawing(report, vertices, wires) {
   const dimensions = report.dimensions ?? [];
-  const height = 825 + 62 * report.parts.length + (dimensions.length ? 94 + dimensions.length * 74 : 0);
+  const defects = report.defects ?? [];
+  const height = (report.defects ? 100 + defects.reduce((n,e) => n + 48 + 20 * e.uses.length, 0) : 0) + 825 + 62 * report.parts.length + (dimensions.length ? 94 + dimensions.length * 74 : 0);
   const text = (x, y, value, size = 14, extra = '') => `<text x="${x}" y="${y}" font-size="${size}"${extra}>${xml(value)}</text>`;
   const panels = report.views.map((view, index) => {
     const axes = viewSpecs[index].axes, x = 20 + 470 * index;
@@ -95,6 +96,11 @@ function renderDrawing(report, vertices, wires) {
       const dots = wires[p].orphanIndices.map(i => { const [cx, cy] = project(vertices[i]); return `<circle cx="${sheetNumber(cx)}" cy="${sheetNumber(cy)}" r="2"/>`; }).join('');
       return `<g data-instance-id="${xml(part.id)}" stroke="${part.color}" fill="${part.color}"><title>${xml(part.id)}</title><path data-edge-count="${wires[p].edges.length}" d="${path}" fill="none" stroke-width="1.2"/>${dots}</g>`;
     }).join('\n');
+    const defectMarks = defects.map(edge => {
+      const [a,b] = edge.coordinates_mm.map(project);
+      const color = { boundary: '#bd3a00', nonmanifold: '#a000b8', inconsistent: '#0066bb' }[edge.kind];
+      return `<g data-defect-id="${edge.id}" stroke="${color}" fill="${color}"><title>${xml(`${edge.id} ${edge.kind} · ${report.instance_id}`)}</title><path d="M${a.map(sheetNumber).join(' ')}L${b.map(sheetNumber).join(' ')}" stroke-width="3" fill="none"/>${text(sheetNumber((a[0]+b[0])/2+5),sheetNumber((a[1]+b[1])/2-5),edge.id,11,' stroke="none"')}</g>`;
+    }).join('');
     const annotations = dimensions.map((dimension, d) => {
       const ends = [dimension.endpoint_a, dimension.endpoint_b].map(endpoint => project(endpoint.coordinates_mm));
       const [a, b] = ends;
@@ -107,7 +113,7 @@ ${ends.map(([cx,cy],i) => `<circle cx="${sheetNumber(cx)}" cy="${sheetNumber(cy)
 <rect x="${x}" y="155" width="440" height="480" rx="8" fill="#f8fafb" stroke="#c7d3da"/>
 ${text(x + 16, 184, view.title, 18)}
 ${text(x + 16, 209, `+${view.projected_axes[0].toUpperCase()} right · +${view.projected_axes[1].toUpperCase()} up`, 13)}
-${drawings}${annotations}
+${drawings}${annotations}${defectMarks}
 <g stroke="#637681" stroke-width="1" fill="none">
 <path data-dimension="${view.projected_axes[0]}" d="M${sheetNumber(left)} 539V551M${sheetNumber(left)} 545H${sheetNumber(right)}M${sheetNumber(right)} 539V551"/>
 <path data-dimension="${view.projected_axes[1]}" d="M${x + 30} ${sheetNumber(top)}H${x + 42}M${x + 36} ${sheetNumber(top)}V${sheetNumber(bottom)}M${x + 30} ${sheetNumber(bottom)}H${x + 42}"/>
@@ -142,6 +148,15 @@ ${text(24, y + 42, `A XYZ ${dimension.endpoint_a.coordinates_mm.map(labelNumber)
   }).join('\n')}
 ${text(24, height - 18, `Dimension set SHA-256: ${report.dimension_set_sha256} · save the companion JSON and editable layout`, 12)}
 ` : '';
+  let defectY = footer + 100;
+  const defectLedger = report.defects ? text(24, defectY - 22, `DEFECT EDGE LOCATORS · ${report.instance_id} · ${defects.length} observed edges`, 17) +
+    defects.map(edge => {
+      const y = defectY; defectY += 48 + 20 * edge.uses.length;
+      return text(24,y,`${edge.id} ${edge.kind} · placed XYZ endpoints: ${edge.coordinates_mm.map(p=>p.map(labelNumber).join(', ')).join(' → ')} mm`,12) + edge.uses.map((use,i)=> {
+        const l = use.source_locator;
+        return text(24,y+20+i*20,l.kind === 'original-obj' ? `Triangle ${use.triangle_index} · original OBJ face ${l.face_index}, line ${l.line}, vertex numbers ${l.obj_vertex_numbers.join(' → ')} (one-based)` : `Retained triangle ${use.triangle_index}, vertices ${use.local_vertex_indices.join(' → ')} (zero-based); original face mapping unavailable`,12);
+      }).join('');
+    }).join('') + text(24, height - 18, 'Exact-coordinate incidence only; no tolerance welding or repair. Original source SHA and locators are embedded in metadata.',12) : '';
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="${height}" viewBox="0 0 1440 ${height}" role="img" aria-labelledby="drawing-title drawing-description">
 <title id="drawing-title">${xml(`${report.name} · three-view reference drawing`)}</title>
@@ -161,6 +176,6 @@ ${text(24, 712, 'PLACED REFERENCES · original source identities', 13)}
 ${legend}
 ${text(24, footer, 'Projection discards depth; colors identify instances, not source materials. Overlapping lines do not prove contact.', 14)}
 ${text(24, footer + 24, 'Labels use 9 significant digits. Exact bounds, transforms, source losses and view mapping are embedded in metadata.', 14)}
-${text(24, footer + 48, report.qualification, 13)}${dimensionLedger}
+${text(24, footer + 48, report.qualification, 13)}${dimensionLedger}${defectLedger}
 </g></svg>\n`;
 }

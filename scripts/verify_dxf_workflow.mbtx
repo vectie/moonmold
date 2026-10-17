@@ -1,0 +1,194 @@
+///|
+import {
+  "moonbitlang/async@0.19.4",
+  "moonbitlang/async@0.19.4/fs",
+  "moonbitlang/async@0.19.4/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+}
+
+///|
+fn field(value : Json, key : String) -> Json raise {
+  guard value is Object(fields) && fields.get(key) is Some(value) else {
+    fail("Missing " + key)
+  }
+  value
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  assert_eq(
+    args.length(),
+    3,
+    msg="verify_dxf_workflow SOURCE_ROOT NEW_OUTPUT_DIRECTORY",
+  )
+  let source = @fs.realpath(args[1])
+  let output = args[2]
+  assert_true(output.has_prefix("/"))
+  assert_false(@fs.exists(output), msg="Use a new output directory")
+  @fs.mkdir(output)
+  let original = @fs.read_file(source + "/fixtures/reference-outlines.dxf").binary()
+  let drawing = output + "/original.dxf"
+  @fs.write_file(drawing, original, create_mode=@fs.CreateNew)
+  let calls : Array[Json] = []
+  async fn run(
+    label : String,
+    command : Array[String],
+    fails : Bool,
+  ) -> String {
+    let (status, out, err) = @process.collect_output(
+      "node",
+      command,
+      cwd=source,
+    )
+    @fs.write_file(
+      output + "/" + label + ".stdout",
+      out,
+      create_mode=@fs.CreateNew,
+    )
+    @fs.write_file(
+      output + "/" + label + ".stderr",
+      err,
+      create_mode=@fs.CreateNew,
+    )
+    calls.push({
+      "label": label.to_json(),
+      "program": "node",
+      "arguments": command.to_json(),
+      "exit": status.to_json(),
+      "expected_failure": fails.to_json(),
+    })
+    @fs.write_file(
+      output + "/commands.json",
+      calls.to_json().stringify(indent=2),
+      create_mode=@fs.CreateOrTruncate,
+    )
+    assert_eq(status != 0, fails, msg=err.text())
+    out.text()
+  }
+  let cli = source + "/bin/moonmold-reference-dxf.mjs"
+  let inventory = @json.parse(
+    run("inventory", [cli, "--input", drawing], false),
+  )
+  assert_eq(field(inventory, "entity_count"), Json::number(3))
+  @fs.write_file(
+    output + "/inventory.json",
+    inventory.stringify(indent=2),
+    create_mode=@fs.CreateNew,
+  )
+  let selection = [
+    cli, "--input", drawing, "--entity", "1", "--units", "mm", "--height", "8", "--name",
+    "stepped", "--format", "json",
+  ]
+  let result_text = run("import", selection, false)
+  let result = @json.parse(result_text)
+  assert_eq(field(field(result, "bounds"), "size"), [40, 30, 8])
+  assert_eq(field(result, "triangle_count"), Json::number(20))
+  assert_eq(
+    field(field(result, "extrusion"), "profile_area_mm2"),
+    Json::number(700),
+  )
+  @fs.write_file(
+    output + "/stepped.dxf-import-report.json",
+    field(result, "dxf_import").stringify(indent=2),
+    create_mode=@fs.CreateNew,
+  )
+  for format in ["recipe", "layout", "obj", "stl"] {
+    guard field(field(result, "exports"), format) is String(text) else {
+      fail("Missing export")
+    }
+    let suffix = match format {
+      "recipe" => "profile.json"
+      "layout" => "layout.json"
+      _ => format
+    }
+    @fs.write_file(
+      output + "/stepped." + suffix,
+      text,
+      create_mode=@fs.CreateNew,
+    )
+  }
+  let recipe = field(field(result, "extrusion"), "recipe")
+  guard recipe is Object(recipe_fields) else { fail("Expected recipe") }
+  recipe_fields["height"] = Json::number(12)
+  @fs.write_file(
+    output + "/taller.profile.json",
+    recipe.stringify(indent=2),
+    create_mode=@fs.CreateNew,
+  )
+  let revised_text = run(
+    "revise",
+    [
+      source + "/bin/moonmold-reference-extrude.mjs",
+      "--input",
+      output + "/taller.profile.json",
+      "--format",
+      "json",
+    ],
+    false,
+  )
+  let revised = @json.parse(revised_text)
+  assert_eq(field(field(revised, "bounds"), "size"), [40, 30, 12])
+  assert_true(
+    field(revised, "geometry_sha256") != field(result, "geometry_sha256"),
+  )
+  guard field(field(revised, "exports"), "layout") is String(layout) else {
+    fail("Missing layout")
+  }
+  @fs.write_file(
+    output + "/taller.layout.json",
+    layout,
+    create_mode=@fs.CreateNew,
+  )
+  let reopened = @json.parse(
+    run(
+      "reopen",
+      [
+        source + "/bin/moonmold-reference-layout.mjs",
+        "--input",
+        output + "/taller.layout.json",
+        "--format",
+        "json",
+      ],
+      false,
+    ),
+  )
+  assert_eq(
+    field(reopened, "geometry_sha256"),
+    field(revised, "geometry_sha256"),
+  )
+  assert_eq(run("repeat", selection, false), result_text)
+  ignore(
+    run(
+      "wrong-entity",
+      [
+        cli, "--input", drawing, "--entity", "2", "--units", "mm", "--height", "8",
+        "--name", "wrong", "--format", "recipe",
+      ],
+      true,
+    ),
+  )
+  ignore(run("overwrite", [cli, "--input", drawing, "--output", drawing], true))
+  assert_eq(@fs.read_file(drawing).binary(), original)
+  let summary : Json = {
+    "status": "passed",
+    "original_bounds_mm": [40, 30, 8],
+    "revised_bounds_mm": [40, 30, 12],
+    "original_preserved": true,
+    "repeat_deterministic": true,
+    "layout_reopened": true,
+    "source_sha256": field(field(result, "dxf_import"), "source_sha256"),
+    "original_geometry_sha256": field(result, "geometry_sha256"),
+    "revised_geometry_sha256": field(revised, "geometry_sha256"),
+    "qualification": "Synthetic offline Node CLI only; no graphical CAD/browser or live Blender qualification",
+  }
+  @fs.write_file(
+    output + "/RESULT.json",
+    summary.stringify(indent=2),
+    create_mode=@fs.CreateNew,
+  )
+  println(
+    "DXF inspect/select/import/edit/reopen journey passed; source bytes unchanged",
+  )
+}

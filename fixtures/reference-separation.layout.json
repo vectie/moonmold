@@ -1,0 +1,9 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "surface-gap-study",
+  "instances": [
+    { "id": "base", "source": { "input_format": "obj", "units": "cm", "name": "base-panel", "text": "v 0 0 0\nv 4 0 0\nv 0 4 0\nf 1 2 3\n" } },
+    { "id": "raised", "source": { "input_format": "obj", "units": "mm", "name": "raised-panel", "text": "v 10 10 0\nv 20 10 0\nv 10 20 0\nf 1 2 3\n" }, "transform": { "translation_mm": [0, 0, 5] } },
+    { "id": "crossing", "source": { "input_format": "obj", "units": "mm", "name": "crossing-panel", "text": "v 12 12 -3\nv 12 12 8\nv 14 14 8\nf 1 2 3\n" } }
+  ]
+}

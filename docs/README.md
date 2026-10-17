@@ -1,5 +1,11 @@
 # MoonMold documentation
 
+- [Editable profile cutouts](REFERENCE_PROFILE_CUTOUTS.md): author a plate or
+  bracket with one polygon opening, revise both rings/height, save/reopen and
+  reuse existing layout placement and measurements.
+- [DXF outline intake](REFERENCE_DXF_PROFILE.md): inspect a saved drawing, select
+  a straight closed polyline and build an editable profile/3D reference.
+
 - [Product contract](PRODUCT_CONTRACT.md) — capability status, representation
   truth and release gates.
 - [Constitution](CONSTITUTION.md) — authority and claim ceiling.
@@ -26,3 +32,5 @@
 - [Equal-gap reference distribution](REFERENCE_DISTRIBUTION.md): arrange existing differently sized references between fixed endpoints, then save and reopen the editable layout.
 
 - [Reference surface-area schedules](REFERENCE_SURFACE_AREA.md): select placed references, inspect triangle-sum areas and surface centroids, and export source-bound JSON/CSV.
+
+- [Locate reference defect edges](REFERENCE_DEFECT_NAVIGATION.md): select an instance, inspect original OBJ locators and export annotated SVG.

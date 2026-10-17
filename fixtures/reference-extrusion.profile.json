@@ -1,0 +1,8 @@
+{
+  "contract_id": "moonmold.reference-profile-extrusion.v1",
+  "name": "stepped-profile",
+  "units": "mm",
+  "coordinate_frame": "xy-z-up",
+  "vertices": [[0, 0], [40, 0], [40, 10], [15, 10], [15, 30], [0, 30]],
+  "height": 8
+}

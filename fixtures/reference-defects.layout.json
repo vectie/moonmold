@@ -1,0 +1,59 @@
+{
+  "contract_id": "moonmold.reference-layout.v1",
+  "name": "defect-navigation",
+  "instances": [
+    {
+      "id": "tetra-cm",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "name": "synthetic-tetrahedron.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 3 0\nv 0 0 4\nf 1 3 2\nf 1 2 4\nf 2 3 4\nf 3 1 4\n"
+      }
+    },
+    {
+      "id": "reversed-tetra",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "reversed.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 3 0\nv 0 0 4\nf 2 3 1\nf 4 2 1\nf 4 3 2\nf 4 1 3\n"
+      },
+      "transform": {
+        "scale": 2,
+        "translation_mm": [
+          100,
+          -20,
+          30
+        ]
+      }
+    },
+    {
+      "id": "open-panel",
+      "source": {
+        "input_format": "obj",
+        "units": "mm",
+        "name": "open-panel.obj",
+        "text": "v 0 0 0\nv 4 0 0\nv 0 3 0\nf 1 2 3\n"
+      }
+    },
+    {
+      "id": "winding-example",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "name": "synthetic-tetrahedron.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 3 0\nv 0 0 4\nf 2 3 1\nf 1 2 4\nf 2 3 4\nf 3 1 4\n"
+      }
+    },
+    {
+      "id": "nonmanifold-example",
+      "source": {
+        "input_format": "obj",
+        "units": "cm",
+        "name": "synthetic-tetrahedron.obj",
+        "text": "v 0 0 0\nv 2 0 0\nv 0 3 0\nv 0 0 4\nf 1 3 2\nf 1 2 4\nf 2 3 4\nf 3 1 4\nf 1 3 2\n"
+      }
+    }
+  ]
+}

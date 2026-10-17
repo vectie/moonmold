@@ -5,6 +5,10 @@
   "type": "module",
   "description": "Bounded semantic Blender/MCP adapter and MoonMold experiment CLI",
   "scripts": {
+    "reference-svg": "node bin/moonmold-reference-svg.mjs",
+    "reference-dxf": "node bin/moonmold-reference-dxf.mjs",
+    "reference-extrude": "node bin/moonmold-reference-extrude.mjs",
+    "reference-separation": "node bin/moonmold-reference-separation.mjs",
     "reference-glb-import": "node bin/moonmold-reference-glb-import.mjs",
     "reference-measure": "node bin/moonmold-reference-measure.mjs",
     "reference-align": "node bin/moonmold-reference-align.mjs",
@@ -30,7 +34,8 @@
     "reference-compare": "node bin/moonmold-reference-compare.mjs",
     "reference-distribute": "node bin/moonmold-reference-distribute.mjs",
     "reference-area": "node bin/moonmold-reference-area.mjs",
-    "reference-islands": "node bin/moonmold-reference-islands.mjs"
+    "reference-islands": "node bin/moonmold-reference-islands.mjs",
+    "reference-path-array": "node bin/moonmold-reference-path-array.mjs"
   },
   "engines": {
     "node": ">=20"

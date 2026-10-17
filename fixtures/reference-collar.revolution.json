@@ -1,0 +1,8 @@
+{
+  "contract_id": "moonmold.reference-revolution.v1",
+  "name": "stepped-collar",
+  "units": "mm",
+  "coordinate_frame": "radius-z",
+  "vertices": [[10,0],[20,0],[20,5],[15,5],[15,15],[10,15]],
+  "segments": 32
+}

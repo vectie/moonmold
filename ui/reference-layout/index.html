@@ -4,7 +4,7 @@
 <style>body{font:16px system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem;background:#10212b;color:#edf6f7}label{display:block;margin:.6rem 0}select,input,button{font:inherit;padding:.45rem}input[type=number]{width:7rem}button{cursor:pointer;margin:.4rem}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#91e1cf}.row{display:flex;gap:1rem;flex-wrap:wrap}small{color:#b2c7d2}canvas{width:100%;height:360px;background:#09161e;border:1px solid #476170}fieldset{margin:1rem 0;border:1px solid #476170}button:disabled{cursor:wait}h1{margin-bottom:.3rem}</style>
 <h1>Reference layout</h1>
 <p>Place several OBJ, STL or PLY references together. Save the editable layout with its originals, or export the combined millimetre geometry.</p>
-<p><a href="/reference-mesh">Single-reference workbench and sections</a></p>
+<p><a href="/reference-mesh">Single-reference workbench and sections</a> · <a href="/reference-profile">Create geometry from an editable profile</a></p>
 <small>Up to 16 independent references. No welding, boolean union, collision check or fabrication authority. Overlapping and disconnected geometry stays as placed. Z is the grounding axis.</small>
 <form id="load-form"><fieldset id="load-controls"><legend>Reopen a layout, cut recipe or island recipe</legend><label>Saved layout or recipe JSON <input id="layout-file" type="file" accept=".json" required></label><button>Open layout</button></fieldset></form>
 <form id="merge-form"><fieldset id="merge-controls" disabled><legend>Merge a saved arrangement into this layout</legend>
@@ -19,7 +19,7 @@
 <p id="history-status" role="status" aria-live="polite">No applied changes in this session.</p>
 <small>History is kept only in this page, for up to 20 states and 16 MiB of serialized UTF-16 snapshot text. Save editable layouts before closing. Opening a saved layout starts a new history. Apply or discard placement fields before Undo/Redo. Measurements, named dimensions and generated drawings must be prepared again after restoring.</small>
 </fieldset>
-<canvas id="preview" width="1000" height="400" aria-label="Combined reference wireframe; selected instance and measured endpoints A and B are highlighted"></canvas>
+<canvas id="preview" width="1000" height="400" aria-label="Combined reference wireframe; selected instance and distance endpoints, ordered path vertices and angle arms A, B and C are highlighted"></canvas>
 <div class="row"><label>View yaw <input id="yaw" type="range" min="-180" max="180" value="35"></label><label>View elevation <input id="pitch" type="range" min="-90" max="90" value="25"></label><button id="top">Top view</button><button id="iso">Isometric</button></div>
 <small>Orthographic wireframe auto-fits all placed vertices and includes hidden edges. View changes do not edit the layout.</small>
 <form id="edit-form"><fieldset id="edit-controls" disabled><legend>Edit selected placement</legend>
@@ -60,6 +60,31 @@
 <div class="row"><label>Instances to replace (Ctrl/Command to select several)<select id="replace-targets" multiple size="4" required></select></label><label>Revised OBJ, STL or PLY <input id="replace-file" type="file" accept=".obj,.stl,.ply" required></label><label>New file's source units <select id="replace-units" required><option value="">Choose units</option><option value="mm">Millimetres</option><option value="cm">Centimetres</option><option value="m">Metres</option><option value="in">Inches</option></select></label></div>
 <small>The entire new file replaces the old source, including any old named-part or GLB-node selection. Other instances stay unchanged. Source origin changes affect placement; center/ground recalculates from the new shape. Apply pending placement edits first. Save your old layout separately if you need to return to it. 400000 bytes maximum; no automatic resizing, alignment or geometry repair.</small><br><button>Replace chosen sources</button>
 </fieldset></form>
+<form id="registration-form"><fieldset id="registration-controls" disabled><legend>Register two references with three vertex pairs</legend>
+<label>Fixed reference <select id="registration-fixed" required></select></label>
+<small>The selected reference above moves. Enter corresponding local vertices in the same pair order on each reference. The canvas labels M1–M3 and F1–F3, and the coordinates below use placed XYZ millimetres. Indices are zero-based in the current imported/part-selected order; STL can repeat vertices. Pick distinct non-collinear points.</small>
+<div class="row"><label>Moving vertex 1 <input id="registration-moving-1" type="number" min="0" step="1" required></label><label>Fixed vertex 1 <input id="registration-fixed-1" type="number" min="0" step="1" required></label><label>Moving vertex 2 <input id="registration-moving-2" type="number" min="0" step="1" required></label><label>Fixed vertex 2 <input id="registration-fixed-2" type="number" min="0" step="1" required></label><label>Moving vertex 3 <input id="registration-moving-3" type="number" min="0" step="1" required></label><label>Fixed vertex 3 <input id="registration-fixed-3" type="number" min="0" step="1" required></label></div><button>Preview rigid registration</button><button id="registration-apply" type="button" disabled>Apply registration</button>
+<small>Least-squares rotation and translation only. Scale and source bytes stay unchanged. Unequal triangles leave residuals; inspect each pair, RMS and maximum distance. Three matches do not establish whole-mesh agreement. Preview changes the canvas only. Save editable layout after Apply. No physical qualification.</small>
+</fieldset><button id="registration-cancel" type="button" disabled>Cancel registration preview</button>
+<pre id="registration-selection" aria-live="polite"></pre><pre id="registration-status" role="status" aria-live="polite">Choose three ordered pairs, then preview.</pre></form>
+<form id="face-placement-form"><fieldset id="face-placement-controls" disabled><legend>Lay a picked face flat</legend>
+<div class="row"><label>Current local triangle (zero-based) <input id="face-placement-triangle" type="number" min="0" step="1" value="0" required></label><label>World XY plane height (mm) <input id="face-placement-height" type="number" min="-1000000000" max="1000000000" step="any" value="0" required></label></div>
+<button>Preview face placement</button><button id="face-placement-apply" type="button" disabled>Apply face placement</button>
+<small>The highlighted A/B/C triangle belongs to the selected instance. A keeps its world X/Y and moves to the requested height; edge A–B points +X and the triangle normal points +Z. This rigid placement retains source, scale and other instances. Preview changes only the canvas. Save editable layout after Apply. Digital geometry only; no contact, collision or physical suitability assessment.</small>
+</fieldset><button id="face-placement-cancel" type="button" disabled>Cancel face preview</button>
+<pre id="face-placement-selection">Select a reference and a current triangle.</pre><pre id="face-placement-status" role="status" aria-live="polite">Choose a triangle and height, then preview.</pre></form>
+<form id="fit-envelope-form"><fieldset id="fit-envelope-controls" disabled><legend>Fit selected reference inside a size envelope</legend>
+<div class="row"><label>World X limit (mm) <input id="fit-envelope-x" type="number" min="0.000001" max="1000000000" step="any" required></label><label>World Y limit (mm) <input id="fit-envelope-y" type="number" min="0.000001" max="1000000000" step="any" required></label><label>World Z limit (mm) <input id="fit-envelope-z" type="number" min="0.000001" max="1000000000" step="any" required></label></div>
+<label><input id="fit-envelope-enlarge" type="checkbox"> Allow enlargement to fill the envelope</label>
+<button>Preview fit</button><button id="fit-envelope-apply" type="button" disabled>Apply fit</button><button id="fit-envelope-cancel" type="button" disabled>Cancel preview</button>
+<small>Uniform scale preserves proportions and rotation. The world XYZ envelope is centered on the selected reference's current bounding box. Other references stay fixed. The blue wireframe shows the envelope. Preview changes the canvas only; downloads and measurements remain the applied revision until Apply. One-time placement edit, not a persistent constraint or collision/clearance/physical suitability check. Includes unreferenced vertices.</small>
+<pre id="fit-envelope-status" role="status" aria-live="polite">Enter three positive dimensions, then preview.</pre>
+</fieldset></form>
+<form id="path-array-form"><fieldset id="path-array-controls" disabled><legend>Repeat along a polyline</legend>
+<label>World points in millimetres (JSON x,y,z triples) <textarea id="path-array-points" rows="3">[[0,0,0],[100,0,0],[100,100,0]]</textarea></label>
+<label>Total placements including selected <input id="path-array-count" type="number" min="2" max="16" value="5"></label>
+<p>Moves the selected source origin to the first point and adds evenly spaced independent copies through the last point. Rotation and scale stay unchanged. No tangent alignment or collision avoidance.</p>
+<button type="submit">Place along path</button></fieldset></form>
 <form id="array-form"><fieldset id="array-controls" disabled><legend>Repeat selected placement</legend>
 <p>Create a line, grid or stack from the last applied selected instance. Counts include the original; at most 16 total layout instances. Each copy remains independently editable.</p>
 <div class="row"><label>Count X <input id="count-x" type="number" value="2" min="1" max="16" step="1" required></label><label>Count Y <input id="count-y" type="number" value="1" min="1" max="16" step="1" required></label><label>Count Z <input id="count-z" type="number" value="1" min="1" max="16" step="1" required></label></div>
@@ -72,12 +97,32 @@
 <small>Selected anchor = reference anchor + offset. Positive offsets move toward the positive world axis; for the negative side use a negative offset. Bounds include unreferenced vertices. This is not surface snapping, a persistent constraint or a collision/physical-clearance check. Apply placement edits first.</small><br><button>Align selected</button>
 </fieldset></form>
 <pre id="part-status" role="status" aria-live="polite"></pre>
-<form id="surface-area-form"><fieldset id="surface-area-controls" disabled><legend>Measure triangle surface area</legend>
+<form id="separation-form"><fieldset id="separation-controls" disabled><legend>Find the nearest gap between two reference surfaces</legend>
+<div class="row"><label>Surface A <select id="separation-a" required></select></label><label>Surface B <select id="separation-b" required></select></label><button>Measure nearest surface gap</button></div>
+<small>Finds the closest triangle points, including face interiors, in placed XYZ millimetres. Open meshes are allowed; orphan vertices are ignored. At most 250000 triangle pairs. The cyan/pink witnesses show one closest pair and their triangles. A positive gap does not rule out solid containment; zero is represented surface contact/intersection. No physical clearance, collision certification or fabrication authority. Apply placement changes first and save editable layout separately.</small>
+<pre id="separation-status" role="status" aria-live="polite">Choose two different references in the applied layout.</pre><div id="separation-download"></div>
+</fieldset></form>
+<form id="surface-area-form"><fieldset id="surface-area-controls" disabled><legend>Explore surface area or closed-shell volume</legend>
+<label>Measurement <select id="measurement-mode"><option value="area">Triangle surface area</option><option value="volume">Algebraic closed-shell volume and centroid</option></select></label>
 <label>Instances to measure (Ctrl/Command to select several)<select id="surface-area-targets" multiple size="4" required></select></label>
-<button>Calculate surface-area schedule</button>
+<button>Calculate measurement schedule</button>
+<small>Volume mode requires closed, consistently wound edges. It sums absolute algebraic shell volumes: overlaps and nested shells count independently, cavities are not subtracted, and self-intersection is untested. This is not capacity, mass or manufacturing evidence.</small>
 <small>Counts each placed triangle once, regardless of winding. Duplicate, overlapping and internal faces count independently; this is not exposed exterior area or material quantity. No inferred second side, thickness, volume, mass or physical-use qualification. Apply placement edits first. Save the editable layout beside the read-only report.</small>
 <pre id="surface-area-status" role="status" aria-live="polite">Open a layout and choose references to measure.</pre><div id="surface-area-downloads"></div>
 </fieldset></form>
+<form id="path-form"><fieldset id="path-controls" disabled><legend>Measure an ordered vertex path</legend>
+<div class="row"><label>Next instance <select id="path-instance"></select></label><label>Next local vertex (zero-based) <input id="path-vertex" type="number" min="0" step="1"></label></div>
+<button id="path-add" type="button">Append vertex</button><button id="path-remove" type="button">Remove last vertex</button><button id="path-clear" type="button">Clear ordered path</button>
+<label><input id="path-closed" type="checkbox"> Close with a last-to-first segment</label>
+<pre id="path-selection" aria-live="polite">Append 2 through 64 vertices in traversal order.</pre>
+<button>Measure ordered path</button>
+<label>Saved path observation JSON <input id="path-file" type="file" accept=".json,application/json"></label><button id="path-open" type="button">Reopen matching path choices</button>
+<small>Append in the intended order; repeats are retained and coincident segments have zero length. The canvas is a projection; lengths use straight 3D segments in placed millimetres, including jumps between references. This is not a surface/geodesic distance, mesh edge route or physical qualification. A closed path adds one segment even if its last point repeats its first. Reopening restores choices only for the exact applied layout; measure again for a fresh report. Observation export and reopen share a 1000000-byte JSON limit. Apply or discard pending placement edits first.</small>
+</fieldset><pre id="path-status" role="status" aria-live="polite">Choose an ordered path in the applied layout.</pre><div id="path-download"></div></form>
+<form id="angle-form"><fieldset id="angle-controls" disabled><legend>Measure angle ABC at B</legend>
+<div class="row"><label>Arm A instance <select id="angle-a-instance" required></select></label><label>A local vertex <input id="angle-a-vertex" type="number" min="0" step="1" required></label><label>Vertex B instance <select id="angle-b-instance" required></select></label><label>B local vertex <input id="angle-b-vertex" type="number" min="0" step="1" required></label><label>Arm C instance <select id="angle-c-instance" required></select></label><label>C local vertex <input id="angle-c-vertex" type="number" min="0" step="1" required></label></div>
+<small>Choose three zero-based local vertices. The canvas labels A, B (the angle vertex) and C, and draws B–A and B–C as you select them. The report measures their unsigned smaller 3D angle, 0–180°, in the applied XYZ layout. The canvas is a projection; its apparent angle can differ. Both arms must have nonzero represented length. Apply placement edits first. This is a digital observation, not surface/dihedral analysis, physical qualification or a named human review.</small><br><button>Measure angle at B</button>
+</fieldset></form><pre id="angle-selection" aria-live="polite"></pre><pre id="angle-status" role="status" aria-live="polite">Choose A, B and C after opening references.</pre><div id="angle-download"></div>
 <form id="measure-form"><fieldset id="measure-controls" disabled><legend>Measure two placed vertices</legend>
 <div class="row"><label>Endpoint A instance <select id="measure-a-instance" required></select></label><label>A local vertex (zero-based) <input id="measure-a-vertex" type="number" min="0" step="1" required></label><label>Endpoint B instance <select id="measure-b-instance" required></select></label><label>B local vertex (zero-based) <input id="measure-b-vertex" type="number" min="0" step="1" required></label></div>
 <small>Choose a local vertex from each current imported/part-selected instance. The same instance or vertex is allowed. Measures placed XYZ coordinates in mm, including retained unreferenced vertices. STL vertices may repeat per triangle. This is a point observation, not minimum mesh separation, collision, clearance or engineering/physical suitability evidence. Apply placement edits first. A new layout or placement clears endpoint choices and the old report.</small><br><button>Measure A to B</button>
@@ -107,6 +152,12 @@
 <div id="downloads" class="row"></div>
 <p><button id="glb-export" disabled>Prepare GLB for 3D viewers</button> <span id="glb-download"></span><br>
 <small>GLB keeps named instances, converts mm/Z-up to metres/Y-up and rounds positions to float32. Neutral double-sided styling replaces original materials. Save editable layout JSON too; GLB bakes placement and omits original source bytes.</small></p>
+<fieldset id="defect-controls" disabled><legend>Locate defect edges in selected instance</legend>
+<button id="defect-inspect" type="button">Locate boundary / nonmanifold / winding edges</button>
+<label>Edge <select id="defect-edge"></select></label>
+<pre id="defect-status">Select an instance, then locate edges. Observation only; correct original sources in your modeling tool.</pre>
+<pre id="defect-detail"></pre><span id="defect-download"></span>
+<p>Orange: boundary. Purple: nonmanifold. Blue: inconsistent winding. White: chosen edge. Original face/vertex locators are available for OBJ; other formats show retained triangulation only. At most 256 defect edges.</p></fieldset>
 <p><button id="drawing-export" disabled>Prepare three-view drawing</button> <span id="drawing-download"></span><br>
 <small>Top, front and right SVG views with overall dimensions in mm and source identities. All triangle edges are visible. Common auto-fit scale; not a print-scale template. Apply placement changes first and save editable layout JSON too.</small></p>
 <fieldset id="revision-controls" disabled><legend>Compare a saved revision with this applied layout</legend>
@@ -124,13 +175,51 @@ let cutRecipe = null, sectionUrls = [];
 let islandRecipe = null, islandsCatalog = null, islandsUrl = null, islandsGeneration = 0;
 let revisionUrls = [], revisionGeneration = 0;
 let surfaceAreaUrls = [], surfaceAreaGeneration = 0;
+let separationReport = null, separationUrl = null, separationGeneration = 0, separationPending = false;
+let envelopePreview = null, envelopeGeneration = 0;
+let registrationPreview = null, registrationGeneration = 0, registrationPending = false, registrationAbort = null;
+let facePreview = null, faceGeneration = 0, facePending = false, faceAbort = null;
 let placementsPreview = null, placementsUrl = null, placementsRevision = 0;
 let dimensionSet = null, dimensionRevision = 0, dimensionUrls = [], dimensionSetUrl = null;
+const PATH_MAX_OBSERVATION_BYTES = 1_000_000;
+let pathChoices = [], pathReport = null, pathUrl = null, pathRevision = 0, pathPending = false;
+let angleReport = null, angleUrl = null, angleRevision = 0;
 let measurement = null, measurementUrl = null, measurementRevision = 0, placementDirty = false, glbUrl = null, drawingUrls = [];
 const copy = value => JSON.parse(JSON.stringify(value));
 // Retain editable source snapshots, not potentially much larger derived geometry.
 const HISTORY_STATES = 20, HISTORY_TEXT_BYTES = 16 * 1024 * 1024;
 let undoStates = [], redoStates = [], historyTrimmed = false;
+let defectReport = null, defectUrls = [], defectGeneration = 0, defectPending = false;
+function clearDefects() {
+ defectGeneration++; defectReport = null; defectUrls.forEach(URL.revokeObjectURL); defectUrls = [];
+ $('defect-edge').replaceChildren(); $('defect-download').replaceChildren(); $('defect-detail').textContent = '';
+ $('defect-status').textContent = 'Select an instance, then locate edges for the current applied layout.';
+}
+function showDefectDetail() {
+ const edge = defectReport?.defects.find(e => e.id === $('defect-edge').value);
+ $('defect-detail').textContent = edge ? JSON.stringify({instance_id:defectReport.instance_id,source_sha256:defectReport.source_sha256,locator_policy:defectReport.locator_policy,...edge},null,2) : 'No observed defect edges. This is not a watertightness or solid qualification.';
+ render();
+}
+$('defect-edge').addEventListener('change', showDefectDetail);
+$('defect-inspect').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ defectPending = true;
+ return action(async () => {
+  const applied = result, wanted = selected, generation = defectGeneration;
+  const response = await fetch('/api/reference-layout/defects', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({layout:copy(layout),instance_id:wanted})});
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || selected !== wanted || placementDirty || generation !== defectGeneration) return;
+  const part = applied.parts.find(p=>p.id===wanted);
+  if (next.contract_id !== 'moonmold.reference-defect-navigation.v1' || next.layout_sha256 !== applied.layout_sha256 || next.geometry_sha256 !== applied.geometry_sha256 || next.instance_id !== wanted || next.source_sha256 !== part.source_sha256 || next.physical_authority !== false) throw Error('Defect response does not match current source and selection');
+  clearDefects(); defectReport = next;
+  for (const edge of next.defects) { const option = document.createElement('option'); option.value=edge.id;option.textContent=`${edge.id}: ${edge.kind} (${edge.uses.length} triangle uses)`;$('defect-edge').append(option); }
+  $('defect-edge').value = next.defects[0]?.id ?? '';
+  $('defect-status').textContent = `${next.defect_count} defect edges in ${wanted}. ${next.qualification} ${next.locator_policy}`;
+  for (const [format,type] of [['svg','image/svg+xml'],['json','application/json']]) { const url=URL.createObjectURL(new Blob([next.exports[format]],{type}));defectUrls.push(url);const a=document.createElement('a');a.href=url;a.download=`${layout.name}.${wanted}.defects.${format}`;a.textContent=`Download annotated ${format.toUpperCase()}`;$('defect-download').append(a); }
+  showDefectDetail();
+ }).finally(() => { defectPending = false; });
+});
+
 function snapshot() {
  return { layout: JSON.stringify(layout), selected, recipe: cutRecipe ? JSON.stringify(cutRecipe) : null, island_recipe: islandRecipe ? JSON.stringify(islandRecipe) : null,
   layout_sha256: result?.layout_sha256 ?? null, geometry_sha256: result?.geometry_sha256 ?? null };
@@ -157,19 +246,114 @@ function resetHistory() { undoStates = []; redoStates = []; historyTrimmed = fal
 const number = id => { if ($(id).value.trim() === '') throw Error('Enter all placement numbers'); return Number($(id).value); };
 const display = values => values.map(n => Number(n.toPrecision(8))).join(' × ');
 function calibrationReady() { return !!result && !placementDirty && !!measurement && measurement.distance_mm > 0 && measurement.endpoint_a.instance_id === measurement.endpoint_b.instance_id && measurement.layout_sha256 === result.layout_sha256 && measurement.geometry_sha256 === result.geometry_sha256; }
-function lock(value) { busy = value; $('islands-controls').disabled = value || !result || placementDirty; $('islands-split').disabled = value || placementDirty || !islandsCatalog || islandsCatalog.component_count < 2 || islandsCatalog.resulting_instance_count > 16; $('islands-restore').disabled = value || placementDirty || !islandRecipe; $('surface-area-controls').disabled = value || !result || placementDirty; $('revision-controls').disabled = value || !result || placementDirty; $('placements-controls').disabled = value || !result || placementDirty; $('placements-apply').disabled = value || !placementsPreview || placementDirty; $('placements-cancel').disabled = value || !placementsPreview; $('calibrate-controls').disabled = value || !calibrationReady(); $('section-controls').disabled = value || !result || placementDirty; $('cut-controls').disabled = value || !result || placementDirty; $('cut-restore').disabled = value || !cutRecipe || placementDirty; $('arrange-controls').disabled = value || !result || placementDirty; $('merge-controls').disabled = value || !result || placementDirty; $('replace-controls').disabled = value || !result || placementDirty; $('drawing-export').disabled = value || !result || placementDirty; $('glb-import-controls').disabled = value; $('glb-export').disabled = value || !result || placementDirty; $('load-controls').disabled = value; $('add-controls').disabled = value; $('edit-controls').disabled = value || !layout.instances.length; $('array-controls').disabled = value || !layout.instances.length; $('align-controls').disabled = value || layout.instances.length < 2; $('measure-controls').disabled = value || !result || placementDirty; updateDimensionControls(); updateHistoryControls(); }
+function lock(value) { busy = value; $('path-array-controls').disabled = value || !result || placementDirty; $('defect-controls').disabled = value || !result || placementDirty; $('path-controls').disabled = value || !result || placementDirty; $('registration-controls').disabled = value || !result || layout.instances.length < 2 || placementDirty; $('registration-apply').disabled = value || !registrationPreview || placementDirty; $('registration-cancel').disabled = !registrationPreview && !registrationPending; $('face-placement-controls').disabled = value || !result || placementDirty; $('face-placement-apply').disabled = value || !facePreview || placementDirty; $('face-placement-cancel').disabled = !facePreview && !facePending; $('angle-controls').disabled = value || !result || placementDirty; $('fit-envelope-controls').disabled = value || !result || placementDirty; $('fit-envelope-apply').disabled = value || !envelopePreview || placementDirty; $('fit-envelope-cancel').disabled = value || !envelopePreview; $('islands-controls').disabled = value || !result || placementDirty; $('islands-split').disabled = value || placementDirty || !islandsCatalog || islandsCatalog.component_count < 2 || islandsCatalog.resulting_instance_count > 16; $('islands-restore').disabled = value || placementDirty || !islandRecipe; $('surface-area-controls').disabled = value || !result || placementDirty; $('revision-controls').disabled = value || !result || placementDirty; $('placements-controls').disabled = value || !result || placementDirty; $('placements-apply').disabled = value || !placementsPreview || placementDirty; $('placements-cancel').disabled = value || !placementsPreview; $('calibrate-controls').disabled = value || !calibrationReady(); $('section-controls').disabled = value || !result || placementDirty; $('cut-controls').disabled = value || !result || placementDirty; $('cut-restore').disabled = value || !cutRecipe || placementDirty; $('arrange-controls').disabled = value || !result || placementDirty; $('merge-controls').disabled = value || !result || placementDirty; $('replace-controls').disabled = value || !result || placementDirty; $('drawing-export').disabled = value || !result || placementDirty; $('glb-import-controls').disabled = value; $('glb-export').disabled = value || !result || placementDirty; $('load-controls').disabled = value; $('add-controls').disabled = value; $('edit-controls').disabled = value || !layout.instances.length; $('array-controls').disabled = value || !layout.instances.length; $('align-controls').disabled = value || layout.instances.length < 2; $('measure-controls').disabled = value || !result || placementDirty; updateDimensionControls(); updateHistoryControls(); }
 function clearMeasurement(message) {
  measurement = null; measurementRevision++; $('calibrate-controls').disabled = true;
  if (measurementUrl) URL.revokeObjectURL(measurementUrl); measurementUrl = null;
  $('measure-download').replaceChildren(); $('measure-status').textContent = message; updateDimensionControls(); render();
 }
 function resetEndpoints() {
+ resetSeparation();
  for (const side of ['a','b']) {
   const menu = $('measure-'+side+'-instance'); menu.replaceChildren();
   const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose instance'; menu.append(placeholder);
   for (const part of result?.parts ?? []) { const option = document.createElement('option'); option.value = part.id; option.textContent = `${part.id} (vertices 0–${part.vertex_range.count-1})`; menu.append(option); }
   menu.value = ''; $('measure-'+side+'-vertex').value = ''; $('measure-'+side+'-vertex').removeAttribute?.('max');
  }
+}
+function clearSeparation() {
+ separationGeneration++; separationReport = null;
+ if (separationUrl) URL.revokeObjectURL(separationUrl); separationUrl = null;
+ $('separation-download').replaceChildren();
+ $('separation-status').textContent = 'Choose two different references and measure the current applied layout.';
+ render();
+}
+function resetSeparation() {
+ clearSeparation();
+ for (const side of ['a','b']) {
+  const menu = $('separation-'+side); menu.replaceChildren();
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose surface'; menu.append(placeholder);
+  for (const part of result?.parts ?? []) { const option = document.createElement('option'); option.value = part.id; option.textContent = `${part.id} (${part.triangle_range.count} triangles)`; menu.append(option); }
+  menu.value = '';
+ }
+}
+for (const side of ['a','b']) $('separation-'+side).addEventListener('change',clearSeparation);
+$('separation-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  const applied = result, generation = separationGeneration;
+  const request = { layout:copy(layout), instance_a:$('separation-a').value, instance_b:$('separation-b').value,
+   expected_layout_sha256:applied.layout_sha256, expected_geometry_sha256:applied.geometry_sha256 };
+  if (!request.instance_a || !request.instance_b || request.instance_a === request.instance_b) throw Error('Choose two different surfaces');
+  separationPending = true;
+  try {
+   const response = await fetch('/api/reference-layout/separation',{ method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(request) });
+   const report = await response.json();
+   if (generation !== separationGeneration || result !== applied || placementDirty) return;
+   if (!response.ok) throw Error(report.message);
+   if (report.contract_id !== 'moonmold.reference-surface-separation.v1' || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || report.instance_a !== request.instance_a || report.instance_b !== request.instance_b || report.witness_a?.instance_id !== request.instance_a || report.witness_b?.instance_id !== request.instance_b || !Number.isFinite(report.distance_mm) || report.distance_mm < 0 || ![report.witness_a,report.witness_b].every(w => Array.isArray(w.coordinates_mm) && w.coordinates_mm.length === 3 && w.coordinates_mm.every(Number.isFinite) && Number.isSafeInteger(w.triangle_index) && w.triangle_index >= 0 && w.triangle_index < applied.parts.find(p => p.id === w.instance_id).triangle_range.count)) throw Error('Separation report does not match the inspected layout and chosen surfaces');
+   clearSeparation(); separationReport = report;
+   $('separation-status').textContent = `Nearest triangle-surface gap: ${report.distance_mm} mm\nA ${report.instance_a}, triangle ${report.witness_a.triangle_index}: ${report.witness_a.coordinates_mm.join(', ')} mm\nB ${report.instance_b}, triangle ${report.witness_b.triangle_index}: ${report.witness_b.coordinates_mm.join(', ')} mm\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
+   separationUrl = URL.createObjectURL(new Blob([JSON.stringify(report,null,2)+'\n'],{ type:'application/json' }));
+   const link = document.createElement('a'); link.href = separationUrl; link.download = `${layout.name}.surface-separation.json`; link.textContent = 'Download nearest-surface report'; $('separation-download').append(link); render();
+  } finally { separationPending = false; }
+ });
+});
+function clearPath(message, reset = false) {
+ pathReport = null; pathRevision++;
+ if (pathUrl) URL.revokeObjectURL(pathUrl); pathUrl = null;
+ $('path-download').replaceChildren(); $('path-status').textContent = message;
+ if (reset) {
+  pathChoices = []; $('path-closed').checked = false;
+  const menu = $('path-instance'); menu.replaceChildren();
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose instance'; menu.append(placeholder);
+  for (const part of result?.parts ?? []) { const option = document.createElement('option'); option.value = part.id; option.textContent = `${part.id} (vertices 0–${part.vertex_range.count-1})`; menu.append(option); }
+  menu.value = ''; $('path-vertex').value = ''; $('path-vertex').removeAttribute?.('max');
+ }
+ render();
+}
+function pathEndpoint(choice, applied = result) {
+ if (!choice || Object.keys(choice).some(key => !['instance_id','vertex_index'].includes(key))) return null;
+ const part = applied?.parts.find(part => part.id === choice.instance_id), index = choice.vertex_index;
+ if (!part || !Number.isSafeInteger(index) || index < 0 || index >= part.vertex_range.count) return null;
+ return { instance_id: part.id, vertex_index: index, layout_vertex_index: part.vertex_range.start + index,
+  coordinates_mm: applied.vertices[part.vertex_range.start + index], vertex_range: part.vertex_range,
+  source_name: part.source_name, source_format: part.source_format,
+  ...(part.source_encoding ? { source_encoding: part.source_encoding } : {}),
+  source_units: part.source_units, source_sha256: part.source_sha256,
+  ...(part.selection ? { selection: part.selection, source_vertex_index: part.source_vertex_indices[index] } : {}),
+  transform: part.transform, losses: part.losses };
+}
+function matchesPathReport(report, applied, choices, closed) {
+ const same = (a,b) => JSON.stringify(a) === JSON.stringify(b), ends = choices.map(choice => pathEndpoint(choice, applied));
+ if (ends.some(endpoint => !endpoint) || report?.contract_id !== 'moonmold.reference-vertex-path.v1' || report.layout_name !== applied.layout.name || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || report.measurement_kind !== 'ordered-straight-segment-path' || report.units !== 'mm' || report.frame !== 'placed layout XYZ; Z is the grounding axis' || report.physical_authority !== false || report.closed !== closed || report.endpoint_count !== choices.length || report.segment_count !== choices.length - 1 + Number(closed) || !Array.isArray(report.endpoints) || report.endpoints.length !== choices.length || !Array.isArray(report.segments) || report.segments.length !== report.segment_count || report.transform_order !== applied.transform_order || typeof report.qualification !== 'string' || !Array.isArray(report.limitations)) return false;
+ if (ends.some((endpoint,index) => !same(report.endpoints[index],endpoint))) return false;
+ let total = 0;
+ for (let i=0; i<report.segment_count; i++) {
+  const next = (i+1)%ends.length, delta = ends[next].coordinates_mm.map((value,axis) => value-ends[i].coordinates_mm[axis]), length = Math.hypot(...delta); total += length;
+  if (!Number.isFinite(total) || !same(report.segments[i], { index:i, from_endpoint_index:i, to_endpoint_index:next, closing:next===0, delta_mm:delta, length_mm:length, cumulative_length_mm:total })) return false;
+ }
+ return report.total_length_mm === total;
+}
+function clearAngle(message, reset = false) {
+ angleReport = null; angleRevision++;
+ if (angleUrl) URL.revokeObjectURL(angleUrl); angleUrl = null;
+ $('angle-download').replaceChildren(); $('angle-status').textContent = message;
+ if (reset) for (const side of ['a','b','c']) {
+  const menu = $('angle-'+side+'-instance'); menu.replaceChildren();
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose instance'; menu.append(placeholder);
+  for (const part of result?.parts ?? []) { const option = document.createElement('option'); option.value = part.id; option.textContent = `${part.id} (vertices 0–${part.vertex_range.count-1})`; menu.append(option); }
+  menu.value = ''; $('angle-'+side+'-vertex').value = ''; $('angle-'+side+'-vertex').removeAttribute?.('max');
+ }
+ render();
+}
+function angleEndpoint(side) {
+ const part = result?.parts.find(part => part.id === $('angle-'+side+'-instance').value);
+ const value = $('angle-'+side+'-vertex').value;
+ if (!part || !/^(0|[1-9][0-9]*)$/.test(value)) return null;
+ const index = Number(value);
+ if (!Number.isSafeInteger(index) || index >= part.vertex_range.count) return null;
+ return { instance_id: part.id, vertex_index: index, layout_vertex_index: part.vertex_range.start+index, coordinates_mm: result.vertices[part.vertex_range.start+index] };
 }
 function clearSection() {
  sectionUrls.forEach(URL.revokeObjectURL); sectionUrls = [];
@@ -182,11 +366,12 @@ function clearRevision() {
  $('revision-download').replaceChildren(); $('revision-preview').hidden = true; $('revision-preview').removeAttribute?.('src');
  $('revision-status').textContent = 'Choose a saved revision and compare it with the current applied layout.';
 }
-function clearDownloads() { clearIslands(); clearSurfaceArea(); clearRevision(); clearPlacements(); clearSection(); clearDrawing(); clearDimensionDrawing(); if (glbUrl) URL.revokeObjectURL(glbUrl); glbUrl = null; $('glb-download').replaceChildren(); urls.forEach(URL.revokeObjectURL); urls = []; $('downloads').replaceChildren(); }
+function clearDownloads() { clearDefects(); clearRegistrationPreview(); clearFacePreview(); clearEnvelopePreview(); clearIslands(); clearSurfaceArea(); clearRevision(); clearPlacements(); clearSection(); clearDrawing(); clearDimensionDrawing(); if (glbUrl) URL.revokeObjectURL(glbUrl); glbUrl = null; $('glb-download').replaceChildren(); urls.forEach(URL.revokeObjectURL); urls = []; $('downloads').replaceChildren(); }
 function currentDimensionSet() {
  return !!dimensionSet && !!result && dimensionSet.expected_layout_sha256 === result.layout_sha256 && dimensionSet.expected_geometry_sha256 === result.geometry_sha256;
 }
 function updateDimensionControls() {
+ $('separation-controls').disabled = busy || !result || placementDirty || layout.instances.length < 2;
  const ready = !busy && !!result && !placementDirty, count = currentDimensionSet() ? dimensionSet.dimensions.length : 0;
  $('dimension-controls').disabled = !ready;
  $('dimension-add').disabled = !ready || count >= 12 || !measurement || measurement.layout_sha256 !== result?.layout_sha256 || measurement.geometry_sha256 !== result?.geometry_sha256;
@@ -263,26 +448,104 @@ $('dimension-export').addEventListener('click', () => {
 });
 function nextId() { let n = 1; while (layout.instances.some(item => item.id === `reference-${n}`)) n++; return `reference-${n}`; }
 function render() {
- ctx.clearRect(0, 0, canvas.width, canvas.height); if (!result) return;
+ ctx.clearRect(0, 0, canvas.width, canvas.height); $('angle-selection').textContent = ''; $('path-selection').textContent = pathChoices.map((choice,i) => { const endpoint = pathEndpoint(choice); return `${i+1}. ${choice.instance_id}[${choice.vertex_index}]${endpoint ? ': '+endpoint.coordinates_mm.join(', ')+' mm' : ''}`; }).join('\n') || 'Append 2 through 64 vertices in traversal order.'; if (!result) return;
+ const shown = registrationPreview?.next ?? facePreview?.next ?? envelopePreview?.next ?? result;
  const yaw = Number($('yaw').value)*Math.PI/180, pitch = Number($('pitch').value)*Math.PI/180;
- const center = result.bounds.min.map((n,i) => (n + result.bounds.max[i])/2);
+ const center = shown.bounds.min.map((n,i) => (n + shown.bounds.max[i])/2);
  let extent = 1e-12;
- const points = result.vertices.map(point => { const [x,y,z] = point.map((n,i) => n-center[i]); const u = x*Math.cos(yaw)-y*Math.sin(yaw), v = (x*Math.sin(yaw)+y*Math.cos(yaw))*Math.sin(pitch)-z*Math.cos(pitch); extent = Math.max(extent, Math.abs(u), Math.abs(v)); return [u,v]; });
+ const project = point => { const [x,y,z] = point.map((n,i) => n-center[i]); const u = x*Math.cos(yaw)-y*Math.sin(yaw), v = (x*Math.sin(yaw)+y*Math.cos(yaw))*Math.sin(pitch)-z*Math.cos(pitch); extent = Math.max(extent, Math.abs(u), Math.abs(v)); return [u,v]; };
+ const points = shown.vertices.map(project);
+ const envelopePoints = envelopePreview ? Array.from({ length: 8 }, (_, corner) => project(envelopePreview.next.envelope_fit.center_mm.map((n,i) => n + ((corner >> i) & 1 ? 0.5 : -0.5) * envelopePreview.next.envelope_fit.size_mm[i]))) : [];
  const zoom = 170/extent;
- for (const part of result.parts) {
+ for (const part of shown.parts) {
   ctx.strokeStyle = part.id === selected ? '#ffe6a6' : '#63aaa5'; ctx.lineWidth = part.id === selected ? 1.5 : 1; ctx.beginPath();
   const end = part.triangle_range.start + part.triangle_range.count;
-  for (let n = part.triangle_range.start; n < end; n++) { const face = result.triangles[n]; for (let i = 0; i < 3; i++) { const a = points[face[i]], b = points[face[(i+1)%3]]; ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom); ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom); } }
+  for (let n = part.triangle_range.start; n < end; n++) { const face = shown.triangles[n]; for (let i = 0; i < 3; i++) { const a = points[face[i]], b = points[face[(i+1)%3]]; ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom); ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom); } }
   ctx.stroke();
  }
- ctx.fillStyle = '#b2c7d2'; ctx.font = '15px system-ui'; ctx.fillText(`${result.instance_count} instances · selected: ${selected}`,15,25);
- if (measurement && measurement.layout_sha256 === result.layout_sha256 && measurement.geometry_sha256 === result.geometry_sha256) {
+ if (defectReport && !placementDirty && !registrationPreview && !facePreview && !envelopePreview && defectReport.instance_id === selected && defectReport.layout_sha256 === result.layout_sha256) {
+  for (const edge of defectReport.defects) {
+   const part = result.parts.find(p => p.id === selected), use = edge.uses[0];
+   const [a,b] = use.local_vertex_indices.map(v => points[part.vertex_range.start+v]);
+   ctx.strokeStyle = edge.id === $('defect-edge').value ? '#ffffff' : {boundary:'#ff8833',nonmanifold:'#ec66ff',inconsistent:'#5599ff'}[edge.kind];
+   ctx.lineWidth = edge.id === $('defect-edge').value ? 5 : 3; ctx.beginPath();ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom);ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom);ctx.stroke();
+   if (edge.id === $('defect-edge').value) {ctx.fillStyle='#ffffff';ctx.fillText(edge.id,505+(a[0]+b[0])/2*zoom,195+(a[1]+b[1])/2*zoom);}
+  }
+ }
+ if (envelopePoints.length) {
+  ctx.strokeStyle = '#9bb8ff'; ctx.lineWidth = 1; ctx.beginPath();
+  for (let corner = 0; corner < 8; corner++) for (let axis = 0; axis < 3; axis++) {
+   const other = corner ^ (1 << axis); if (other < corner) continue;
+   const a = envelopePoints[corner], b = envelopePoints[other]; ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom); ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom);
+  }
+  ctx.stroke();
+ }
+ ctx.fillStyle = '#b2c7d2'; ctx.font = '15px system-ui'; ctx.fillText(`${shown.instance_count} instances · selected: ${selected}${registrationPreview ? ' · REGISTRATION PREVIEW (not applied)' : facePreview ? ' · FACE PREVIEW (not applied)' : envelopePreview ? ' · FIT PREVIEW (not applied)' : ''}`,15,25);
+ const registrationChoice = registrationSelection();
+ $('registration-selection').textContent = registrationChoice ? ['moving','fixed'].map(side => `${side === 'moving' ? 'Moving' : 'Fixed'} ${registrationChoice[side].instance_id}: vertices 0–${registrationChoice[side].part.vertex_range.count-1}\n` + registrationChoice[side].indices.map((vertex,i) => `${side === 'moving' ? 'M' : 'F'}${i+1} [${registrationChoice[side].vertex_indices[i]}]: ${shown.vertices[vertex].join(', ')} mm`).join('\n')).join('\n') : ['moving','fixed'].map(side => { const id=side==='moving'?selected:$('registration-fixed').value,part=result.parts.find(part=>part.id===id); return part ? `${side==='moving'?'Moving':'Fixed'} ${id}: choose three ordered local vertices from 0–${part.vertex_range.count-1}.` : 'Choose a different fixed reference.'; }).join('\n');
+ if (registrationChoice && !placementDirty && !facePreview && !envelopePreview) {
+  for (const side of ['moving','fixed']) {
+   ctx.strokeStyle = side === 'moving' ? '#ffc277' : '#73dcff'; ctx.fillStyle = ctx.strokeStyle; ctx.beginPath();
+   registrationChoice[side].indices.forEach((vertex,i) => { const p = points[vertex], x=500+p[0]*zoom, y=200+p[1]*zoom; ctx.moveTo(x-6,y);ctx.lineTo(x+6,y);ctx.moveTo(x,y-6);ctx.lineTo(x,y+6);ctx.fillText(`${side === 'moving' ? 'M' : 'F'}${i+1}`,x+8,y+(side === 'moving' ? -10 : 18)); }); ctx.stroke();
+  }
+  if (registrationPreview) { ctx.strokeStyle = '#ff88d6';ctx.beginPath(); registrationChoice.moving.indices.forEach((vertex,i) => { const a=points[vertex],b=points[registrationChoice.fixed.indices[i]];ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom);ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom); });ctx.stroke(); }
+ }
+ const faceChoice = faceSelection();
+ $('face-placement-selection').textContent = faceChoice ? `${selected}: triangles 0–${faceChoice.part.triangle_range.count-1}; picked ${faceChoice.index}. Local vertices ${faceChoice.local.join(', ')}.\n` + faceChoice.indices.map((vertex,i) => `${['A','B','C'][i]}: ${shown.vertices[vertex].join(', ')} mm`).join('\n') : 'Choose a valid current local triangle.';
+ if (faceChoice && !placementDirty && !envelopePreview && !registrationPreview) {
+  ctx.strokeStyle = '#ff88d6'; ctx.lineWidth = 3; ctx.beginPath();
+  faceChoice.indices.forEach((vertex,i) => { const a = points[vertex], b = points[faceChoice.indices[(i+1)%3]]; ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom); ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom); ctx.fillStyle = '#ff88d6'; ctx.fillText(`Face ${['A','B','C'][i]}`,510+a[0]*zoom,190+a[1]*zoom); });
+  ctx.stroke();
+ }
+ if (!registrationPreview && !facePreview && !envelopePreview && !placementDirty && pathChoices.length) {
+  const ends = pathChoices.map(choice => pathEndpoint(choice)).filter(Boolean).map(endpoint => { const p = points[endpoint.layout_vertex_index]; return [500+p[0]*zoom,200+p[1]*zoom]; });
+  ctx.strokeStyle = '#ffb668'; ctx.fillStyle = '#ffb668'; ctx.lineWidth = 3; ctx.beginPath();
+  for (let i=1; i<ends.length; i++) { ctx.moveTo(...ends[i-1]); ctx.lineTo(...ends[i]); }
+  if ($('path-closed').checked && ends.length > 1) { ctx.moveTo(...ends.at(-1)); ctx.lineTo(...ends[0]); }
+  ctx.stroke(); ends.forEach(([x,y],i) => ctx.fillText(`Path ${i+1}`,x+10,y+20));
+  if (pathReport) ctx.fillText(`Path: ${Number(pathReport.total_length_mm.toPrecision(8))} mm (3D)`,15,67);
+ }
+ if (!registrationPreview && !facePreview && !envelopePreview && !placementDirty) {
+  const chosen = ['a','b','c'].map(angleEndpoint);
+  $('angle-selection').textContent = chosen.map((endpoint,i) => endpoint ? `${['A','B (angle vertex)','C'][i]} ${endpoint.instance_id}[${endpoint.vertex_index}]: ${endpoint.coordinates_mm.join(', ')} mm` : `${['A','B (angle vertex)','C'][i]}: choose a valid local vertex`).join('\n');
+  const ends = chosen.map(endpoint => endpoint ? [500+points[endpoint.layout_vertex_index][0]*zoom,200+points[endpoint.layout_vertex_index][1]*zoom] : null);
+  ctx.strokeStyle = '#a5ed90'; ctx.lineWidth = 3; ctx.beginPath();
+  for (const side of [0,2]) if (ends[1] && ends[side]) { ctx.moveTo(...ends[1]); ctx.lineTo(...ends[side]); }
+  ctx.stroke();
+  ends.forEach((point,i) => { if (!point) return; const [x,y] = point; ctx.strokeStyle = i === 1 ? '#ffd46e' : '#a5ed90'; ctx.beginPath(); ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6); ctx.moveTo(x-6,y+6); ctx.lineTo(x+6,y-6); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.fillText(['Angle A','Angle B (vertex)','Angle C'][i],x+10,y-10); });
+  if (angleReport) ctx.fillText(`ABC at B: ${Number(angleReport.angle_abc_degrees.toPrecision(8))}° (3D)`,15,47);
+ }
+ if (!registrationPreview && !facePreview && !envelopePreview && measurement && measurement.layout_sha256 === result.layout_sha256 && measurement.geometry_sha256 === result.geometry_sha256) {
   const ends = [measurement.endpoint_a, measurement.endpoint_b].map(endpoint => { const p = points[endpoint.layout_vertex_index]; return [500+p[0]*zoom,200+p[1]*zoom]; });
   ctx.strokeStyle = '#ff80d5'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(...ends[0]); ctx.lineTo(...ends[1]); ctx.stroke();
   ends.forEach(([x,y],i) => { ctx.strokeStyle = i ? '#ff80d5' : '#73dcff'; ctx.beginPath(); ctx.moveTo(x-7,y); ctx.lineTo(x+7,y); ctx.moveTo(x,y-7); ctx.lineTo(x,y+7); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.fillText(i ? 'B' : 'A',x+10,y+(i ? 18 : -10)); });
  }
+ if (!registrationPreview && !facePreview && !envelopePreview && !placementDirty && separationReport && separationReport.layout_sha256 === result.layout_sha256 && separationReport.geometry_sha256 === result.geometry_sha256) {
+  const witnesses = [separationReport.witness_a,separationReport.witness_b];
+  const ends = witnesses.map(w => { const p = project(w.coordinates_mm); return [500+p[0]*zoom,200+p[1]*zoom]; });
+  ctx.strokeStyle = '#ff80d5'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(...ends[0]); ctx.lineTo(...ends[1]); ctx.stroke();
+  witnesses.forEach((w,i) => {
+   ctx.strokeStyle = i ? '#ff80d5' : '#73dcff'; ctx.fillStyle = ctx.strokeStyle; ctx.beginPath();
+   const part = result.parts.find(p => p.id === w.instance_id), face = result.triangles[part.triangle_range.start+w.triangle_index];
+   for (let j=0;j<3;j++) { const a=points[face[j]], b=points[face[(j+1)%3]]; ctx.moveTo(500+a[0]*zoom,200+a[1]*zoom); ctx.lineTo(500+b[0]*zoom,200+b[1]*zoom); }
+   const [x,y] = ends[i]; ctx.moveTo(x-7,y); ctx.lineTo(x+7,y); ctx.moveTo(x,y-7); ctx.lineTo(x,y+7); ctx.stroke(); ctx.fillText(i ? 'Gap B' : 'Gap A',x+10,y+(i ? 18 : -10));
+  });
+  ctx.fillStyle = '#ffbce8'; ctx.fillText(`Surface gap: ${Number(separationReport.distance_mm.toPrecision(8))} mm (3D)`,15,87);
+ }
 }
-function selectPart() {
+function selectPart() { clearDefects();
+ clearRegistrationPreview();
+ const previousFixed = $('registration-fixed').value, fixedReferences = layout.instances.filter(item => item.id !== selected);
+ $('registration-fixed').replaceChildren();
+ for (const item of fixedReferences) { const option=document.createElement('option');option.value=item.id;option.textContent=item.id;$('registration-fixed').append(option); }
+ $('registration-fixed').value = fixedReferences.some(item=>item.id===previousFixed) ? previousFixed : (fixedReferences[0]?.id ?? '');
+ for (const side of ['moving','fixed']) for (let i=1;i<=3;i++) $('registration-'+side+'-'+i).value='';
+ updateRegistrationRanges();
+ clearFacePreview();
+ $('face-placement-triangle').value = '0';
+ const facePart = result?.parts.find(part => part.id === selected);
+ if (facePart) $('face-placement-triangle').max = String(facePart.triangle_range.count - 1);
+ clearEnvelopePreview();
  clearIslands();
  placementDirty = false;
  $('cut-targets').replaceChildren();
@@ -310,6 +573,8 @@ function show(next, wanted, record = true) {
  islandRecipe = next.island_split ? JSON.parse(next.exports.recipe) : null;
  if (dimensionSet && (dimensionSet.expected_layout_sha256 !== next.layout_sha256 || dimensionSet.expected_geometry_sha256 !== next.geometry_sha256)) clearDimensions('Applied layout changed. Inspect and add named pairs for this revision.');
  result = next; layout = next.layout; selected = layout.instances.some(item => item.id === wanted) ? wanted : layout.instances[0].id;
+ clearPath('Layout composed. Append vertices for this revision.', true);
+ clearAngle('Layout composed. Select A, B and C for this revision.', true);
  clearMeasurement('Layout composed. Choose endpoints and measure this revision.'); resetEndpoints();
  $('selected').replaceChildren(); for (const item of layout.instances) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.id; $('selected').append(option); }
  selectPart(); clearDownloads();
@@ -330,7 +595,7 @@ async function commit(candidate, wanted, record = true) {
  const next = await response.json(); if (!response.ok) throw Error(next.message); show(next, wanted, record);
 }
 async function action(operation) {
- if (busy) return; lock(true);
+ if (busy) return; clearRegistrationPreview(); clearFacePreview(); lock(true);
  try { await operation(); } catch (error) { $('status').textContent = `${error.message}. Last successful layout, preview and downloads are unchanged.`; } finally { lock(false); }
 }
 async function sourceFromFile(file) {
@@ -343,6 +608,171 @@ async function sourceFromFile(file) {
  else throw Error('Choose an .obj, .stl or .ply file');
  return source;
 }
+function updateRegistrationRanges() {
+ for (const side of ['moving','fixed']) {
+  const id=side==='moving'?selected:$('registration-fixed').value,part=result?.parts.find(part=>part.id===id);
+  for(let i=1;i<=3;i++) {const field=$('registration-'+side+'-'+i);if(part)field.max=String(part.vertex_range.count-1);else field.removeAttribute?.('max');}
+ }
+}
+function registrationSelection() {
+ if (!result || !selected || selected === $('registration-fixed').value) return null;
+ const choice = {};
+ for (const side of ['moving','fixed']) {
+  const instance_id = side === 'moving' ? selected : $('registration-fixed').value;
+  const part=result.parts.find(part=>part.id===instance_id);
+  if (!part) return null;
+  const raw=[1,2,3].map(i=>$('registration-'+side+'-'+i).value);
+  if(raw.some(value=>!/^(0|[1-9][0-9]*)$/.test(value))) return null;
+  const vertex_indices=raw.map(Number);
+  if(vertex_indices.some(index=>!Number.isSafeInteger(index)||index>=part.vertex_range.count)||new Set(vertex_indices).size!==3) return null;
+  choice[side]={instance_id,vertex_indices,part,indices:vertex_indices.map(i=>part.vertex_range.start+i)};
+ }
+ return choice;
+}
+function clearRegistrationPreview() {
+ registrationAbort?.abort();registrationAbort=null;registrationPreview=null;registrationPending=false;registrationGeneration++;
+ $('registration-apply').disabled=true;$('registration-cancel').disabled=true;
+ $('registration-status').textContent='Choose three ordered pairs, then preview. Downloads show the applied layout.';render();
+}
+for(const side of ['moving','fixed']) for(let i=1;i<=3;i++) $('registration-'+side+'-'+i).addEventListener('input',clearRegistrationPreview);
+$('registration-fixed').addEventListener('change',()=>{for(let i=1;i<=3;i++) $('registration-fixed-'+i).value='';updateRegistrationRanges();clearRegistrationPreview();});
+$('registration-cancel').addEventListener('click',()=>{clearRegistrationPreview();lock(busy);});
+function registrationResponseMatches(applied,next,choice) {
+ const r=next.registration,same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),finiteVector=p=>Array.isArray(p)&&p.length===3&&p.every(Number.isFinite);
+ const selector=side=>({instance_id:choice[side].instance_id,vertex_indices:choice[side].vertex_indices});
+ const wanted=choice.moving.instance_id,oldItem=applied.layout.instances.find(item=>item.id===wanted),newItem=next.layout?.instances?.find(item=>item.id===wanted);
+ if(r?.contract_id!=='moonmold.reference-registration.v1'||r.method!=='three-pair-proper-rigid-least-squares'||next.contract_id!==applied.contract_id||r.parent_layout_sha256!==applied.layout_sha256||r.parent_geometry_sha256!==applied.geometry_sha256||r.layout_sha256!==next.layout_sha256||r.geometry_sha256!==next.geometry_sha256||r.frame!=='placed-world-xyz-mm'||r.physical_authority!==false||!same(r.moving,selector('moving'))||!same(r.fixed,selector('fixed'))||!same(r.before_transform,oldItem.transform)||!same(r.after_transform,newItem?.transform)||!same(newItem?.source,oldItem.source)||newItem?.transform.scale!==oldItem.transform.scale||newItem?.transform.center_and_ground!==oldItem.transform.center_and_ground||next.layout.name!==applied.layout.name||!same(next.layout.instances.map(item=>item.id),applied.layout.instances.map(item=>item.id))||!same(next.layout.instances.filter(item=>item.id!==wanted),applied.layout.instances.filter(item=>item.id!==wanted))||!same(next.triangles,applied.triangles)||!same(JSON.parse(next.exports.layout),next.layout)||!Array.isArray(next.vertices)||next.vertices.length!==applied.vertices.length||!next.vertices.every(finiteVector)||!Array.isArray(r.residuals)||r.residuals.length!==3) return false;
+ const matrix=r.world_rotation;
+ if(!Array.isArray(matrix)||matrix.length!==3||!matrix.every(finiteVector)||!finiteVector(r.source_centroid_mm)||!finiteVector(r.target_centroid_mm)) return false;
+ const dot=(a,b)=>a.reduce((sum,n,i)=>sum+n*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+ for(let i=0;i<3;i++)for(let j=0;j<3;j++)if(Math.abs(dot(matrix[i],matrix[j])-(i===j?1:0))>1e-10)return false;
+ if(Math.abs(dot(matrix[0],cross(matrix[1],matrix[2]))-1)>1e-10)return false;
+ const points=side=>choice[side].indices.map(i=>applied.vertices[i]);
+ const center=points=>points[0].map((n,i)=>n+(points[1][i]-n)/3+(points[2][i]-n)/3);
+ if(!same(r.source_centroid_mm,center(points('moving')))||!same(r.target_centroid_mm,center(points('fixed'))))return false;
+ const magnitude=Math.max(1,...applied.bounds.min.map(Math.abs),...applied.bounds.max.map(Math.abs),...next.vertices.reduce((a,p)=>a.map((n,i)=>Math.max(n,Math.abs(p[i]))),[0,0,0]));
+ const tolerance=magnitude*Number.EPSILON*512;
+ const range=choice.moving.part.vertex_range;
+ for(let i=0;i<next.vertices.length;i++) {
+  if(i<range.start||i>=range.start+range.count) {if(!same(next.vertices[i],applied.vertices[i]))return false;}
+  else {const local=applied.vertices[i].map((n,k)=>n-r.source_centroid_mm[k]);if(next.vertices[i].some((n,k)=>Math.abs(n-r.target_centroid_mm[k]-dot(matrix[k],local))>tolerance))return false;}
+ }
+ for(let i=0;i<3;i++) {
+  const residual=r.residuals[i],after=next.vertices[choice.moving.indices[i]],target=applied.vertices[choice.fixed.indices[i]],delta=after.map((n,k)=>n-target[k]);
+  if(residual.pair!==i+1||residual.moving_vertex_index!==choice.moving.vertex_indices[i]||residual.fixed_vertex_index!==choice.fixed.vertex_indices[i]||!same(residual.before_mm,applied.vertices[choice.moving.indices[i]])||!same(residual.target_mm,target)||!same(residual.after_mm,after)||!same(residual.delta_mm,delta)||residual.distance_mm!==Math.hypot(...delta))return false;
+ }
+ return r.rms_residual_mm===Math.hypot(...r.residuals.map(r=>r.distance_mm))/Math.sqrt(3)&&r.max_residual_mm===Math.max(...r.residuals.map(r=>r.distance_mm));
+}
+$('registration-form').addEventListener('submit',e=>{e.preventDefault();
+ if(busy||!result||placementDirty)return;
+ clearEnvelopePreview();clearPlacementsPreview();
+ return action(async()=>{
+  const applied=result,wanted=selected,generation=registrationGeneration,choice=registrationSelection();
+  if(!choice)throw Error('Choose three distinct current local vertices on each of two different references');
+  const controller=new AbortController();registrationAbort=controller;registrationPending=true;lock(true);
+  const selector=side=>({instance_id:choice[side].instance_id,vertex_indices:choice[side].vertex_indices});
+  try {
+   const response=await fetch('/api/reference-layout/register-vertices',{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({layout,moving:selector('moving'),fixed:selector('fixed'),expected_layout_sha256:applied.layout_sha256,expected_geometry_sha256:applied.geometry_sha256})});
+   const next=await response.json();
+   if(result!==applied||selected!==wanted||placementDirty||generation!==registrationGeneration)return;
+   if(!response.ok)throw Error(next.message);
+   if(!registrationResponseMatches(applied,next,choice))throw Error('Registration preview does not match this request');
+   registrationPreview={applied,wanted,next};
+   const r=next.registration;
+   $('registration-status').textContent=`PREVIEW ONLY · moving ${wanted} to ${choice.fixed.instance_id}\n`+r.residuals.map(pair=>`Pair ${pair.pair}: ${pair.distance_mm} mm; XYZ residual [${pair.delta_mm.join(', ')}]`).join('\n')+`\nRMS: ${r.rms_residual_mm} mm · maximum: ${r.max_residual_mm} mm\n${r.qualification}\nApply to update editable layout, or cancel.`;render();
+  }catch(error){if(generation===registrationGeneration)throw error;}finally{if(registrationAbort===controller)registrationAbort=null;registrationPending=false;}
+ });
+});
+$('registration-apply').addEventListener('click',()=>{
+ if(busy||placementDirty||!registrationPreview)return;
+ const preview=registrationPreview;
+ if(preview.applied!==result||preview.wanted!==selected){clearRegistrationPreview();return;}
+ show(preview.next,selected);lock(false);
+ $('status').textContent+='\nRigid registration applied. Original sources and scales retained. Save editable layout and inspection report; Undo restores the previous placement.';
+});
+
+function faceSelection() {
+ const part = result?.parts.find(part => part.id === selected), value = $('face-placement-triangle').value;
+ if (!part || !/^(0|[1-9][0-9]*)$/.test(value)) return null;
+ const index = Number(value);
+ if (!Number.isSafeInteger(index) || index >= part.triangle_range.count) return null;
+ const indices = result.triangles[part.triangle_range.start + index];
+ return { part, index, indices, local: indices.map(i => i - part.vertex_range.start) };
+}
+function clearFacePreview() {
+ faceAbort?.abort(); faceAbort = null;
+ facePreview = null; facePending = false; faceGeneration++;
+ $('face-placement-apply').disabled = true; $('face-placement-cancel').disabled = true;
+ $('face-placement-status').textContent = 'Choose a triangle and height, then preview. Downloads show the applied layout.';
+ render();
+}
+for (const id of ['face-placement-triangle','face-placement-height']) $(id).addEventListener('input', clearFacePreview);
+$('face-placement-cancel').addEventListener('click', () => { clearFacePreview(); lock(busy); });
+$('face-placement-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ clearEnvelopePreview(); clearPlacementsPreview();
+ return action(async () => {
+  const applied = result, wanted = selected, generation = faceGeneration, choice = faceSelection(), height = number('face-placement-height');
+  if (!choice) throw Error('Choose a current zero-based local triangle');
+  if (!Number.isFinite(height) || Math.abs(height) > 1e9) throw Error('Enter a finite height within ±1000000000 mm');
+  const controller = new AbortController(); faceAbort = controller;
+  facePending = true; lock(true);
+  try {
+   const response = await fetch('/api/reference-layout/place-face', { signal: controller.signal, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ layout, instance_id: wanted, triangle_index: choice.index, height_mm: height, expected_layout_sha256: applied.layout_sha256, expected_geometry_sha256: applied.geometry_sha256 }) });
+   const next = await response.json();
+   if (result !== applied || selected !== wanted || placementDirty || generation !== faceGeneration) return;
+   if (!response.ok) throw Error(next.message);
+   const report = next.face_placement, same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
+   const oldItem = applied.layout.instances.find(item => item.id === wanted), newItem = next.layout?.instances?.find(item => item.id === wanted);
+   if (report?.contract_id !== 'moonmold.reference-face-placement.v1' || next.contract_id !== applied.contract_id || report.parent_layout_sha256 !== applied.layout_sha256 || report.parent_geometry_sha256 !== applied.geometry_sha256 || report.layout_sha256 !== next.layout_sha256 || report.geometry_sha256 !== next.geometry_sha256 || report.instance_id !== wanted || report.triangle_index !== choice.index || report.height_mm !== height || report.frame !== 'world-xy-mm-first-edge-positive-x-normal-positive-z' || report.physical_authority !== false || !same(report.vertex_indices, choice.local) || !same(report.before_vertices_mm, choice.indices.map(i => applied.vertices[i])) || !same(report.before_transform, oldItem.transform) || !same(report.after_transform, newItem?.transform) || !same(newItem?.source, oldItem.source) || newItem?.transform.scale !== oldItem.transform.scale || newItem?.transform.center_and_ground !== oldItem.transform.center_and_ground || !same(next.layout.instances.map(item => item.id), applied.layout.instances.map(item => item.id)) || next.layout.name !== applied.layout.name || !same(next.layout.instances.filter(item => item.id !== wanted), applied.layout.instances.filter(item => item.id !== wanted)) || !same(next.triangles, applied.triangles) || !same(report.after_vertices_mm, choice.indices.map(i => next.vertices[i])) || !same(JSON.parse(next.exports.layout), next.layout)) throw Error('Face preview does not match this request');
+   facePreview = { applied, wanted, next };
+   $('face-placement-status').textContent = `PREVIEW ONLY · ${wanted} triangle ${choice.index} at Z=${height} mm\nMaximum height residual: ${report.max_height_residual_mm} mm\n${report.qualification}\nApply to update editable layout, or cancel.`;
+   render();
+  } catch (error) { if (generation === faceGeneration) throw error; } finally { if (faceAbort === controller) faceAbort = null; facePending = false; }
+ });
+});
+$('face-placement-apply').addEventListener('click', () => {
+ if (busy || placementDirty || !facePreview) return;
+ const preview = facePreview;
+ if (preview.applied !== result || preview.wanted !== selected) { clearFacePreview(); return; }
+ show(preview.next, selected); lock(false);
+ $('status').textContent += '\nFace placement applied. Original source and scale retained. Save editable layout; Undo restores the previous placement.';
+});
+
+function clearEnvelopePreview() {
+ envelopePreview = null; envelopeGeneration++;
+ $('fit-envelope-apply').disabled = true; $('fit-envelope-cancel').disabled = true;
+ $('fit-envelope-status').textContent = 'Enter three positive dimensions, then preview. Downloads show the applied layout.';
+ render();
+}
+for (const id of ['fit-envelope-x','fit-envelope-y','fit-envelope-z','fit-envelope-enlarge']) $(id).addEventListener('input', clearEnvelopePreview);
+$('fit-envelope-cancel').addEventListener('click', () => { if (!busy) { clearEnvelopePreview(); lock(false); } });
+$('fit-envelope-form').addEventListener('submit', e => { e.preventDefault();
+ if (busy || !result || placementDirty) return;
+ clearEnvelopePreview();
+ return action(async () => {
+  const applied = result, wanted = selected, generation = envelopeGeneration;
+  const size = ['x','y','z'].map(axis => number('fit-envelope-'+axis));
+  if (size.some(n => !Number.isFinite(n) || n <= 0 || n > 1e9)) throw Error('Enter three finite positive envelope dimensions');
+  const enlarge = $('fit-envelope-enlarge').checked;
+  const response = await fetch('/api/reference-layout/fit-envelope', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ layout, instance_id: wanted, size_mm: size, allow_enlarge: enlarge, expected_layout_sha256: applied.layout_sha256, expected_geometry_sha256: applied.geometry_sha256 }) });
+  const next = await response.json(); if (!response.ok) throw Error(next.message);
+  if (result !== applied || selected !== wanted || placementDirty || generation !== envelopeGeneration) return;
+  const report = next.envelope_fit;
+  if (report?.contract_id !== 'moonmold.reference-envelope-fit.v1' || report.parent_layout_sha256 !== applied.layout_sha256 || report.parent_geometry_sha256 !== applied.geometry_sha256 || report.layout_sha256 !== next.layout_sha256 || report.geometry_sha256 !== next.geometry_sha256 || report.instance_id !== wanted || report.frame !== 'world-xyz-mm' || JSON.stringify(report.size_mm) !== JSON.stringify(size) || report.allow_enlarge !== enlarge) throw Error('Envelope preview does not match this request');
+  envelopePreview = { applied, wanted, next };
+  $('fit-envelope-status').textContent = `PREVIEW ONLY · ${wanted} · uniform factor ${report.scale_factor}\nBefore (mm): ${display(report.before_size_mm)}\nAfter (mm): ${display(report.after_size_mm)}\nUnused envelope space (mm): ${display(report.remaining_space_mm)}\n${report.qualification}\nApply to update editable layout, or cancel.`;
+  render();
+ });
+});
+$('fit-envelope-apply').addEventListener('click', () => {
+ if (busy || placementDirty || !envelopePreview) return;
+ const preview = envelopePreview;
+ if (preview.applied !== result || preview.wanted !== selected) { clearEnvelopePreview(); return; }
+ show(preview.next, selected); lock(false);
+ $('status').textContent += '\nEnvelope fit applied. Original source bytes and units retained. Save editable layout; Undo restores the previous placement.';
+});
+
 function clearIslands() {
  islandsGeneration++; islandsCatalog = null;
  if (islandsUrl) URL.revokeObjectURL(islandsUrl); islandsUrl = null;
@@ -386,24 +816,27 @@ function clearSurfaceArea() {
  $('surface-area-status').textContent = 'Choose references and calculate area for the current applied layout.';
 }
 $('surface-area-targets').addEventListener('change', clearSurfaceArea);
+$('measurement-mode').addEventListener('change', clearSurfaceArea);
 $('surface-area-form').addEventListener('submit', e => { e.preventDefault();
  if (busy || !result || placementDirty) return;
  return action(async () => {
   const applied = result, generation = surfaceAreaGeneration, snapshot = copy(layout);
   const instance_ids = Array.from($('surface-area-targets').selectedOptions, option => option.value);
+  const volume = $('measurement-mode').value === 'volume', endpoint = volume ? 'volume' : 'surface-area';
   if (!instance_ids.length) throw Error('Choose at least one instance to measure');
-  const response = await fetch('/api/reference-layout/surface-area', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, instance_ids }) });
+  const response = await fetch('/api/reference-layout/' + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ layout: snapshot, instance_ids }) });
   const report = await response.json(); if (!response.ok) throw Error(report.message);
   if (result !== applied || placementDirty || surfaceAreaGeneration !== generation) return;
   const expectedIds = snapshot.instances.filter(item => instance_ids.includes(item.id)).map(item => item.id);
-  if (report.contract_id !== 'moonmold.reference-surface-area.v1' || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || JSON.stringify(report.instance_ids) !== JSON.stringify(expectedIds) || typeof report.exports?.csv !== 'string' || typeof report.exports?.json !== 'string') throw Error('Surface-area report does not match the requested layout and selection');
+  if (report.contract_id !== (volume ? 'moonmold.reference-shell-volume.v1' : 'moonmold.reference-surface-area.v1') || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || JSON.stringify(report.instance_ids) !== JSON.stringify(expectedIds) || typeof report.exports?.csv !== 'string' || typeof report.exports?.json !== 'string') throw Error('Measurement report does not match the requested layout and selection');
   clearSurfaceArea();
-  for (const [format, label, type] of [['json', 'Download area report JSON', 'application/json'], ['csv', 'Download area schedule CSV', 'text/csv;charset=utf-8']]) {
+  for (const [format, label, type] of [['json', 'Download measurement report JSON', 'application/json'], ['csv', 'Download measurement schedule CSV', 'text/csv;charset=utf-8']]) {
    const url = URL.createObjectURL(new Blob([report.exports[format]], { type })); surfaceAreaUrls.push(url);
-   const link = document.createElement('a'); link.href = url; link.download = `${layout.name}.surface-area.${format}`; link.textContent = label; $('surface-area-downloads').append(link);
+   const link = document.createElement('a'); link.href = url; link.download = `${layout.name}.${volume ? 'shell-volume' : 'surface-area'}.${format}`; link.textContent = label; $('surface-area-downloads').append(link);
   }
-  const describe = item => `${item.triangle_sum_area_mm2} mm² (${item.triangle_sum_area_m2} m²); ${item.triangle_count} triangles. Surface centroid XYZ mm: ${item.surface_centroid_mm.join(', ')}`;
-  $('surface-area-status').textContent = `Triangle-sum area, ${report.instance_count} chosen instances\nTotal: ${describe(report.total)}\n` + report.parts.map(part => `${part.instance_id}: ${describe(part)}`).join('\n') + `\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
+  const describe = item => volume ? (item.shell_sum_volume_mm3 === null ? `${item.status}; boundary ${item.topology.boundary_edges}, nonmanifold ${item.topology.nonmanifold_edges}, inconsistent ${item.topology.inconsistent_edges} edges` : `${item.shell_sum_volume_mm3} mm³; ${item.components.length} shells. Volume centroid XYZ mm: ${item.volume_centroid_mm.join(', ')}`) : `${item.triangle_sum_area_mm2} mm² (${item.triangle_sum_area_m2} m²); ${item.triangle_count} triangles. Surface centroid XYZ mm: ${item.surface_centroid_mm.join(', ')}`;
+  const heading = volume ? `Algebraic shell volume, ${report.instance_count} chosen instances\nShell sum: ${report.shell_sum_volume_mm3 === null ? 'Unavailable: inspect individual parts' : report.shell_sum_volume_mm3 + ' mm³'}\n` : `Triangle-sum area, ${report.instance_count} chosen instances\nTotal: ${describe(report.total)}\n`;
+  $('surface-area-status').textContent = heading + report.parts.map(part => `${part.instance_id}: ${describe(part)}`).join('\n') + `\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
  });
 });
 function clearPlacementsPreview() {
@@ -673,6 +1106,82 @@ $('edit-form').addEventListener('submit', e => { e.preventDefault(); return acti
  await commit(candidate,item.id);
 }); });
 $('selected').addEventListener('change', () => { if (busy) return; selected = $('selected').value; selectPart(); lock(false); });
+$('path-instance').addEventListener('change', () => {
+ const part = result?.parts.find(part => part.id === $('path-instance').value);
+ $('path-vertex').value = ''; if (part) $('path-vertex').max = String(part.vertex_range.count-1);
+ clearPath('Next vertex changed. Append it to change the ordered path, then measure.');
+});
+$('path-vertex').addEventListener('input', () => clearPath('Next vertex changed. Append it to change the ordered path, then measure.'));
+$('path-closed').addEventListener('change', () => clearPath('Closure changed. Measure the ordered path again.'));
+$('path-add').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ const value = $('path-vertex').value, choice = { instance_id:$('path-instance').value, vertex_index:Number(value) };
+ if (!/^(0|[1-9][0-9]*)$/.test(value) || !pathEndpoint(choice)) { clearPath('Choose an existing instance and valid zero-based local vertex.'); return; }
+ if (pathChoices.length >= 64) { clearPath('The ordered path is limited to 64 vertices.'); return; }
+ pathChoices.push(choice); clearPath('Vertex appended in order. Measure when the path is ready.');
+});
+$('path-remove').addEventListener('click', () => { if (busy || !result || placementDirty) return; pathChoices.pop(); clearPath('Last vertex removed. Measure the revised path.'); });
+$('path-clear').addEventListener('click', () => { if (busy) return; clearPath('Ordered path cleared.', true); });
+$('path-open').addEventListener('click', () => {
+ if (busy || !result || placementDirty) return;
+ return action(async () => {
+  clearPath('Reading saved path choices…'); const revision = pathRevision, applied = result;
+  try {
+   const file = $('path-file').files[0]; if (!file || file.size > PATH_MAX_OBSERVATION_BYTES) throw Error('Choose a path observation JSON no larger than 1000000 bytes');
+   const report = JSON.parse(await file.text());
+   if (revision !== pathRevision || result !== applied || placementDirty) return;
+   if (!Array.isArray(report?.endpoints) || report.endpoints.length < 2 || report.endpoints.length > 64 || typeof report.closed !== 'boolean') throw Error('Invalid saved path observation');
+   const choices = report.endpoints.map(endpoint => ({ instance_id:endpoint?.instance_id, vertex_index:endpoint?.vertex_index }));
+   if (!matchesPathReport(report, applied, choices, report.closed)) throw Error('Saved path does not match the current exact layout and geometry');
+   pathChoices = choices; $('path-closed').checked = report.closed; clearPath('Matching ordered choices reopened. Measure again to produce a fresh observation.');
+  } catch (error) { if (revision === pathRevision) clearPath(`Path reopen unavailable: ${error.message}`); }
+ });
+});
+$('path-form').addEventListener('submit', e => { e.preventDefault(); if (busy || !result || placementDirty) return; return action(async () => {
+ clearPath('Measuring ordered straight segments in the applied layout…'); const revision = pathRevision, applied = result, choices = copy(pathChoices), closed = $('path-closed').checked;
+ pathPending = true;
+ try {
+  if (choices.length < 2 || choices.length > 64) throw Error('Append 2 through 64 ordered vertices');
+  const request = { layout:copy(layout), endpoints:choices, closed, expected_layout_sha256:applied.layout_sha256, expected_geometry_sha256:applied.geometry_sha256 };
+  const response = await fetch('/api/reference-layout/path', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(request) });
+  const report = await response.json(); if (revision !== pathRevision || result !== applied || placementDirty) return;
+  if (!response.ok) throw Error(report.message);
+  if (!matchesPathReport(report, applied, choices, closed)) throw Error('Path result does not match the current ordered choices and exact layout');
+  const observation = new Blob([JSON.stringify(report,null,2)+'\n'], { type:'application/json' });
+  if (observation.size > PATH_MAX_OBSERVATION_BYTES) throw Error('Path observation exceeds 1000000 bytes; reduce ordered endpoints or selected parts');
+  pathReport = report;
+  $('path-status').textContent = `${report.closed ? 'Closed' : 'Open'} ordered path: ${report.segment_count} segments; total ${report.total_length_mm} mm\n` + report.segments.map(segment => `${segment.index+1}. Point ${segment.from_endpoint_index+1} → ${segment.to_endpoint_index+1}${segment.closing ? ' (closing)' : ''}: ${segment.length_mm} mm; cumulative ${segment.cumulative_length_mm} mm`).join('\n') + `\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
+  pathUrl = URL.createObjectURL(observation);
+  const link = document.createElement('a'); link.href = pathUrl; link.download = `${layout.name}.path.json`; link.textContent = 'Download ordered path observation'; $('path-download').append(link); render();
+ } catch (error) { if (revision === pathRevision) clearPath(`Path unavailable: ${error.message}`); }
+ finally { pathPending = false; }
+}); });
+$('angle-form').addEventListener('submit', e => { e.preventDefault(); if (busy || !result || placementDirty) return; return action(async () => {
+ clearAngle('Measuring angle at B in the current applied layout…'); const revision = angleRevision, applied = result;
+ try {
+  const choices = ['a','b','c'].map(angleEndpoint);
+  if (choices.some(choice => !choice)) throw Error('Choose an existing instance and zero-based local vertex for A, B and C');
+  const endpoint = choice => ({ instance_id: choice.instance_id, vertex_index: choice.vertex_index });
+  const request = { layout: copy(layout), endpoint_a: endpoint(choices[0]), vertex_b: endpoint(choices[1]), endpoint_c: endpoint(choices[2]), expected_layout_sha256: applied.layout_sha256, expected_geometry_sha256: applied.geometry_sha256 };
+  const response = await fetch('/api/reference-layout/angle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+  const report = await response.json();
+  if (revision !== angleRevision || result !== applied || placementDirty) return;
+  if (!response.ok) throw Error(report.message);
+  if (report.contract_id !== 'moonmold.reference-vertex-angle.v1' || report.layout_sha256 !== applied.layout_sha256 || report.geometry_sha256 !== applied.geometry_sha256 || !Number.isFinite(report.angle_abc_degrees) || report.angle_abc_degrees < 0 || report.angle_abc_degrees > 180 || ['endpoint_a','vertex_b','endpoint_c'].some((key,i) => report[key]?.instance_id !== choices[i].instance_id || report[key]?.vertex_index !== choices[i].vertex_index || JSON.stringify(report[key]?.coordinates_mm) !== JSON.stringify(choices[i].coordinates_mm))) throw Error('Angle result does not match the current three selected vertices');
+  angleReport = report;
+  $('angle-status').textContent = `Angle ABC at B: ${report.angle_abc_degrees} degrees\nArm B–A: ${report.arm_ba_length_mm} mm; B–C: ${report.arm_bc_length_mm} mm\n${report.qualification}\nLayout SHA-256: ${report.layout_sha256}\nGeometry SHA-256: ${report.geometry_sha256}`;
+  angleUrl = URL.createObjectURL(new Blob([JSON.stringify(report,null,2)+'\n'], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = angleUrl; link.download = `${layout.name}.angle.json`; link.textContent = 'Download angle observation'; $('angle-download').append(link); render();
+ } catch (error) { if (revision === angleRevision) clearAngle(`Angle unavailable: ${error.message}`); }
+}); });
+for (const side of ['a','b','c']) {
+ $('angle-'+side+'-instance').addEventListener('change', () => {
+  const part = result?.parts.find(part => part.id === $('angle-'+side+'-instance').value);
+  $('angle-'+side+'-vertex').value = ''; if (part) $('angle-'+side+'-vertex').max = String(part.vertex_range.count-1);
+  clearAngle('Angle selection changed. Choose its local vertex and measure again.');
+ });
+ $('angle-'+side+'-vertex').addEventListener('input', () => clearAngle('Angle selection changed. Inspect the highlighted arms and measure again.'));
+}
 $('measure-form').addEventListener('submit', e => { e.preventDefault(); if (busy || !result || placementDirty) return; return action(async () => {
  clearMeasurement('Measuring the current applied layout…'); const revision = measurementRevision;
  const endpoint = side => { const id = 'measure-'+side+'-vertex', value = $(id).value; if (!/^(0|[1-9][0-9]*)$/.test(value)) throw Error('Enter a zero-based integer vertex index for both endpoints'); return { instance_id: $('measure-'+side+'-instance').value, vertex_index: Number(value) }; };
@@ -719,6 +1228,13 @@ $('align-form').addEventListener('submit', e => { e.preventDefault(); return act
  const operation = next.alignment;
  $('status').textContent += `\nAligned ${operation.instance_id} ${operation.moving_anchor} to ${operation.reference_id} ${operation.reference_anchor} on ${operation.axis.toUpperCase()}. Requested signed offset: ${operation.offset_mm} mm; actual: ${operation.actual_offset_mm} mm; residual: ${operation.residual_mm} mm. Save the editable layout to keep this placement.`;
 }); });
+$('path-array-form').addEventListener('submit', e => { e.preventDefault(); if (placementDirty) return; return action(async () => {
+ const candidate = { layout: copy(layout), instance_id: selected, count: number('path-array-count'), points_mm: JSON.parse($('path-array-points').value) };
+ const response = await fetch('/api/reference-layout/path-array', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(candidate) });
+ const next = await response.json(); if (!response.ok) throw Error(next.message);
+ show(next, next.path_array.samples.at(-1).instance_id);
+ $('status').textContent += `\nPlaced ${next.path_array.count} instances at ${next.path_array.spacing_mm} mm arc-length intervals. Save the editable layout to keep them.`;
+}); });
 $('array-form').addEventListener('submit', e => { e.preventDefault(); return action(async () => {
  const candidate = { layout: copy(layout), instance_id: selected, counts: ['count-x','count-y','count-z'].map(number), pitch_mm: ['array-x','array-y','array-z'].map(number) };
  const response = await fetch('/api/reference-layout/array', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(candidate) });
@@ -737,7 +1253,7 @@ function showEmpty(candidate, record = true) {
  const before = record ? snapshot() : null;
  clearDimensions('Layout is empty.'); layout = candidate; result = null; selected = ''; cutRecipe = null; islandRecipe = null; placementDirty = false;
  for (const id of ['surface-area-targets','cut-targets','arrange-targets','replace-targets','selected','align-reference']) $(id).replaceChildren();
- clearDownloads(); clearMeasurement('Layout is empty.'); resetEndpoints(); $('part-status').textContent = '';
+ clearDownloads(); clearPath('Layout is empty.', true); clearAngle('Layout is empty.', true); clearMeasurement('Layout is empty.'); resetEndpoints(); $('part-status').textContent = '';
  $('status').textContent = 'Layout is empty. Add a reference, undo removal, or reopen a saved layout.'; render();
  if (record) rememberChange(before);
 }
@@ -766,7 +1282,19 @@ $('discard-placement').addEventListener('click', () => {
  if (busy || !placementDirty) return;
  selectPart(); lock(false); $('status').textContent = 'Unapplied placement fields discarded. Applied layout and history are unchanged.';
 });
-for (const id of ['layout-name','instance-id','scale','rx','ry','rz','tx','ty','tz','ground']) $(id).addEventListener('input', () => { if (!busy) { placementDirty = true; clearIslands(); clearSurfaceArea(); clearRevision(); clearPlacements(); clearSection(); clearDrawing(); clearDimensionDrawing(); clearMeasurement('Placement fields changed. Apply placement before selecting endpoints and measuring again.'); lock(false); $('status').textContent = 'Placement fields changed. Preview and downloads show the last applied layout. Click Apply placement to update.'; } });
+for (const id of ['layout-name','instance-id','scale','rx','ry','rz','tx','ty','tz','ground']) $(id).addEventListener('input', () => {
+ if (defectPending) { placementDirty = true; clearDefects(); }
+ if (separationPending) { placementDirty = true; clearDefects(); clearSeparation(); }
+ if (pathPending) { placementDirty = true; clearDefects(); clearPath('Placement fields changed during measurement. Apply or discard them, then select the path again.', true); }
+ if (!busy) {
+  placementDirty = true; clearDefects(); clearSeparation();
+  clearPath('Placement fields changed. Apply or discard them, then select the path again.', true);
+  clearRegistrationPreview(); clearFacePreview(); clearAngle('Placement fields changed. Apply or discard them, then select three vertices again.', true);
+  clearEnvelopePreview(); clearIslands(); clearSurfaceArea(); clearRevision(); clearPlacements(); clearSection(); clearDrawing(); clearDimensionDrawing();
+  clearMeasurement('Placement fields changed. Apply placement before selecting endpoints and measuring again.'); lock(false);
+  $('status').textContent = 'Placement fields changed. Preview and downloads show the last applied layout. Click Apply placement to update.';
+ }
+});
 for (const id of ['yaw','pitch']) $(id).addEventListener('input',render);
 for (const [id,yaw,pitch] of [['top',0,90],['iso',35,25]]) $(id).addEventListener('click', () => { $('yaw').value = String(yaw); $('pitch').value = String(pitch); render(); });
 </script></html>
