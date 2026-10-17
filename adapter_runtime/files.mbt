@@ -7,7 +7,7 @@ pub(all) struct AdapterRuntimeIssue {
 
 ///|
 fn issue(code : String, path : String, message : String) -> AdapterRuntimeIssue {
-  { code, path, message }
+  { code, path, message, }
 }
 
 ///|

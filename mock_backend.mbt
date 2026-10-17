@@ -15,7 +15,7 @@ pub struct MockBackend {
 pub fn MockBackend::new(
   initial_digest? : String = "mm1-empty-scene",
 ) -> MockBackend {
-  { scene_digest: initial_digest, applied: [] }
+  { scene_digest: initial_digest, applied: [], }
 }
 
 ///|
