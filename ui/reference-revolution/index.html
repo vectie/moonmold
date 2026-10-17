@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoonMold · Revolve a collar</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:2rem auto;padding:1rem;background:#10212b;color:#edf6f7}a{color:#91e1cf}label{display:block;margin:1rem 0}input,select,textarea,button{font:inherit;padding:.5rem}textarea{width:90%;height:8rem}canvas{width:100%;background:#09161e}pre{white-space:pre-wrap}#downloads a{display:inline-block;margin:1rem}</style>
+<h1>Revolve an editable collar</h1>
+<p>Sweep a radius–height boundary 360° around +Z. Build a sleeve or stepped collar, revise dimensions, save and reopen its recipe. <a href="/reference-profile">Extrude a profile</a> · <a href="/reference-layout">Place the derived layout</a></p>
+<p>Faceted digital reference only. No engineering CAD, certified tolerance, Blender qualification, manufacturing or physical authority. One simple polygon, 3–32 points strictly away from the axis; no repeated closing point, collinear corners or crossings.</p>
+<form id="open-form"><fieldset id="open-controls"><legend>Reopen recipe</legend><input id="recipe-file" type="file" accept=".json" required><button>Open and build</button></fieldset></form>
+<form id="build-form"><fieldset id="controls"><legend>Editable radius–height profile</legend>
+<label>Name <input id="name" value="stepped-collar" required></label>
+<label>Source units <select id="units"><option>mm</option><option>cm</option><option>m</option><option>in</option></select></label>
+<label>Radius,height pairs in boundary order <textarea id="points" required>[[10,0],[20,0],[20,5],[15,5],[15,15],[10,15]]</textarea></label>
+<label>Angular segments for full 360° sweep <input id="segments" type="number" min="8" max="64" step="1" value="32" required></label>
+<p>Radius must be at least 0.001 mm after conversion; both coordinates are bounded to 100000 mm. Units reinterpret all entered numbers. The angular seam is joined; both boundary windings are accepted. More segments reduce faceting.</p>
+<button>Build reference</button><button type="button" id="restore" disabled>Restore last built fields</button></fieldset></form>
+<h2>Last successful build</h2><canvas id="preview" width="800" height="460" aria-label="Auto-fit isometric wireframe including hidden edges"></canvas>
+<pre id="summary">Build to inspect the reference geometry.</pre><p id="status" role="status" aria-live="polite">Edit the collar example or reopen a saved recipe.</p><div id="downloads"></div>
+<p>Downloads describe the last successful build, even while fields contain unbuilt edits. Keep the recipe for editable dimensions; OBJ/STL/layout are derived triangulated siblings. Save before closing.</p>
+<script type="module">
+const el = id => document.getElementById(id), fields = ['name','units','points','segments'];
+let result = null, busy = false, revision = 0, urls = [];
+function controls() { el('controls').disabled = busy; el('open-controls').disabled = busy; el('restore').disabled = busy || !result; }
+function fill(r) { el('name').value = r.name; el('units').value = r.units; el('points').value = JSON.stringify(r.vertices, null, 2); el('segments').value = String(r.segments); }
+function draft() { if (!el('segments').value.trim()) throw Error('Enter explicit angular segments'); return { contract_id: 'moonmold.reference-revolution.v1', name: el('name').value, units: el('units').value, coordinate_frame: 'radius-z', vertices: JSON.parse(el('points').value), segments: Number(el('segments').value) }; }
+function draw(mesh) {
+  const c = el('preview'), ctx = c.getContext('2d'), p = mesh.vertices.map(([x,y,z]) => [(x-y)*Math.SQRT1_2,(x+y)*0.4-z]);
+  const lo = [0,1].map(a => Math.min(...p.map(q => q[a]))), hi = [0,1].map(a => Math.max(...p.map(q => q[a])));
+  const scale = Math.min((c.width-40)/(hi[0]-lo[0]),(c.height-40)/(hi[1]-lo[1]));
+  const pos = q => [c.width/2+(q[0]-(lo[0]+hi[0])/2)*scale,c.height/2+(q[1]-(lo[1]+hi[1])/2)*scale];
+  ctx.clearRect(0,0,c.width,c.height);ctx.strokeStyle='#91e1cf';
+  for (const t of mesh.triangles) { ctx.beginPath();ctx.moveTo(...pos(p[t[0]])); for (const i of [t[1],t[2],t[0]]) ctx.lineTo(...pos(p[i]));ctx.stroke(); }
+}
+async function build(read, opened = false) {
+  if (busy) return; busy = true; const ticket = ++revision; controls();
+  try {
+    const recipe = await read(); if (ticket !== revision) return;
+    const response = await fetch('/api/reference-profile/revolve', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(recipe)});
+    const next = await response.json(); if (ticket !== revision) return;
+    if (!response.ok) throw Error(next.message || 'Revolution failed');
+    if (next.revolution?.contract_id !== 'moonmold.reference-revolution-report.v1' || next.revolution.geometry_sha256 !== next.geometry_sha256 || ['contract_id','name','units','coordinate_frame','vertices','segments'].some(k => JSON.stringify(next.revolution.recipe[k]) !== JSON.stringify(recipe[k]))) throw Error('Returned build does not match the submitted recipe');
+    draw(next); result = next; if (opened) fill(next.revolution.recipe);
+    for (const url of urls) URL.revokeObjectURL(url); urls=[]; el('downloads').replaceChildren();
+    for (const [suffix,text,label] of [['revolution.json',next.exports.recipe,'Save editable recipe'],['layout.json',next.exports.layout,'Save derived layout'],['obj',next.exports.obj,'Download OBJ'],['stl',next.exports.stl,'Download STL'],['report.json',JSON.stringify(next.revolution,null,2),'Save lineage and losses']]) {
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));urls.push(a.href);a.download=next.name+'.'+suffix;a.textContent=label;el('downloads').append(a);
+    }
+    el('summary').textContent=`${next.vertices.length} vertices · ${next.triangles.length} triangles · bounds ${next.bounds.size.join(' × ')} mm\n${next.revolution.segments} angular facets · maximum radial chord deviation ${next.revolution.maximum_radial_chord_deviation_mm} mm (approximation, not certified tolerance)\n${next.qualification}`;
+    el('status').textContent='Built digital reference. Save the editable recipe and derived files.';
+  } catch(error) { if(ticket===revision) el('status').textContent=error.message+'. Last successful build and downloads are unchanged.'; }
+  finally {busy=false;controls();}
+}
+el('build-form').addEventListener('submit',e=>{e.preventDefault();return build(draft);});
+el('open-form').addEventListener('submit',e=>{e.preventDefault();return build(async()=>{const f=el('recipe-file').files[0];if(!f || f.size>16000)throw Error('Choose a recipe up to 16000 bytes');const bytes=await f.arrayBuffer();if(bytes.byteLength>16000)throw Error('Recipe exceeds 16000 bytes');return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));},true);});
+for(const id of fields)el(id).addEventListener(id==='units'?'change':'input',()=>{revision++;el('status').textContent='Unbuilt edits. Preview and downloads still show the last successful build.';});
+el('recipe-file').addEventListener('change',()=>{revision++;});
+el('restore').addEventListener('click',()=>{if(busy||!result)return;revision++;fill(result.revolution.recipe);el('status').textContent='Restored last built fields.';});
+controls();
+</script></html>

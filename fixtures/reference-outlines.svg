@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="60mm" viewBox="0 0 80 60">
+  <title>Selected outline intake example</title>
+  <g id="outlines" fill="none" stroke="black">
+    <polygon id="stepped" points="0,0 40,0 40,10 15,10 15,30 0,30" />
+    <polyline id="triangle" points="50 0, 70 0, 50 20, 50 0" />
+    <polyline id="open-guide" points="0,50 40,50 40,60" />
+    <path id="curve-needs-tolerance" d="M 50 40 Q 60 20 70 40 Z" />
+  </g>
+</svg>

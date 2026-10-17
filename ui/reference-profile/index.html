@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoonMold · Extrude a profile</title>
+<style>body{font:16px system-ui;max-width:1080px;margin:2rem auto;padding:0 1rem;background:#10212b;color:#edf6f7}a{color:#91e1cf}label{display:block;margin:.8rem 0}input,select,textarea,button{font:inherit;padding:.5rem}textarea{width:90%;min-height:13rem;font-family:monospace}fieldset{border:1px solid #476170;margin:1rem 0}button{cursor:pointer}button:disabled{cursor:wait}.row{display:flex;gap:1rem;flex-wrap:wrap}.editor{flex:1;min-width:280px}.views{flex:1;min-width:280px}canvas{width:100%;background:#09161e;border:1px solid #476170}small{color:#b2c7d2}pre{white-space:pre-wrap;overflow-wrap:anywhere}#downloads a{display:inline-block;margin:.5rem 1rem .5rem 0}h1{margin-bottom:.3rem}</style>
+<h1>Extrude an editable profile</h1>
+<p>Need a sleeve or stepped collar? <a href="/reference-revolution">Revolve a radius–height profile</a>.</p>
+<p>Turn a straight-edged XY outline with an optional interior cutout into a capped 3D reference. Revise the outer points, opening or height, save the profile, then place the derived mesh in your <a href="/reference-layout">reference layout</a>.</p>
+<small>Digital reference geometry only. No engineering CAD, tolerances, material behavior, Blender qualification, manufacturing or physical authority. One simple outer ring and at most one strictly interior polygon cutout, each 3–128 points. No multiple openings, curves, repeated closing point or collinear corners.</small>
+<form id="open-form"><fieldset id="open-controls"><legend>Reopen an editable profile</legend><label>Profile recipe JSON, up to 32000 bytes <input id="profile-file" type="file" accept=".json" required></label><button>Open and build profile</button></fieldset></form>
+<form id="dxf-form"><fieldset id="dxf-controls"><legend>Start from a CAD drawing</legend>
+<label>ASCII DXF drawing, up to 400000 bytes <input id="dxf-file" type="file" accept=".dxf" required></label><button>Inspect drawing outlines</button>
+<label>Model-space LWPOLYLINE <select id="dxf-entity" aria-label="Drawing outline"></select></label>
+<button type="button" id="dxf-import" disabled>Import selected outline and build</button>
+<p id="dxf-summary">Choose a drawing, inspect it, then select a closed straight outline. Set the name, explicit units and height below before importing.</p>
+<small>DXF import uses one simple XY ring and replaces the current outer outline and cutout. Add an opening with the cutout editor after import. Automatic multi-outline/hole inference, curves, widths, elevation, thickness and nondefault normals are unsupported. Drawing unit hints are not applied. Other entities are omitted and counted. Keep the original DXF; the saved profile is an editable derivative.</small>
+</fieldset></form>
+<form id="svg-form"><fieldset id="svg-controls"><legend>Start from an SVG outline</legend>
+<label>UTF-8 SVG drawing, up to 400000 bytes <input id="svg-file" type="file" accept=".svg" required></label><button formnovalidate>Inspect SVG outlines</button>
+<label>Polygon, closed polyline/path, unrounded rectangle, circle or ellipse <select id="svg-element" aria-label="SVG outline"></select></label>
+<label>Optional opening: explicitly choose a different polygon, closed polyline or unrounded rectangle <select id="svg-opening" aria-label="SVG opening"><option value="">No opening</option></select></label>
+<small>With an opening, both selections must be straight-edged and use the same scale, units and Y reflection. The opening must lie strictly inside the outer outline. No holes are inferred from fill rules, winding or nesting. Import replaces both current rings.</small>
+<label>Source units per SVG user-space coordinate <input id="svg-scale" type="number" min="0" step="any" placeholder="For example, 1" required></label>
+<label>Curve maximum approximation error in selected source units (paths, circles, ellipses) <input id="svg-max-error" type="number" min="0" step="any" placeholder="For example, 0.1 mm when units are mm"></label>
+<label>Coordinate convention <select id="svg-convention" required><option value="">Choose explicitly</option value="svg-y-down-to-xy-y-up">SVG Y down → model Y up, about origin (X × scale, −Y × scale)</option></select></label>
+<button type="button" id="svg-import" disabled>Import selected SVG outline and optional opening, then build</button>
+<p id="svg-summary">Inspect a drawing, choose one supported outline, and enter the scale and convention. Name, units and height use the editor below.</p>
+<small>Raw user-space coordinates only. Unrounded rectangles produce four corners. Circles, ellipses and one explicitly closed absolute M/L/Q/C/Z path use your explicit error limit and at most 128 editable points. Curves become straight segments; error uses the selected units below. SVG width, height and viewBox are hints and are never used to infer scale. The import replaces the current outer outline and cutout. No rounded rectangles, relative commands, path arcs, transforms, CSS, references, compound contours or automatic holes. Style and stroke widths do not become geometry. Save the import record to retain exact SVG bytes, approximation and initial recipe identities.</small>
+</fieldset></form>
+<div class="row"><div class="editor"><form id="profile-form"><fieldset id="profile-controls"><legend>Outline and extrusion</legend>
+<label>Name <input id="profile-name" value="stepped-profile" maxlength="80" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}" required></label>
+<label>Source units <select id="units"><option value="mm">Millimetres</option><option value="cm">Centimetres</option><option value="m">Metres</option><option value="in">Inches</option></select></label>
+<label>Outer XY points in boundary order, as a JSON array <textarea id="points" spellcheck="false" required>[[0, 0], [40, 0], [40, 10], [15, 10], [15, 30], [0, 30]]</textarea></label>
+<small>Clockwise or counterclockwise is accepted. The closing edge is automatic. Concave outlines are supported; crossings, touching edges and numerically ambiguous geometry are rejected.</small>
+<label>Optional cutout XY points in boundary order, as a JSON array <textarea id="cutout" spellcheck="false" placeholder="[[10,10],[30,10],[30,20],[10,20]]"></textarea></label>
+<small>Leave blank or enter null for no opening. One simple polygon strictly inside the outer outline, in the same units; either winding is accepted. Touching, crossing, outside and numerically ambiguous openings reject.</small>
+<p><button type="button" id="sample-plate">Load plate with opening example</button></p>
+<label>Height in source units, toward +Z <input id="height" type="number" value="8" min="0" step="any" required></label>
+<small>Base is Z=0; XY and height use the same explicit units. Changing units reinterprets all numbers; it does not convert the entered numbers. Output is millimetres.</small><p><button>Build reference mesh</button> <button type="button" id="restore" disabled>Restore last built fields</button></p>
+</fieldset></form></div><div class="views"><h2>Last successful build</h2><canvas id="preview" width="560" height="440" aria-label="Orthographic reference wireframe, including hidden edges"></canvas>
+<p><button type="button" id="view-top">Top view</button> <button type="button" id="view-iso">Isometric view</button></p><small>Auto-fit wireframe with hidden edges. View changes do not edit geometry.</small><pre id="summary">Build a profile to see its geometry.</pre></div></div>
+<form id="transform-form"><fieldset id="transform-controls"><legend>Transform editable profile rings</legend>
+<label>Selection <select id="transform-selection"><option value="outer">Outer ring only</option><option value="cutout">Cutout only</option><option value="all">All profile rings</option></select></label>
+<div class="row"><label>Translate X <input id="transform-x" type="number" value="0" step="any" required></label><label>Translate Y <input id="transform-y" type="number" value="0" step="any" required></label></div>
+<div class="row"><label>Rotate counterclockwise, degrees <input id="transform-angle" type="number" value="0" step="any" required></label><label>Uniform XY scale <input id="transform-scale" type="number" value="1" min="0" step="any" required></label></div>
+<div class="row"><label>Pivot X <input id="transform-pivot-x" type="number" value="0" step="any" required></label><label>Pivot Y <input id="transform-pivot-y" type="number" value="0" step="any" required></label></div>
+<small>Uses the current editor draft. Translation and pivot use its selected source units. Scale about the explicit pivot, rotate about that pivot, then translate. Height stays unchanged. Outer-only edits leave the cutout fixed; all rings move together. Preview validates the whole profile, including cutout containment.</small>
+<p><button>Preview ring transform</button></p></fieldset></form>
+<p><button type="button" id="transform-apply" disabled>Apply preview and rebuild</button> <button type="button" id="transform-cancel" disabled>Cancel transform preview</button></p>
+<canvas id="transform-preview" width="560" height="300" aria-label="Candidate profile transform wireframe, not yet applied"></canvas>
+<p id="transform-status" role="status" aria-live="polite">Preview a transform before applying it. Current fields and saved build stay unchanged until Apply.</p>
+<p id="status" role="status" aria-live="polite">Edit the example, or open a saved profile.</p>
+<div id="downloads"></div>
+<small>Downloads always describe the last successful build. Save the profile recipe to keep outline/height editing; layout/OBJ/STL are derived triangulated siblings. Open the saved layout in the reference layout workbench to move it, combine it with other references, or export GLB and drawings. Save before closing this page.</small>
+<script type="module">
+const el = id => document.getElementById(id);
+let result = null, busy = false, revision = 0, top = false, urls = [], dxfText = null, dxfInventory = null, svgText = null, svgInventory = null, profileContract = 'moonmold.reference-profile-extrusion.v1', transformPreview = null, transformPending = false;
+const fields = ['profile-name', 'units', 'points', 'cutout', 'height'];
+const transformFields = ['transform-selection', 'transform-x', 'transform-y', 'transform-angle', 'transform-scale', 'transform-pivot-x', 'transform-pivot-y'];
+function controls() { el('profile-controls').disabled = busy; el('open-controls').disabled = busy; el('dxf-controls').disabled = busy; el('svg-controls').disabled = busy; el('svg-import').disabled = busy || svgText === null || !el('svg-element').value; el('dxf-import').disabled = busy || dxfText === null || !el('dxf-entity').value; el('restore').disabled = busy || !result; el('transform-controls').disabled = busy; el('transform-apply').disabled = busy || !transformPreview; el('transform-cancel').disabled = !transformPreview && !transformPending; }
+function fill(recipe) { profileContract = recipe.contract_id; el('profile-name').value = recipe.name; el('units').value = recipe.units; el('points').value = JSON.stringify(recipe.vertices, null, 2); el('cutout').value = recipe.cutout == null ? '' : JSON.stringify(recipe.cutout, null, 2); el('height').value = String(recipe.height); }
+function draft() {
+  if (!el('height').value.trim()) throw Error('Enter a positive height in source units');
+  const cutout = el('cutout').value.trim() ? JSON.parse(el('cutout').value) : null;
+  const v2 = cutout !== null || profileContract === 'moonmold.reference-profile-extrusion.v2';
+  return { contract_id: v2 ? 'moonmold.reference-profile-extrusion.v2' : 'moonmold.reference-profile-extrusion.v1', name: el('profile-name').value, units: el('units').value,
+    coordinate_frame: 'xy-z-up', vertices: JSON.parse(el('points').value), height: Number(el('height').value), ...(v2 ? { cutout } : {}) };
+}
+function drawMesh(canvas, mesh) {
+  const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!mesh) return;
+  const points = mesh.vertices.map(([x, y, z]) => top ? [x, -y] : [(x - y) * Math.sqrt(0.5), (x + y) * 0.4 - z]);
+  const min = [0, 1].map(a => Math.min(...points.map(p => p[a]))), max = [0, 1].map(a => Math.max(...points.map(p => p[a])));
+  const scale = Math.min((canvas.width - 48) / Math.max(max[0] - min[0], 1e-12), (canvas.height - 48) / Math.max(max[1] - min[1], 1e-12));
+  const project = p => [canvas.width / 2 + (p[0] - (min[0] + max[0]) / 2) * scale, canvas.height / 2 + (p[1] - (min[1] + max[1]) / 2) * scale];
+  ctx.strokeStyle = '#91e1cf'; ctx.lineWidth = 1;
+  for (const face of mesh.triangles) { ctx.beginPath(); const first = project(points[face[0]]); ctx.moveTo(...first); ctx.lineTo(...project(points[face[1]])); ctx.lineTo(...project(points[face[2]])); ctx.lineTo(...first); ctx.stroke(); }
+}
+function draw() { drawMesh(el('preview'), result); if (transformPreview) drawMesh(el('transform-preview'), transformPreview); }
+function clearTransform(message = 'Preview a transform before applying it. Current fields and saved build stay unchanged until Apply.') {
+  if (transformPreview) drawMesh(el('transform-preview'), null);
+  transformPreview = null; el('transform-status').textContent = message; controls();
+}
+function downloads() {
+  for (const url of urls) URL.revokeObjectURL(url); urls = []; el('downloads').replaceChildren();
+  const files = [['profile.json', result.exports.recipe, 'Save editable profile'], ['layout.json', result.exports.layout, 'Save derived layout'],
+    ['obj', result.exports.obj, 'Download OBJ'], ['stl', result.exports.stl, 'Download STL'], ['extrusion-report.json', JSON.stringify(result.extrusion, null, 2) + '\n', 'Save lineage report']];
+  if (result.dxf_import) files.push(['dxf-import-report.json', JSON.stringify(result.dxf_import, null, 2) + '\n', 'Save DXF import report']);
+  if (result.profile_transform) files.push(['profile-transform-report.json', JSON.stringify(result.profile_transform, null, 2) + '\n', 'Save profile transform lineage']);
+  if (result.svg_import) files.push(['svg-import-record.json', JSON.stringify(result.svg_import, null, 2) + '\n', 'Save SVG source and import record'], ['original.svg', svgText, 'Save original SVG']);
+  for (const [suffix, text, label] of files) { const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })); urls.push(link.href); link.download = result.name + '.' + suffix; link.textContent = label; el('downloads').append(link); }
+}
+async function build(readRecipe, opened = false, fromDxf = false, fromSvg = false, transformRecord = null) {
+  if (busy) return;
+  clearTransform(); busy = true; const ticket = ++revision; controls(); el('status').textContent = 'Building digital reference…';
+  try {
+    const recipe = await readRecipe();
+    if (ticket !== revision) return;
+    const response = await fetch(fromSvg ? '/api/reference-profile/svg-import' : fromDxf ? '/api/reference-profile/dxf-import' : '/api/reference-profile/extrude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(recipe) });
+    const next = await response.json();
+    if (ticket !== revision) return;
+    if (!response.ok) throw Error(next.message ?? 'Profile build failed');
+    if (fromSvg) {
+      if (!next.extrusion || !next.svg_import || next.svg_import.source.sha256 !== svgInventory?.source_sha256 || next.svg_import.element_index !== recipe.element || next.svg_import.units_per_svg_unit !== recipe.units_per_svg_unit || next.svg_import.coordinate_convention !== recipe.coordinate_convention || next.svg_import.approximation?.max_error !== recipe.max_error || recipe.max_error !== undefined && (!['moonmold.reference-svg-profile-import.v2', 'moonmold.reference-svg-profile-import.v3'].includes(next.svg_import.contract_id) || next.svg_import.approximation.units !== recipe.units) || next.extrusion.recipe.name !== recipe.name || next.extrusion.recipe.units !== recipe.units || next.extrusion.recipe.height !== recipe.height) throw Error('Returned SVG profile does not match this request');
+      const record = next.svg_import, opening = record.opening;
+      if (opening?.element_index !== recipe.opening_element || JSON.stringify(record.recipe) !== JSON.stringify(next.extrusion.recipe) || record.recipe_sha256 !== next.extrusion.recipe_sha256 || record.geometry_sha256 !== next.geometry_sha256 || record.layout_sha256 !== next.layout_sha256) throw Error('Returned SVG profile does not match this request');
+      if (recipe.opening_element !== undefined) {
+        const outerChoice = svgInventory.candidates.find(candidate => candidate.element_index === recipe.element), openingChoice = svgInventory.candidates.find(candidate => candidate.element_index === recipe.opening_element);
+        const transform = points => points.map(([x, y]) => [x * recipe.units_per_svg_unit, -y * recipe.units_per_svg_unit]);
+        if (record.contract_id !== 'moonmold.reference-svg-profile-import.v4' || next.extrusion.recipe.contract_id !== 'moonmold.reference-profile-extrusion.v2' || record.element_id !== outerChoice?.element_id || record.element_type !== outerChoice?.element_type || opening.element_id !== openingChoice?.element_id || opening.element_type !== openingChoice?.element_type || !Array.isArray(record.source_points) || !Array.isArray(opening.source_points) || JSON.stringify(transform(record.source_points)) !== JSON.stringify(next.extrusion.recipe.vertices) || JSON.stringify(transform(opening.source_points)) !== JSON.stringify(next.extrusion.recipe.cutout)) throw Error('Returned SVG opening does not match this request');
+      } else if (next.extrusion.recipe.contract_id !== 'moonmold.reference-profile-extrusion.v1') throw Error('Returned SVG profile unexpectedly contains an opening');
+    } else if (fromDxf) {
+      if (!next.extrusion || !next.dxf_import || next.dxf_import.source_sha256 !== dxfInventory?.source_sha256 || next.dxf_import.entity_index !== recipe.entity || next.extrusion.recipe.name !== recipe.name || next.extrusion.recipe.units !== recipe.units || next.extrusion.recipe.height !== recipe.height) throw Error('Returned DXF profile does not match this request');
+    } else if (!next.extrusion || JSON.stringify(next.extrusion.recipe) !== JSON.stringify({ contract_id: recipe.contract_id, name: recipe.name, units: recipe.units, coordinate_frame: recipe.coordinate_frame, vertices: recipe.vertices, height: recipe.height, ...(recipe.contract_id === 'moonmold.reference-profile-extrusion.v2' ? { cutout: recipe.cutout } : {}) })) throw Error('Returned profile does not match this request');
+    if (transformRecord) {
+      if (transformRecord.recipe_sha256 !== next.extrusion.recipe_sha256 || transformRecord.geometry_sha256 !== next.geometry_sha256) throw Error('Rebuilt transform does not match the preview');
+      next.profile_transform = transformRecord;
+    }
+    result = next; fill(next.extrusion.recipe); downloads(); draw();
+    el('summary').textContent = `${next.vertex_count} vertices · ${next.triangle_count} triangles\nBounds ${next.bounds.size.join(' × ')} mm\nNet profile area ${next.extrusion.profile_area_mm2} mm² · Height ${next.extrusion.height_mm} mm${next.extrusion.recipe.contract_id.endsWith('.v2') ? '\nOuter area ' + next.extrusion.outer_area_mm2 + ' mm² · Cutout area ' + next.extrusion.cutout_area_mm2 + ' mm²' : ''}\nRecipe SHA256 ${next.extrusion.recipe_sha256}`;
+    el('status').textContent = (transformRecord ? 'Profile ring transform applied and rebuilt. ' : fromSvg ? `SVG element ${next.svg_import.element_index}${next.svg_import.opening ? ' with opening element ' + next.svg_import.opening.element_index : ''} imported; ${next.svg_import.omitted_drawing_element_count} other drawing elements omitted.${next.svg_import.approximation ? ' Curves approximated by ' + next.svg_import.approximation.vertex_count + ' points at maximum error ' + next.svg_import.approximation.max_error + ' ' + next.svg_import.approximation.units + '; retain the source for curve edits.' : ''} Save the SVG import record before editing. ` : fromDxf ? `DXF entity ${next.dxf_import.entity_index} imported; ${next.dxf_import.omitted_entity_count} other entities omitted. ` : opened ? 'Profile reopened and rebuilt. ' : 'Reference built. ') + 'Downloads match the displayed geometry. Save the editable profile to revise it later.';
+  } catch (error) { if (ticket === revision) el('status').textContent = `${error.message}. ${result ? 'Last successful build and downloads are unchanged; draft fields have not been applied.' : 'No geometry has been applied.'}`; }
+  finally { busy = false; controls(); }
+}
+el('transform-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (busy) return;
+  clearTransform(); busy = true; transformPending = true; const ticket = ++revision; controls();
+  el('transform-status').textContent = 'Building a candidate from the editable profile…';
+  try {
+    const number = id => { const value = el(id).value; if (!value.trim() || !Number.isFinite(Number(value))) throw Error('Enter every transform value explicitly as a finite number'); return Number(value); };
+    const request = { contract_id: 'moonmold.reference-profile-transform.v1', recipe: draft(), selection: el('transform-selection').value,
+      translation: [number('transform-x'), number('transform-y')], rotation_degrees: number('transform-angle'), scale: number('transform-scale'), pivot: [number('transform-pivot-x'), number('transform-pivot-y')] };
+    const response = await fetch('/api/reference-profile/transform', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+    const next = await response.json(); if (ticket !== revision) return;
+    if (!response.ok) throw Error(next.message ?? 'Profile transform failed');
+    const report = next.profile_transform;
+    if (!next.extrusion || report?.contract_id !== 'moonmold.reference-profile-transform-report.v1' || report.recipe_sha256 !== next.extrusion.recipe_sha256 || report.geometry_sha256 !== next.geometry_sha256 || ['selection', 'translation', 'rotation_degrees', 'scale', 'pivot'].some(key => JSON.stringify(report[key]) !== JSON.stringify(request[key]))) throw Error('Returned transform does not match this preview');
+    transformPreview = next; drawMesh(el('transform-preview'), next);
+    el('transform-status').textContent = `Candidate only: ${report.selection} · Bounds ${next.bounds.size.join(' × ')} mm · Net profile area ${next.extrusion.profile_area_mm2} mm². Apply to rebuild and update editable fields, or Cancel. Current downloads still describe the last applied build.`;
+  } catch (error) { if (ticket === revision) el('transform-status').textContent = `${error.message}. Current draft, built geometry and downloads are unchanged.`; }
+  finally { busy = false; transformPending = false; controls(); }
+});
+el('transform-apply').addEventListener('click', () => {
+  if (busy || !transformPreview) return;
+  const candidate = transformPreview;
+  return build(() => candidate.extrusion.recipe, false, false, false, candidate.profile_transform);
+});
+el('transform-cancel').addEventListener('click', () => { if (!transformPreview && !transformPending) return; revision++; transformPending = false; clearTransform('Transform preview cancelled. Current draft and last successful build are unchanged.'); });
+for (const id of transformFields) el(id).addEventListener(id === 'transform-selection' ? 'change' : 'input', () => { revision++; clearTransform('Transform choices changed. Preview again before applying.'); });
+el('profile-form').addEventListener('submit', event => { event.preventDefault(); return build(() => draft()); });
+el('open-form').addEventListener('submit', event => { event.preventDefault(); return build(async () => {
+  const file = el('profile-file').files[0]; if (!file || file.size > 32000) throw Error('Choose a profile JSON no larger than 32000 bytes');
+  const bytes = await file.arrayBuffer(); if (bytes.byteLength > 32000) throw Error('Profile exceeds 32000 bytes');
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes));
+}, true); });
+el('dxf-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (busy) return;
+  busy = true; const ticket = ++revision; controls(); el('status').textContent = 'Inspecting drawing outlines…';
+  try {
+    const file = el('dxf-file').files[0]; if (!file || file.size > 400000) throw Error('Choose a DXF no larger than 400000 bytes');
+    const bytes = await file.arrayBuffer(); if (bytes.byteLength > 400000) throw Error('DXF exceeds 400000 bytes');
+    const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+    if (ticket !== revision) return;
+    const response = await fetch('/api/reference-profile/dxf-inspect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
+    const next = await response.json(); if (ticket !== revision) return;
+    if (!response.ok) throw Error(next.message ?? 'Drawing inspection failed');
+    if (next.contract_id !== 'moonmold.reference-dxf-inventory.v1' || !Array.isArray(next.candidates)) throw Error('Invalid drawing inventory');
+    dxfText = text; dxfInventory = next; el('dxf-entity').replaceChildren();
+    for (const candidate of next.candidates) {
+      const option = document.createElement('option'); option.value = String(candidate.entity_index); option.disabled = !candidate.supported;
+      option.textContent = `Entity ${candidate.entity_index} · layer ${candidate.layer} · ${candidate.supported ? candidate.vertex_count + ' points' : candidate.reason}`;
+      el('dxf-entity').append(option);
+    }
+    el('dxf-entity').value = String(next.candidates.find(candidate => candidate.supported)?.entity_index ?? '');
+    el('dxf-summary').textContent = `${next.entity_count} drawing entities · ${next.candidates.length} LWPOLYLINE outlines. Choose one supported outline; simple-ring geometry is checked on build. Source SHA256 ${next.source_sha256}`;
+    el('status').textContent = 'Drawing inspected. Current fields, preview and downloads are unchanged. Choose units and height, then import an outline.';
+  } catch (error) { if (ticket === revision) el('status').textContent = `${error.message}. Last successful build and fields are unchanged.`; }
+  finally { busy = false; controls(); }
+});
+el('dxf-import').addEventListener('click', () => build(() => {
+  if (dxfText === null || !el('dxf-entity').value || !el('height').value.trim()) throw Error('Inspect and select a drawing outline and enter height first');
+  return { text: dxfText, entity: Number(el('dxf-entity').value), units: el('units').value, height: Number(el('height').value), name: el('profile-name').value };
+}, false, true));
+el('dxf-file').addEventListener('change', () => { revision++; dxfText = null; dxfInventory = null; el('dxf-entity').replaceChildren(); el('dxf-entity').value = ''; el('dxf-summary').textContent = 'Drawing changed. Inspect this file before importing.'; el('status').textContent = 'Drawing changed. Inspect it before importing; current profile, preview and downloads are unchanged.'; controls(); });
+el('dxf-entity').addEventListener('change', () => { revision++; controls(); el('status').textContent = 'Outline selection changed; current profile and downloads are unchanged until import.'; });
+el('svg-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (busy) return;
+  busy = true; const ticket = ++revision; controls(); el('status').textContent = 'Inspecting SVG outlines…';
+  try {
+    const file = el('svg-file').files[0]; if (!file || file.size > 400000) throw Error('Choose an SVG no larger than 400000 bytes');
+    const bytes = await file.arrayBuffer(); if (bytes.byteLength > 400000) throw Error('SVG exceeds 400000 bytes');
+    const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+    if (ticket !== revision) return;
+    const response = await fetch('/api/reference-profile/svg-inspect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
+    const next = await response.json(); if (ticket !== revision) return;
+    if (!response.ok) throw Error(next.message ?? 'SVG inspection failed');
+    if (next.contract_id !== 'moonmold.reference-svg-inventory.v2' || !Array.isArray(next.candidates)) throw Error('Invalid SVG inventory');
+    svgText = text; svgInventory = next; el('svg-element').replaceChildren(); el('svg-opening').replaceChildren();
+    const none = document.createElement('option'); none.value = ''; none.textContent = 'No opening'; el('svg-opening').append(none); el('svg-opening').value = '';
+    for (const candidate of next.candidates) {
+      const option = document.createElement('option'); option.value = String(candidate.element_index); option.disabled = !candidate.supported;
+      option.textContent = `Element ${candidate.element_index} · ${candidate.element_type} · ${candidate.element_id ?? '(no id)'} · ${candidate.supported ? candidate.requires_tolerance ? candidate.source_segment_count + ' segments; explicit error limit required' : candidate.vertex_count + ' points' : candidate.reason}`;
+      el('svg-element').append(option);
+      if (candidate.supported && ['polygon', 'polyline', 'rect'].includes(candidate.element_type)) {
+        const opening = document.createElement('option'); opening.value = option.value; opening.textContent = option.textContent; el('svg-opening').append(opening);
+      }
+    }
+    el('svg-element').value = String(next.candidates.find(candidate => candidate.supported)?.element_index ?? '');
+    el('svg-summary').textContent = `${next.drawing_element_count} drawing elements · ${next.candidates.length} outline/basic-shape candidates. Viewport hints (not applied): ${JSON.stringify(next.viewport_hints)}. Source SHA256 ${next.source_sha256}`;
+    el('status').textContent = 'SVG inspected. Current profile and downloads are unchanged. Choose scale, convention, units and height, then import.';
+  } catch (error) { if (ticket === revision) el('status').textContent = `${error.message}. Last successful build and fields are unchanged.`; }
+  finally { busy = false; controls(); }
+});
+el('svg-import').addEventListener('click', () => build(() => {
+  if (svgText === null || !el('svg-element').value || !el('svg-scale').value.trim() || !el('svg-convention').value || !el('height').value.trim()) throw Error('Inspect and select an SVG outline; enter explicit scale, convention and height first');
+  const path = svgInventory?.candidates.find(candidate => candidate.element_index === Number(el('svg-element').value))?.requires_tolerance;
+  const opening = el('svg-opening').value;
+  if (opening && (opening === el('svg-element').value || path)) throw Error('Choose distinct straight-edged outer and opening elements; curves cannot be paired with an opening');
+  if (path && !el('svg-max-error').value.trim()) throw Error('Enter an explicit curve maximum approximation error in the selected source units');
+  return { text: svgText, element: Number(el('svg-element').value), ...(opening ? { opening_element: Number(opening) } : {}), units: el('units').value, units_per_svg_unit: Number(el('svg-scale').value), coordinate_convention: el('svg-convention').value, height: Number(el('height').value), name: el('profile-name').value, ...(path ? { max_error: Number(el('svg-max-error').value) } : {}) };
+}, false, false, true));
+el('svg-file').addEventListener('change', () => { revision++; svgText = null; svgInventory = null; el('svg-element').replaceChildren(); el('svg-element').value = ''; el('svg-opening').replaceChildren(); el('svg-opening').value = ''; el('svg-summary').textContent = 'SVG changed. Inspect this file before importing.'; el('status').textContent = 'SVG changed. Inspect it before importing; current profile and downloads are unchanged.'; controls(); });
+for (const id of ['svg-element', 'svg-opening', 'svg-convention', 'svg-scale', 'svg-max-error']) el(id).addEventListener(['svg-scale', 'svg-max-error'].includes(id) ? 'input' : 'change', () => { revision++; controls(); el('status').textContent = 'SVG import choices changed; current profile and downloads are unchanged until import.'; });
+for (const id of fields) el(id).addEventListener('input', () => { revision++; clearTransform('Profile draft changed. Preview the transform again before applying.'); el('status').textContent = result ? 'Unbuilt edits. Preview and downloads still show the last successful build.' : 'Unbuilt edits. Build to inspect the reference.'; });
+el('sample-plate').addEventListener('click', () => {
+  if (busy) return; revision++; clearTransform();
+  fill({ contract_id: 'moonmold.reference-profile-extrusion.v2', name: 'plate-with-opening', units: 'mm', coordinate_frame: 'xy-z-up', vertices: [[0,0],[40,0],[40,30],[0,30]], cutout: [[10,10],[30,10],[30,20],[10,20]], height: 8 });
+  el('status').textContent = 'Plate example loaded as unbuilt edits. Build to apply it; any previous preview and downloads are unchanged.';
+});
+el('restore').addEventListener('click', () => { if (busy || !result) return; revision++; clearTransform(); fill(result.extrusion.recipe); el('status').textContent = 'Fields restored to the last successful build.'; });
+el('view-top').addEventListener('click', () => { top = true; draw(); });
+el('view-iso').addEventListener('click', () => { top = false; draw(); });
+controls();
+</script></html>

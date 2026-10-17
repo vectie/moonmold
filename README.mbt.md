@@ -1,5 +1,34 @@
 # MoonMold
 
+Transform the editable outer ring, cutout, or all profile rings with explicit
+translation, rotation, uniform XY scale and pivot. Preview, apply or cancel,
+then save/reopen the revised profile. See
+[profile ring transforms](docs/REFERENCE_PROFILE_TRANSFORMS.md).
+
+Start from a vector drawing with [SVG outline intake](docs/REFERENCE_SVG_PROFILE.md):
+select one polygon, closed polyline/path, unrounded rectangle, circle or ellipse,
+declare scale, curve approximation error when required, and Y-axis
+conversion, retain original drawing bytes, and revise the editable 3D profile.
+
+Create a plate or bracket reference with an editable interior opening using
+[profile cutouts](docs/REFERENCE_PROFILE_CUTOUTS.md). Edit outer/cutout vertices
+and height, save/reopen the v2 recipe, then reuse existing layout placement and
+area/volume observations. One bounded polygon opening; no general CAD booleans.
+
+Start from a saved CAD drawing with [DXF outline intake](docs/REFERENCE_DXF_PROFILE.md):
+inspect named closed polylines, choose explicit units, import one into an editable
+profile, then revise the height/points and reuse the derived 3D layout.
+
+Create a capped 3D reference from an editable concave XY outline with
+[profile extrusion](docs/REFERENCE_PROFILE_EXTRUSION.md). Revise points/height,
+save/reopen the profile recipe, and export a derived layout, OBJ or STL for the
+existing reference workbench. This bounded digital-only workflow needs Node only.
+
+[Closed-shell volume exploration](docs/REFERENCE_VOLUME.md) adds per-instance
+algebraic volume and centroid to the editable reference-layout workbench and
+measurement CLI. Inspect closed and open sources together, change scale, and
+export a source-bound JSON/CSV schedule with explicit topology limitations.
+
 Space existing differently sized references between fixed endpoints with
 [equal-gap distribution](docs/REFERENCE_DISTRIBUTION.md), preserving original sources
 and independently editable placements.
@@ -159,3 +188,12 @@ See [placement table workflow](docs/REFERENCE_PLACEMENTS_CSV.md) for CLI/API, th
 worked example and spreadsheet/qualification limits.
 
 - [Saved layout revision comparison](docs/REFERENCE_REVISION_COMPARISON.md) — inspect source/placement changes and before/after overlays without changing either revision.
+
+### Closed SVG curves into editable profiles
+
+Import one absolute M/L/Q/C/Z closed path with an explicit approximation error
+in selected units. Deterministic bounded Bezier subdivision produces ordinary
+editable point/height recipes and derived layout/OBJ/STL, retaining original
+SVG and separate source/approximation/recipe identities. Inspect and import in
+the profile workbench or use `moonmold-reference-svg --max-error`. See the
+[SVG outline guide](docs/REFERENCE_SVG_PROFILE.md) and curved-outline fixture.

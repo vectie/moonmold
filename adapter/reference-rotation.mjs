@@ -15,6 +15,11 @@ export function rotateReferencePoint(point, rotationDeg) {
 export function composeReferenceRotations(existing, delta) {
   const columns = [[1,0,0], [0,1,0], [0,0,1]].map(p => rotateReferencePoint(rotateReferencePoint(p, existing), delta));
   const m = [0,1,2].map(i => columns.map(p => p[i]));
+  return referenceRotationFromMatrix(m);
+}
+
+// A right-handed orthonormal row-major matrix in the same X/Y/Z convention.
+export function referenceRotationFromMatrix(m) {
   const horizontal = Math.hypot(m[0][0], m[1][0]);
   const y = Math.atan2(-m[2][0], horizontal);
   const z = horizontal > 4 * Number.EPSILON ? Math.atan2(m[1][0], m[0][0]) : 0;
