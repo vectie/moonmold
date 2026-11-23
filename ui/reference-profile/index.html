@@ -2,6 +2,7 @@
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoonMold · Extrude a profile</title>
 <style>body{font:16px system-ui;max-width:1080px;margin:2rem auto;padding:0 1rem;background:#10212b;color:#edf6f7}a{color:#91e1cf}label{display:block;margin:.8rem 0}input,select,textarea,button{font:inherit;padding:.5rem}textarea{width:90%;min-height:13rem;font-family:monospace}fieldset{border:1px solid #476170;margin:1rem 0}button{cursor:pointer}button:disabled{cursor:wait}.row{display:flex;gap:1rem;flex-wrap:wrap}.editor{flex:1;min-width:280px}.views{flex:1;min-width:280px}canvas{width:100%;background:#09161e;border:1px solid #476170}small{color:#b2c7d2}pre{white-space:pre-wrap;overflow-wrap:anywhere}#downloads a{display:inline-block;margin:.5rem 1rem .5rem 0}h1{margin-bottom:.3rem}</style>
+<link rel="stylesheet" href="/workbench/workbench.css"><body data-workbench="profile">
 <h1>Extrude an editable profile</h1>
 <p>Need a sleeve or stepped collar? <a href="/reference-revolution">Revolve a radius–height profile</a>.</p>
 <p>Turn a straight-edged XY outline with an optional interior cutout into a capped 3D reference. Revise the outer points, opening or height, save the profile, then place the derived mesh in your <a href="/reference-layout">reference layout</a>.</p>
@@ -53,7 +54,8 @@
 <small>Downloads always describe the last successful build. Save the profile recipe to keep outline/height editing; layout/OBJ/STL are derived triangulated siblings. Open the saved layout in the reference layout workbench to move it, combine it with other references, or export GLB and drawings. Save before closing this page.</small>
 <script type="module">
 const el = id => document.getElementById(id);
-let result = null, busy = false, revision = 0, top = false, urls = [], dxfText = null, dxfInventory = null, svgText = null, svgInventory = null, profileContract = 'moonmold.reference-profile-extrusion.v1', transformPreview = null, transformPending = false;
+let result = null, busy = false, revision = 0, top = false, urls = [], dxfText = null, dxfInventory = null, svgText = null, svgInventory = null, profileContract = 'moonmold.reference-profile-extrusion.v1', transformPreview = null, transformPending = false, presentationDirty = true;
+function publishProfilePreview(scene = result) { if(typeof globalThis.dispatchEvent==='function'&&typeof CustomEvent==='function')globalThis.dispatchEvent(new CustomEvent('moonmold:preview',{detail:{scene,name:el('profile-name').value,selected:'',busy,dirty:presentationDirty}})); }
 const fields = ['profile-name', 'units', 'points', 'cutout', 'height'];
 const transformFields = ['transform-selection', 'transform-x', 'transform-y', 'transform-angle', 'transform-scale', 'transform-pivot-x', 'transform-pivot-y'];
 function controls() { el('profile-controls').disabled = busy; el('open-controls').disabled = busy; el('dxf-controls').disabled = busy; el('svg-controls').disabled = busy; el('svg-import').disabled = busy || svgText === null || !el('svg-element').value; el('dxf-import').disabled = busy || dxfText === null || !el('dxf-entity').value; el('restore').disabled = busy || !result; el('transform-controls').disabled = busy; el('transform-apply').disabled = busy || !transformPreview; el('transform-cancel').disabled = !transformPreview && !transformPending; }
@@ -66,6 +68,7 @@ function draft() {
     coordinate_frame: 'xy-z-up', vertices: JSON.parse(el('points').value), height: Number(el('height').value), ...(v2 ? { cutout } : {}) };
 }
 function drawMesh(canvas, mesh) {
+  if(canvas.id==='preview')publishProfilePreview(mesh);
   const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (!mesh) return;
   const points = mesh.vertices.map(([x, y, z]) => top ? [x, -y] : [(x - y) * Math.sqrt(0.5), (x + y) * 0.4 - z]);
@@ -115,7 +118,7 @@ async function build(readRecipe, opened = false, fromDxf = false, fromSvg = fals
       if (transformRecord.recipe_sha256 !== next.extrusion.recipe_sha256 || transformRecord.geometry_sha256 !== next.geometry_sha256) throw Error('Rebuilt transform does not match the preview');
       next.profile_transform = transformRecord;
     }
-    result = next; fill(next.extrusion.recipe); downloads(); draw();
+    result = next; presentationDirty = false; fill(next.extrusion.recipe); downloads(); draw();
     el('summary').textContent = `${next.vertex_count} vertices · ${next.triangle_count} triangles\nBounds ${next.bounds.size.join(' × ')} mm\nNet profile area ${next.extrusion.profile_area_mm2} mm² · Height ${next.extrusion.height_mm} mm${next.extrusion.recipe.contract_id.endsWith('.v2') ? '\nOuter area ' + next.extrusion.outer_area_mm2 + ' mm² · Cutout area ' + next.extrusion.cutout_area_mm2 + ' mm²' : ''}\nRecipe SHA256 ${next.extrusion.recipe_sha256}`;
     el('status').textContent = (transformRecord ? 'Profile ring transform applied and rebuilt. ' : fromSvg ? `SVG element ${next.svg_import.element_index}${next.svg_import.opening ? ' with opening element ' + next.svg_import.opening.element_index : ''} imported; ${next.svg_import.omitted_drawing_element_count} other drawing elements omitted.${next.svg_import.approximation ? ' Curves approximated by ' + next.svg_import.approximation.vertex_count + ' points at maximum error ' + next.svg_import.approximation.max_error + ' ' + next.svg_import.approximation.units + '; retain the source for curve edits.' : ''} Save the SVG import record before editing. ` : fromDxf ? `DXF entity ${next.dxf_import.entity_index} imported; ${next.dxf_import.omitted_entity_count} other entities omitted. ` : opened ? 'Profile reopened and rebuilt. ' : 'Reference built. ') + 'Downloads match the displayed geometry. Save the editable profile to revise it later.';
   } catch (error) { if (ticket === revision) el('status').textContent = `${error.message}. ${result ? 'Last successful build and downloads are unchanged; draft fields have not been applied.' : 'No geometry has been applied.'}`; }
@@ -220,14 +223,15 @@ el('svg-import').addEventListener('click', () => build(() => {
 }, false, false, true));
 el('svg-file').addEventListener('change', () => { revision++; svgText = null; svgInventory = null; el('svg-element').replaceChildren(); el('svg-element').value = ''; el('svg-opening').replaceChildren(); el('svg-opening').value = ''; el('svg-summary').textContent = 'SVG changed. Inspect this file before importing.'; el('status').textContent = 'SVG changed. Inspect it before importing; current profile and downloads are unchanged.'; controls(); });
 for (const id of ['svg-element', 'svg-opening', 'svg-convention', 'svg-scale', 'svg-max-error']) el(id).addEventListener(['svg-scale', 'svg-max-error'].includes(id) ? 'input' : 'change', () => { revision++; controls(); el('status').textContent = 'SVG import choices changed; current profile and downloads are unchanged until import.'; });
-for (const id of fields) el(id).addEventListener('input', () => { revision++; clearTransform('Profile draft changed. Preview the transform again before applying.'); el('status').textContent = result ? 'Unbuilt edits. Preview and downloads still show the last successful build.' : 'Unbuilt edits. Build to inspect the reference.'; });
+for (const id of fields) el(id).addEventListener('input', () => { presentationDirty = true; revision++; clearTransform('Profile draft changed. Preview the transform again before applying.'); el('status').textContent = result ? 'Unbuilt edits. Preview and downloads still show the last successful build.' : 'Unbuilt edits. Build to inspect the reference.'; });
 el('sample-plate').addEventListener('click', () => {
-  if (busy) return; revision++; clearTransform();
+  if (busy) return; presentationDirty = true; revision++; clearTransform();
   fill({ contract_id: 'moonmold.reference-profile-extrusion.v2', name: 'plate-with-opening', units: 'mm', coordinate_frame: 'xy-z-up', vertices: [[0,0],[40,0],[40,30],[0,30]], cutout: [[10,10],[30,10],[30,20],[10,20]], height: 8 });
   el('status').textContent = 'Plate example loaded as unbuilt edits. Build to apply it; any previous preview and downloads are unchanged.';
 });
-el('restore').addEventListener('click', () => { if (busy || !result) return; revision++; clearTransform(); fill(result.extrusion.recipe); el('status').textContent = 'Fields restored to the last successful build.'; });
+el('restore').addEventListener('click', () => { if (busy || !result) return; presentationDirty = false; revision++; clearTransform(); fill(result.extrusion.recipe); el('status').textContent = 'Fields restored to the last successful build.'; });
 el('view-top').addEventListener('click', () => { top = true; draw(); });
 el('view-iso').addEventListener('click', () => { top = false; draw(); });
 controls();
-</script></html>
+globalThis.addEventListener?.('moonmold:request-preview',()=>publishProfilePreview());
+</script><script type="module" src="/workbench/workbench.mjs"></script></body></html>

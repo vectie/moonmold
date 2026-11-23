@@ -2,6 +2,7 @@
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoonMold · Revolve a collar</title>
 <style>body{font:16px system-ui;max-width:1000px;margin:2rem auto;padding:1rem;background:#10212b;color:#edf6f7}a{color:#91e1cf}label{display:block;margin:1rem 0}input,select,textarea,button{font:inherit;padding:.5rem}textarea{width:90%;height:8rem}canvas{width:100%;background:#09161e}pre{white-space:pre-wrap}#downloads a{display:inline-block;margin:1rem}</style>
+<link rel="stylesheet" href="/workbench/workbench.css"><body data-workbench="revolution">
 <h1>Revolve an editable collar</h1>
 <p>Sweep a radius–height boundary 360° around +Z. Build a sleeve or stepped collar, revise dimensions, save and reopen its recipe. <a href="/reference-profile">Extrude a profile</a> · <a href="/reference-layout">Place the derived layout</a></p>
 <p>Faceted digital reference only. No engineering CAD, certified tolerance, Blender qualification, manufacturing or physical authority. One simple polygon, 3–32 points strictly away from the axis; no repeated closing point, collinear corners or crossings.</p>
@@ -23,6 +24,7 @@ function controls() { el('controls').disabled = busy; el('open-controls').disabl
 function fill(r) { el('name').value = r.name; el('units').value = r.units; el('points').value = JSON.stringify(r.vertices, null, 2); el('segments').value = String(r.segments); }
 function draft() { if (!el('segments').value.trim()) throw Error('Enter explicit angular segments'); return { contract_id: 'moonmold.reference-revolution.v1', name: el('name').value, units: el('units').value, coordinate_frame: 'radius-z', vertices: JSON.parse(el('points').value), segments: Number(el('segments').value) }; }
 function draw(mesh) {
+  if(typeof globalThis.dispatchEvent==='function'&&typeof CustomEvent==='function')globalThis.dispatchEvent(new CustomEvent('moonmold:preview',{detail:{scene:mesh,name:el('name').value,selected:'',busy}}));
   const c = el('preview'), ctx = c.getContext('2d'), p = mesh.vertices.map(([x,y,z]) => [(x-y)*Math.SQRT1_2,(x+y)*0.4-z]);
   const lo = [0,1].map(a => Math.min(...p.map(q => q[a]))), hi = [0,1].map(a => Math.max(...p.map(q => q[a])));
   const scale = Math.min((c.width-40)/(hi[0]-lo[0]),(c.height-40)/(hi[1]-lo[1]));
@@ -54,4 +56,5 @@ for(const id of fields)el(id).addEventListener(id==='units'?'change':'input',()=
 el('recipe-file').addEventListener('change',()=>{revision++;});
 el('restore').addEventListener('click',()=>{if(busy||!result)return;revision++;fill(result.revolution.recipe);el('status').textContent='Restored last built fields.';});
 controls();
-</script></html>
+globalThis.addEventListener?.('moonmold:request-preview',()=>{if(typeof globalThis.dispatchEvent==='function'&&typeof CustomEvent==='function')globalThis.dispatchEvent(new CustomEvent('moonmold:preview',{detail:{scene:result,name:el('name').value,selected:'',busy}}));});
+</script><script type="module" src="/workbench/workbench.mjs"></script></body></html>

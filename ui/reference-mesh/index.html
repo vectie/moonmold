@@ -2,6 +2,7 @@
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoonMold · Reference workbench</title>
 <style>body{font:16px system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem;background:#10212b;color:#edf6f7}label{display:block;margin:.6rem 0}select,input,button{font:inherit;padding:.45rem}input[type=number]{width:7rem}button{cursor:pointer;margin:.4rem}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#91e1cf}.downloads,.row{display:flex;gap:1rem;flex-wrap:wrap}small{color:#b2c7d2}canvas{width:100%;height:360px;background:#09161e;touch-action:none;border:1px solid #476170}fieldset{margin:1rem 0;border:1px solid #476170}button:disabled{cursor:wait}h1{margin-bottom:.3rem}#part-list{width:100%;max-width:100%}</style>
+<link rel="stylesheet" href="/workbench/workbench.css"><body data-workbench="mesh">
 <h1>Reference mesh workbench</h1>
 <p><a href="/reference-layout">Compose a multi-reference layout</a></p>
 <p>Import an OBJ, STL or PLY, inspect its shape, resize and place it, then download the edited reference.</p>
@@ -43,6 +44,7 @@ function describeParts(){const chosen=new Set(partChoice),faces=new Set();for(co
 function showParts(result){objParts=result.source_format==='obj'?(result.obj_parts??[]):[];partChoice=[...(source?.part_ids??[])];$('parts-controls').hidden=!objParts.length;$('part-list').replaceChildren();for(const part of objParts){const option=document.createElement('option');option.value=part.id;option.selected=partChoice.includes(part.id);option.textContent=`${part.kind}: ${part.name??'(unnamed)'} · line ${part.source_line} · ${part.source_face_indices.length} face(s), ${part.triangle_count} triangle(s)`;$('part-list').append(option);}describeParts();}
 function clearSection(){sectionUrls.forEach(URL.revokeObjectURL);sectionUrls=[];$('section-downloads').replaceChildren();$('section-preview').hidden=true;$('section-preview').removeAttribute('src');$('section-status').textContent='Mesh changed. Calculate a section of the current placement.';}
 function render(){
+ if(typeof globalThis.dispatchEvent==='function'&&typeof CustomEvent==='function')globalThis.dispatchEvent(new CustomEvent('moonmold:preview',{detail:{scene:mesh,name:source?.name??'Reference mesh',selected:'',busy}}));
  ctx.clearRect(0,0,canvas.width,canvas.height);if(!mesh)return;
  const yaw=Number($('yaw').value)*Math.PI/180, pitch=Number($('pitch').value)*Math.PI/180;
  const center=mesh.bounds.min.map((n,i)=>(n+mesh.bounds.max[i])/2);
@@ -92,4 +94,5 @@ $('section-form').addEventListener('submit',async e=>{
 for(const id of ['yaw','pitch'])$(id).addEventListener('input',render);
 for(const [id,yaw,pitch] of [['front',0,0],['top',0,90],['iso',35,25]])$(id).addEventListener('click',()=>{$('yaw').value=yaw;$('pitch').value=pitch;render();});
 let drag=null;canvas.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY,Number($('yaw').value),Number($('pitch').value)];canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!drag)return;$('yaw').value=Math.max(-180,Math.min(180,drag[2]+(e.clientX-drag[0])*.5));$('pitch').value=Math.max(-90,Math.min(90,drag[3]+(e.clientY-drag[1])*.5));render();});for(const name of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(name,()=>{drag=null;});
-</script></html>
+globalThis.addEventListener?.('moonmold:request-preview',render);
+</script><script type="module" src="/workbench/workbench.mjs"></script></body></html>

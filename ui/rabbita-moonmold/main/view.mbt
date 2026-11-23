@@ -1,5 +1,6 @@
 ///|
 using @html {
+  a,
   article,
   button,
   code,
@@ -35,7 +36,7 @@ fn area(
   title : String,
   value : String,
   on_input : @rabbita.Emit[String],
-  rows? : Int = 4,
+  rows~ : Int32 = 4,
 ) -> @rabbita.Html {
   label(class="field", [span(title), textarea(value~, on_input~, rows~, "")])
 }
@@ -44,8 +45,8 @@ fn area(
 fn action(
   title : String,
   command : @rabbita.Cmd,
-  primary? : Bool = false,
-  disabled? : Bool = false,
+  primary~ : Bool = false,
+  disabled~ : Bool = false,
 ) -> @rabbita.Html {
   button(
     class=if primary { "action primary" } else { "action" },
@@ -97,18 +98,18 @@ fn representation_cards(values : Array[Json]) -> @rabbita.Html {
 ///|
 fn view(emit : @rabbita.Emit[Msg], model : Model) -> @rabbita.Html {
   main_(class="shell", [
-    header(class="hero", [
-      div([
-        small(class="eyebrow", "MOONMOLD · FIRST-CLASS DOMAIN PACK"),
-        h1("Governed spatial operator"),
-        p(
-          "Create or load exact semantic requests, inspect authority and provider qualification, execute through the durable MoonBit adapter, and review every derived sibling without granting physical authority.",
-        ),
-      ]),
-      div(class="truth", [
-        span("moonflow.adapter.v2"),
-        code("moonmold/spatial.operation.execute@0.2.0"),
-        strong_truth(),
+    header(class="operations-bar", [
+      a(class="operations-brand", href="/", "MoonMold"),
+      a(href="/reference-layout", "Models"),
+      a(href="/reference-profile", "Profile"),
+      h1("Operations"),
+      details(class="runtime-details", [
+        summary("Runtime details"),
+        div(class="truth", [
+          span("moonflow.adapter.v2"),
+          code("moonmold/spatial.operation.execute@0.2.0"),
+          strong_truth(),
+        ]),
       ]),
     ]),
     workflow_guide(emit, model),

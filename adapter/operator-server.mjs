@@ -829,7 +829,8 @@ function sendJson(response, status, value) {
 
 function contentType(target) {
   if (target.endsWith(".html")) return "text/html; charset=utf-8";
-  if (target.endsWith(".js")) return "text/javascript; charset=utf-8";
+  if (target.endsWith(".js") || target.endsWith(".mjs")) return "text/javascript; charset=utf-8";
+  if (target.endsWith(".svg")) return "image/svg+xml";
   if (target.endsWith(".css")) return "text/css; charset=utf-8";
   return "application/octet-stream";
 }
@@ -972,8 +973,10 @@ export function createOperatorServer({
         sendJson(response, 200, applyReferencePlacements(await bodyJson(request, LAYOUT_MAX_FILE_BYTES + 32000)));
       } else if (request.method === "POST" && url.pathname === "/api/reference-layout/compose") {
         sendJson(response, 200, composeReferenceLayout(await bodyJson(request, LAYOUT_MAX_FILE_BYTES)));
-      } else if (request.method === "GET" && url.pathname === "/reference-layout") {
+      } else if (request.method === "GET" && ["/", "/reference-layout"].includes(url.pathname)) {
         await serveStatic(response, path.join(REPO, "ui/reference-layout"), "/");
+      } else if (request.method === "GET" && url.pathname.startsWith("/workbench/")) {
+        await serveStatic(response, path.join(REPO, "ui/workbench"), url.pathname.slice("/workbench".length));
       } else if (request.method === "GET" && url.pathname === "/reference-mesh") {
         await serveStatic(response, path.join(REPO, "ui/reference-mesh"), "/");
       } else if (request.method === "POST" && url.pathname === "/api/request/save") {
